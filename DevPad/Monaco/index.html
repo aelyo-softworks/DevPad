@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+    <link rel="stylesheet" data-name="vs/editor/editor.main" href="./vs/editor/editor.main.css" />
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+
+        #container {
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+    <script src="./vs/loader.js"></script>
+    <script>require.config({ paths: { 'vs': './vs' } });</script>
+    <script src="./vs/editor/editor.main.nls.js"></script>
+    <script src="./vs/editor/editor.main.js"></script>
+    <script>
+        var editor = monaco.editor.create(document.getElementById('container'), {
+            automaticLayout: true,
+            language: 'plaintext'
+        });
+
+        function loadFromHost(lang) {
+            monaco.editor.setModelLanguage(editor.getModel(), lang);
+            editor.setValue(chrome.webview.hostObjects.sync.devPad.load());
+        }
+    </script>
+</body>
+</html>
