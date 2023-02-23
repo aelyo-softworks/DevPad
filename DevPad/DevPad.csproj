@@ -22,6 +22,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -31,6 +32,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -41,7 +43,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Document.cs" />
+    <Compile Include="AboutForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AboutForm.designer.cs">
+      <DependentUpon>AboutForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="Main.cs">
       <SubType>Form</SubType>
@@ -49,24 +56,33 @@
     <Compile Include="Main.Designer.cs">
       <DependentUpon>Main.cs</DependentUpon>
     </Compile>
+    <Compile Include="MonacoModel\DevPadEventArgs.cs" />
+    <Compile Include="MonacoModel\DevPadKeyEventArgs.cs" />
     <Compile Include="MonacoModel\DevPadLoadEventArgs.cs" />
     <Compile Include="MonacoModel\DevPadObject.cs" />
+    <Compile Include="MonacoModel\DevPadEventType.cs" />
     <Compile Include="MonacoModel\Extensions.cs" />
+    <Compile Include="MonacoModel\KeyCode.cs" />
     <Compile Include="MonacoModel\LanguageExtensionPoint.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RecentFile.cs" />
     <Compile Include="Resources\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
     <Compile Include="Settings.cs" />
+    <Compile Include="Utilities\AssemblyUtilities.cs" />
     <Compile Include="Utilities\Conversions.cs" />
     <Compile Include="Utilities\DecamelizeOptions.cs" />
     <Compile Include="Utilities\Extensions.cs" />
     <Compile Include="Utilities\IOUtilities.cs" />
     <Compile Include="Utilities\Serializable.cs" />
-    <Compile Include="WindowSetting.cs" />
+    <Compile Include="Utilities\WinformsUtilities.cs" />
+    <EmbeddedResource Include="AboutForm.resx">
+      <DependentUpon>AboutForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Main.resx">
       <DependentUpon>Main.cs</DependentUpon>
     </EmbeddedResource>

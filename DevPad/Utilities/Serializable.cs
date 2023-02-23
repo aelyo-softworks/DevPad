@@ -1,13 +1,126 @@
 ﻿using System;
+using System.Collections.Concurrent;
+using System.ComponentModel;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Xml;
 using System.Xml.Serialization;
 
 namespace DevPad.Utilities
 {
-    public abstract class Serializable<T> where T : new()
+    public abstract class Serializable<T> : INotifyPropertyChanged where T : new()
     {
+        private readonly ConcurrentDictionary<string, object> _values = new ConcurrentDictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        public void SerializeToConfiguration() => Serialize(ConfigurationFilePath);
+        public void Serialize(XmlWriter writer)
+        {
+            if (writer == null)
+                throw new ArgumentNullException(nameof(writer));
+
+            var serializer = new XmlSerializer(GetType());
+            serializer.Serialize(writer, this);
+        }
+
+        public void Serialize(TextWriter writer)
+        {
+            if (writer == null)
+                throw new ArgumentNullException(nameof(writer));
+
+            var serializer = new XmlSerializer(GetType());
+            serializer.Serialize(writer, this);
+        }
+
+        public void Serialize(Stream stream)
+        {
+            if (stream == null)
+                throw new ArgumentNullException(nameof(stream));
+
+            var serializer = new XmlSerializer(GetType());
+            serializer.Serialize(stream, this);
+        }
+
+        public void Serialize(string filePath)
+        {
+            if (filePath == null)
+                throw new ArgumentNullException(nameof(filePath));
+
+            string dir = Path.GetDirectoryName(filePath);
+            if (dir != null && !Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
+
+            using (var writer = new XmlTextWriter(filePath, Encoding.UTF8))
+            {
+                Serialize(writer);
+            }
+        }
+
+        protected void OnPropertyChanged(string name) => OnPropertyChanged(this, new PropertyChangedEventArgs(name));
+        protected virtual void OnPropertyChanged(object sender, PropertyChangedEventArgs e) => PropertyChanged?.Invoke(sender, e);
+
+        protected Tv GetPropertyValue<Tv>(Tv defaultValue = default, [CallerMemberName] string propertyName = null)
+        {
+            if (!TryGetPropertyValue(out var value, propertyName))
+                return defaultValue;
+
+            if (!Conversions.TryChangeType<Tv>(value, out var convertedValue))
+                return defaultValue;
+
+            return convertedValue;
+        }
+
+        protected virtual bool TryGetPropertyValue(out object value, [CallerMemberName] string propertyName = null)
+        {
+            if (propertyName == null)
+                throw new ArgumentNullException(nameof(propertyName));
+
+            return _values.TryGetValue(propertyName, out value);
+        }
+
+        protected virtual bool SetPropertyValue(object value, [CallerMemberName] string propertyName = null)
+        {
+            if (propertyName == null)
+                throw new ArgumentNullException(nameof(propertyName));
+
+            var changed = true;
+            _values.AddOrUpdate(propertyName, value, (k, o) =>
+            {
+                changed = !Equals(value, o);
+                return value;
+            });
+
+            if (changed)
+            {
+                OnPropertyChanged(propertyName);
+            }
+            return changed;
+        }
+
+        public virtual void CopyFrom(Serializable<T> other)
+        {
+            if (other == null)
+                throw new ArgumentNullException(nameof(other));
+
+            var frozen = other._values.ToArray();
+            foreach (var kv in frozen)
+            {
+                SetPropertyValue(kv.Value, kv.Key);
+            }
+        }
+
+        protected virtual T CreateNew() => new T();
+        public virtual T Clone()
+        {
+            var clone = CreateNew();
+            ((Serializable<T>)(object)clone).CopyFrom(this);
+            return clone;
+        }
+
         private static readonly Lazy<string> _configurationFilePath = new Lazy<string>(() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), typeof(T).Namespace, typeof(T).Name + ".config"), true);
         public static string ConfigurationFilePath => _configurationFilePath.Value;
 
@@ -159,51 +272,6 @@ namespace DevPad.Utilities
             catch
             {
                 return defaultValue;
-            }
-        }
-
-        public void SerializeToConfiguration() => Serialize(ConfigurationFilePath);
-        public void Serialize(XmlWriter writer)
-        {
-            if (writer == null)
-                throw new ArgumentNullException(nameof(writer));
-
-            var serializer = new XmlSerializer(GetType());
-            serializer.Serialize(writer, this);
-        }
-
-        public void Serialize(TextWriter writer)
-        {
-            if (writer == null)
-                throw new ArgumentNullException(nameof(writer));
-
-            var serializer = new XmlSerializer(GetType());
-            serializer.Serialize(writer, this);
-        }
-
-        public void Serialize(Stream stream)
-        {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
-
-            var serializer = new XmlSerializer(GetType());
-            serializer.Serialize(stream, this);
-        }
-
-        public void Serialize(string filePath)
-        {
-            if (filePath == null)
-                throw new ArgumentNullException(nameof(filePath));
-
-            string dir = Path.GetDirectoryName(filePath);
-            if (dir != null && !Directory.Exists(dir))
-            {
-                Directory.CreateDirectory(dir);
-            }
-
-            using (var writer = new XmlTextWriter(filePath, Encoding.UTF8))
-            {
-                Serialize(writer);
             }
         }
     }

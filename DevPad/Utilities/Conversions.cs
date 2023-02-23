@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 
 namespace DevPad.Utilities
 {
@@ -36,7 +37,6 @@ namespace DevPad.Utilities
             if (!TryChangeType(input, enumType, out object result))
                 return Activator.CreateInstance(enumType);
 
-            // validate
             var s = result.ToString();
             if (!char.IsDigit(s[0]) && s[0] != '-')
                 return result;
@@ -45,7 +45,7 @@ namespace DevPad.Utilities
                 return Activator.CreateInstance(enumType);
 
             var names = Enum.GetNames(enumType);
-            if (names.Length == 0) // nothing defined...
+            if (names.Length == 0)
                 return Activator.CreateInstance(enumType);
 
             var values = Enum.GetValues(enumType);
@@ -91,7 +91,6 @@ namespace DevPad.Utilities
                 return false;
             }
 
-            // validate
             var s = result.ToString();
             if (!char.IsDigit(s[0]) && s[0] != '-')
             {
@@ -743,6 +742,9 @@ namespace DevPad.Utilities
                 value = input;
                 return true;
             }
+
+            if (input is JsonElement element)
+                return TryChangeType(element.ToString(), conversionType, provider, out value);
 
             if (conversionType.IsEnum)
                 return EnumTryParse(conversionType, input, out value);
@@ -1397,13 +1399,12 @@ namespace DevPad.Utilities
                     foreach (var obj in enumerable)
                     {
                         count++;
-                        if (TryChangeType(obj, elementType, provider, out object element))
+                        if (TryChangeType(obj, elementType, provider, out object elem))
                         {
-                            list.Add(element);
+                            list.Add(elem);
                         }
                     }
 
-                    // at least one was converted
                     if (count > 0 && list.Count > 0)
                     {
                         if (isGenericList)
@@ -1843,5 +1844,130 @@ namespace DevPad.Utilities
 
         [DllImport("shlwapi", CharSet = CharSet.Unicode)]
         private static extern long StrFormatByteSizeW(long qdw, [MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszBuf, int cchBuf);
+
+
+        public static string GetNullifiedValue(this JsonElement element, string jsonPath) => GetValue<string>(element, jsonPath, null).Nullify();
+        public static string GetNullifiedValue(this IDictionary<string, JsonElement> element, string key, string defaultValue = null, IFormatProvider provider = null)
+        {
+            if (key == null)
+                throw new ArgumentNullException(nameof(key));
+
+            if (element == null)
+                return defaultValue.Nullify();
+
+            if (!element.TryGetValue(key, out var o))
+                return defaultValue;
+
+            return ChangeType(o, defaultValue, provider).Nullify();
+        }
+
+        public static T GetValue<T>(this JsonElement element, string jsonPath, T defaultValue = default)
+        {
+            if (!TryGetValue(element, jsonPath, out T value))
+                return defaultValue;
+
+            return value;
+        }
+
+        public static bool TryGetValue<T>(this JsonElement element, string jsonPath, out T value)
+        {
+            if (!TryGetValue(element, jsonPath, out object obj))
+            {
+                value = default;
+                return false;
+            }
+
+            return TryChangeType(obj, out value);
+        }
+
+        public static bool TryGetValue(this JsonElement element, string jsonPath, out object value)
+        {
+            if (jsonPath == null)
+                throw new ArgumentNullException(nameof(jsonPath));
+
+            if (element.TryGetProperty(jsonPath, out var directElement))
+            {
+                value = directElement.ToObject();
+                return true;
+            }
+
+            value = null;
+            var segments = jsonPath.Split('.');
+            var current = element;
+            for (var i = 0; i < segments.Length; i++)
+            {
+                var segment = segments[i].Nullify();
+                if (segment == null)
+                    return false;
+
+                if (!current.TryGetProperty(segment, out var newElement))
+                    return false;
+
+                if (i == segments.Length - 1)
+                {
+                    value = newElement.ToObject();
+                    return true;
+                }
+                current = newElement;
+            }
+            return false;
+        }
+
+        public static object ToObject(this JsonElement element)
+        {
+            switch (element.ValueKind)
+            {
+                case JsonValueKind.Null:
+                    return null;
+
+                case JsonValueKind.Object:
+                    var dic = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var child in element.EnumerateObject())
+                    {
+                        dic[child.Name] = ToObject(child.Value);
+                    }
+                    return dic;
+
+                case JsonValueKind.Array:
+                    var objects = new object[element.GetArrayLength()];
+                    var i = 0;
+                    foreach (var child in element.EnumerateArray())
+                    {
+                        objects[i++] = ToObject(child);
+                    }
+                    return objects;
+
+                case JsonValueKind.String:
+                    var str = element.ToString();
+                    if (DateTime.TryParseExact(str, new string[] { "o", "r", "s" }, null, DateTimeStyles.None, out var dt))
+                        return dt;
+
+                    return str;
+
+                case JsonValueKind.Number:
+                    if (element.TryGetInt32(out var i32))
+                        return i32;
+
+                    if (element.TryGetInt32(out var i64))
+                        return i64;
+
+                    if (element.TryGetDecimal(out var dec))
+                        return dec;
+
+                    if (element.TryGetDouble(out var dbl))
+                        return dbl;
+
+                    throw new NotSupportedException();
+
+                case JsonValueKind.True:
+                    return true;
+
+                case JsonValueKind.False:
+                    return false;
+
+                default:
+                    throw new NotSupportedException();
+            }
+        }
     }
 }

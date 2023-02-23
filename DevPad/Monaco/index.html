@@ -21,9 +21,25 @@
     <script src="./vs/editor/editor.main.nls.js"></script>
     <script src="./vs/editor/editor.main.js"></script>
     <script>
+        monaco.editor.onDidCreateEditor(evt => {
+            chrome.webview.hostObjects.sync.devPad.onEvent(5);
+        });
+
         var editor = monaco.editor.create(document.getElementById('container'), {
             automaticLayout: true,
             language: 'plaintext'
+        });
+
+        editor.getModel().onDidChangeContent(evt => {
+            chrome.webview.hostObjects.sync.devPad.onEvent(2, JSON.stringify(evt));
+        });
+
+        editor.onKeyUp(evt => {
+            chrome.webview.hostObjects.sync.devPad.onEvent(3, JSON.stringify(evt));
+        });
+
+        editor.onKeyDown(evt => {
+            chrome.webview.hostObjects.sync.devPad.onEvent(4, JSON.stringify(evt));
         });
 
         function loadFromHost(lang) {

@@ -1,11 +1,12 @@
 ﻿namespace DevPad.MonacoModel
 {
-    public class DevPadLoadEventArgs
+    public class DevPadLoadEventArgs : DevPadEventArgs
     {
         public DevPadLoadEventArgs()
+            : base(DevPadEventType.Load)
         {
         }
 
-        public string Load { get; set; }
+        public string DocumentText { get; set; }
     }
 }

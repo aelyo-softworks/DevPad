@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Windows.Forms;
 using System.Xml.Serialization;
 using DevPad.Utilities;
 
@@ -21,185 +20,64 @@ namespace DevPad
         }, true);
         public static Settings Current => _current.Value;
 
-        private List<Document> _documents = new List<Document>();
-        private List<WindowSetting> _windowSettings = new List<WindowSetting>();
-
-
-        [XmlIgnore]
-        public IEnumerable<Document> RecentDocuments => _documents.Where(d => d.IsRecent).OrderByDescending(d => d.LastOpenTime);
+        [DefaultValue(null)]
+        [Browsable(false)]
+        public virtual List<RecentFile> RecentFilesPaths { get => GetPropertyValue((List<RecentFile>)null); set { SetPropertyValue(value); } }
 
         [XmlIgnore]
-        public IEnumerable<Document> OpenDocuments => _documents.Where(d => d.IsOpen);
-
         public string UserDataFolder { get; set; } = DefaultUserDataFolder;
 
-        public Document[] Documents
+        private Dictionary<string, DateTime> GetRecentFiles()
         {
-            get => _documents.ToArray();
-            set
+            var dic = new Dictionary<string, DateTime>(StringComparer.Ordinal);
+            var recents = RecentFilesPaths;
+            if (recents != null)
             {
-                _documents = new List<Document>();
-                if (value != null)
+                foreach (var recent in recents)
                 {
-                    foreach (var doc in value)
-                    {
-                        if (IOUtilities.FileExists(doc.FilePath))
-                        {
-                            AddDocument(doc);
-                        }
-                    }
-                }
-                _documents.Sort();
-            }
-        }
+                    if (recent?.FilePath == null)
+                        continue;
 
-        public WindowSetting[] WindowSettings
-        {
-            get => _windowSettings.ToArray();
-            set
-            {
-                _windowSettings = new List<WindowSetting>();
-                if (value != null)
-                {
-                    _windowSettings.AddRange(value);
+                    if (!IOUtilities.PathIsFile(recent.FilePath))
+                        continue;
+
+                    dic[recent.FilePath] = recent.LastAccessTime;
                 }
             }
+            return dic;
         }
 
-        public WindowSetting SaveWindow(string name, Form window)
+        private void SaveRecentFiles(Dictionary<string, DateTime> dic)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
-            if (window == null)
-                throw new ArgumentNullException(nameof(window));
-
-            var existing = _windowSettings.FirstOrDefault(w => w.Name.EqualsIgnoreCase(name));
-            if (existing == null)
+            var list = dic.Select(kv => new RecentFile { FilePath = kv.Key, LastAccessTime = kv.Value }).OrderByDescending(r => r.LastAccessTime).ToList();
+            if (list.Count == 0)
             {
-                existing = new WindowSetting();
-                existing.HasChanged = true;
-                existing.Name = name;
-                _windowSettings.Add(existing);
-            }
-
-            if (window.WindowState == FormWindowState.Maximized)
-            {
-                existing.Left = window.RestoreBounds.Left;
-                existing.Top = window.RestoreBounds.Top;
-                existing.Width = window.RestoreBounds.Width;
-                existing.Height = window.RestoreBounds.Height;
-                existing.IsMaximized = true;
+                RecentFilesPaths = null;
             }
             else
             {
-                existing.Left = window.Left;
-                existing.Top = window.Top;
-                existing.Width = window.Width;
-                existing.Height = window.Height;
-                existing.IsMaximized = false;
-            }
-
-            if (existing.HasChanged)
-            {
-                SerializeToConfiguration();
-                existing.HasChanged = false;
-            }
-            return existing;
-        }
-
-        public WindowSetting RestoreWindow(string name, Form window)
-        {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
-            if (window == null)
-                throw new ArgumentNullException(nameof(window));
-
-            var existing = _windowSettings.FirstOrDefault(w => w.Name.EqualsIgnoreCase(name));
-            if (existing != null)
-            {
-                window.Left = existing.Left;
-                window.Top = existing.Top;
-                window.Width = existing.Width;
-                window.Height = existing.Height;
-                if (existing.IsMaximized)
-                {
-                    window.WindowState = FormWindowState.Maximized;
-                }
-            }
-            return existing;
-        }
-
-        private void AddDocument(Document doc)
-        {
-            _documents.Add(doc);
-        }
-
-        public void SelectDocument(string filePath)
-        {
-            if (filePath == null)
-                throw new ArgumentNullException(nameof(filePath));
-
-            foreach (var doc in _documents)
-            {
-                doc.IsSelected = doc.FilePath.EqualsIgnoreCase(filePath);
+                RecentFilesPaths = list;
             }
         }
 
-        public Document GetDocument(string filePath)
+        public void CleanRecentFiles() => SaveRecentFiles(GetRecentFiles());
+        public void ClearRecentFiles()
         {
-            if (filePath == null)
-                throw new ArgumentNullException(nameof(filePath));
-
-            return _documents.FirstOrDefault(d => d.FilePath.EqualsIgnoreCase(filePath));
-        }
-
-        public Document AddDocument(string filePath, int tabOrder)
-        {
-            if (filePath == null)
-                throw new ArgumentNullException(nameof(filePath));
-
-            var doc = _documents.FirstOrDefault(d => d.FilePath.EqualsIgnoreCase(filePath));
-            if (doc == null)
-            {
-                doc = new Document();
-                doc.FilePath = filePath;
-                AddDocument(doc);
-                _documents.Sort();
-            }
-
-            doc.IsRecent = true;
-            doc.LastOpenTime = DateTime.Now;
-            doc.TabOrder = tabOrder;
+            RecentFilesPaths = null;
             SerializeToConfiguration();
-            return doc;
         }
 
-        public Document AddNewDocument(int tabOrder)
+        public void AddRecentFile(string filePath)
         {
-            IOUtilities.FileCreateDirectory(Path.Combine(TempFileDirectory, "dummy"));
-            int i = 1;
-            string filePath;
-            do
-            {
-                filePath = Path.Combine(TempFileDirectory, "(unnamed " + i + ")");
-                if (!File.Exists(filePath))
-                    break;
+            if (filePath == null)
+                throw new ArgumentNullException(nameof(filePath));
 
-                i++;
-            }
-            while (true);
+            if (!IOUtilities.PathIsFile(filePath))
+                return;
 
-            var doc = new Document();
-            doc.IsNew = true;
-            doc.FilePath = filePath;
-            doc.TabOrder = tabOrder;
-            File.WriteAllText(doc.FilePath, string.Empty, Encoding.UTF8);
-            AddDocument(doc);
-            _documents.Sort();
-            SerializeToConfiguration();
-            return doc;
+            var dic = GetRecentFiles();
+            dic[filePath] = DateTime.UtcNow;
+            SaveRecentFiles(dic);
         }
     }
 }
