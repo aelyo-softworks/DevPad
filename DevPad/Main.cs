@@ -20,14 +20,16 @@ namespace DevPad
         public Main()
         {
             InitializeComponent();
+            Task.Run(() => Settings.Current.CleanRecentFiles());
             Icon = Resources.Resources.DevPadIcon;
+            Text = WinformsUtilities.ApplicationName;
             _dpo.Load += DevPadOnLoad;
             _dpo.Event += DevPadEvent;
             _ = InitializeAsync();
-            Task.Run(() => Settings.Current.CleanRecentFiles());
         }
 
         public bool IsMonacoReady { get; private set; }
+        public bool IsEditorCreated { get; private set; }
         public bool HasContentChanged { get; private set; }
         public string CurrentFilePath { get; private set; }
 
@@ -98,13 +100,14 @@ namespace DevPad
             if (filePath == null)
             {
                 Text = WinformsUtilities.ApplicationName;
+                return;
             }
-            else
-            {
-                Text = WinformsUtilities.ApplicationName + " - " + filePath;
-                Settings.Current.AddRecentFile(filePath);
-                Settings.Current.SerializeToConfiguration();
-            }
+
+            Text = WinformsUtilities.ApplicationName + " - " + filePath;
+            Settings.Current.AddRecentFile(filePath);
+            Settings.Current.SerializeToConfiguration();
+            WindowsUtilities.SHAddToRecentDocs(filePath);
+            //Program.WindowsApplication.PublishRecentList();
         }
 
         private bool DiscardChanges()
@@ -275,7 +278,13 @@ namespace DevPad
 
                 case DevPadEventType.EditorCreated:
                     HasContentChanged = false;
+                    IsEditorCreated = true;
                     await WebView.ExecuteScriptAsync($"editor.focus()");
+                    var open = CommandLine.GetNullifiedArgument(0);
+                    if (open != null)
+                    {
+                        await OpenFileAsync(open);
+                    }
                     break;
             }
         }

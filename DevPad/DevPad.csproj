@@ -26,6 +26,9 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -66,6 +69,7 @@
     </Compile>
     <Compile Include="Settings.cs" />
     <Compile Include="Utilities\AssemblyUtilities.cs" />
+    <Compile Include="Utilities\CommandLine.cs" />
     <Compile Include="Utilities\Conversions.cs" />
     <Compile Include="Utilities\DecamelizeOptions.cs" />
     <Compile Include="Utilities\Extensions.cs" />
@@ -86,6 +90,7 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
       <SubType>Designer</SubType>
     </EmbeddedResource>
+    <None Include="app.manifest" />
     <None Include="Monaco\vs\base\browser\ui\codicons\codicon\codicon.ttf" />
   </ItemGroup>
   <ItemGroup>

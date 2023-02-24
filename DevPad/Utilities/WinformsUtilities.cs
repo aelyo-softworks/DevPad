@@ -4,7 +4,7 @@ namespace DevPad.Utilities
 {
     public static class WinformsUtilities
     {
-        public static string ApplicationName => AssemblyUtilities.GetDescription();
+        public static string ApplicationName => AssemblyUtilities.GetTitle();
         public static string ApplicationVersion => AssemblyUtilities.GetFileVersion();
         public static string ApplicationTitle => ApplicationName + " V" + ApplicationVersion;
 

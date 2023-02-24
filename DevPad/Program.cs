@@ -21,17 +21,27 @@ namespace DevPad
 #endif
         }
 
-        public static WindowsApp WindowsApplication { get; } = new WindowsApp(AssemblyUtilities.GetTitle(), AssemblyUtilities.GetTitle(), AssemblyUtilities.GetDescription());
+        public static WindowsApp WindowsApplication { get; } = new WindowsApp("Aelyo.DevPad", AssemblyUtilities.GetTitle());
 
         [STAThread]
         static void Main()
         {
             WindowsApplication.PublisherName = AssemblyUtilities.GetCompany();
-            WindowsApplication.FileExtensions.Add(".txt");
-            WindowsApplication.FileExtensions.Add(".json");
-            WindowsApplication.FileExtensions.Add(".xml");
-            WindowsApplication.FileExtensions.Add(".csv");
+
+            // for some reason, if I add these, they will not appear as recent items in TaskBar's JumpList...
+            //WindowsApplication.FileExtensions.Add(".txt");
+            //WindowsApplication.FileExtensions.Add(".json");
+            //WindowsApplication.FileExtensions.Add(".xml");
+            //WindowsApplication.FileExtensions.Add(".csv");
             WindowsApplication.RegisterProcess();
+
+            var unregister = CommandLine.GetArgument("unregister", false);
+            if (unregister)
+            {
+                WindowsApplication.Unregister();
+                return;
+            }
+
             WindowsApplication.Register();
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
