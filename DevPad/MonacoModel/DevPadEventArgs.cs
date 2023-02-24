@@ -25,6 +25,14 @@ namespace DevPad.MonacoModel
         public JsonDocument Document => _document.Value;
         public JsonElement RootElement => (Document?.RootElement).GetValueOrDefault();
 
-        public override string ToString() => EventType.ToString();
+        public override string ToString()
+        {
+            var str = EventType.ToString();
+            if (Json != null)
+            {
+                str += " " + Json;
+            }
+            return str;
+        }
     }
 }

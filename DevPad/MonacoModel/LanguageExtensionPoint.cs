@@ -3,6 +3,9 @@
     // https://microsoft.github.io/monaco-editor/docs.html#interfaces/languages.ILanguageExtensionPoint.html
     public class LanguageExtensionPoint
     {
+        public const string DefaultLanguageId = "plaintext";
+        public const string DefaultLanguageName = "Plain Text";
+
         public string Id { get; set; }
         public string Configuration { get; set; }
         public string[] Extensions { get; set; }

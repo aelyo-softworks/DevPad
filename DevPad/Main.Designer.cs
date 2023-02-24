@@ -44,14 +44,21 @@
             this.ExitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.editToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.findToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
+            this.preferencesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.viewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.setLanguageToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.placeholderToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.aboutDevPadToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.StatusStrip = new System.Windows.Forms.StatusStrip();
+            this.toolStripStatusPosition = new System.Windows.Forms.ToolStripStatusLabel();
+            this.toolStripStatusSelection = new System.Windows.Forms.ToolStripStatusLabel();
             this.WebView = new Microsoft.Web.WebView2.WinForms.WebView2();
-            this.placeholderToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripStatusLanguage = new System.Windows.Forms.ToolStripStatusLabel();
+            this.goToToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.MainMenu.SuspendLayout();
+            this.StatusStrip.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.WebView)).BeginInit();
             this.SuspendLayout();
             // 
@@ -174,7 +181,10 @@
             // editToolStripMenuItem
             // 
             this.editToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.findToolStripMenuItem});
+            this.findToolStripMenuItem,
+            this.goToToolStripMenuItem,
+            this.toolStripSeparator5,
+            this.preferencesToolStripMenuItem});
             this.editToolStripMenuItem.Name = "editToolStripMenuItem";
             this.editToolStripMenuItem.Size = new System.Drawing.Size(39, 20);
             this.editToolStripMenuItem.Text = "&Edit";
@@ -186,6 +196,18 @@
             this.findToolStripMenuItem.Size = new System.Drawing.Size(146, 22);
             this.findToolStripMenuItem.Text = "&Find...";
             // 
+            // toolStripSeparator5
+            // 
+            this.toolStripSeparator5.Name = "toolStripSeparator5";
+            this.toolStripSeparator5.Size = new System.Drawing.Size(143, 6);
+            // 
+            // preferencesToolStripMenuItem
+            // 
+            this.preferencesToolStripMenuItem.Name = "preferencesToolStripMenuItem";
+            this.preferencesToolStripMenuItem.Size = new System.Drawing.Size(146, 22);
+            this.preferencesToolStripMenuItem.Text = "&Preferences...";
+            this.preferencesToolStripMenuItem.Click += new System.EventHandler(this.PreferencesToolStripMenuItem_Click);
+            // 
             // viewToolStripMenuItem
             // 
             this.viewToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -193,15 +215,21 @@
             this.viewToolStripMenuItem.Name = "viewToolStripMenuItem";
             this.viewToolStripMenuItem.Size = new System.Drawing.Size(44, 20);
             this.viewToolStripMenuItem.Text = "&View";
-            this.viewToolStripMenuItem.DropDownOpening += new System.EventHandler(this.viewToolStripMenuItem_DropDownOpening);
+            this.viewToolStripMenuItem.DropDownOpening += new System.EventHandler(this.ViewToolStripMenuItem_DropDownOpening);
             // 
             // setLanguageToolStripMenuItem
             // 
             this.setLanguageToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.placeholderToolStripMenuItem});
             this.setLanguageToolStripMenuItem.Name = "setLanguageToolStripMenuItem";
-            this.setLanguageToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.setLanguageToolStripMenuItem.Size = new System.Drawing.Size(145, 22);
             this.setLanguageToolStripMenuItem.Text = "Set Language";
+            // 
+            // placeholderToolStripMenuItem
+            // 
+            this.placeholderToolStripMenuItem.Name = "placeholderToolStripMenuItem";
+            this.placeholderToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.placeholderToolStripMenuItem.Text = "<placeholder>";
             // 
             // helpToolStripMenuItem
             // 
@@ -220,11 +248,28 @@
             // 
             // StatusStrip
             // 
+            this.StatusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.toolStripStatusPosition,
+            this.toolStripStatusSelection,
+            this.toolStripStatusLanguage});
+            this.StatusStrip.LayoutStyle = System.Windows.Forms.ToolStripLayoutStyle.HorizontalStackWithOverflow;
             this.StatusStrip.Location = new System.Drawing.Point(0, 939);
             this.StatusStrip.Name = "StatusStrip";
             this.StatusStrip.Size = new System.Drawing.Size(1184, 22);
-            this.StatusStrip.TabIndex = 1;
+            this.StatusStrip.TabIndex = 2;
             this.StatusStrip.Text = "Status Strip";
+            // 
+            // toolStripStatusPosition
+            // 
+            this.toolStripStatusPosition.Name = "toolStripStatusPosition";
+            this.toolStripStatusPosition.Size = new System.Drawing.Size(50, 17);
+            this.toolStripStatusPosition.Text = "Position";
+            // 
+            // toolStripStatusSelection
+            // 
+            this.toolStripStatusSelection.Name = "toolStripStatusSelection";
+            this.toolStripStatusSelection.Size = new System.Drawing.Size(55, 17);
+            this.toolStripStatusSelection.Text = "Selection";
             // 
             // WebView
             // 
@@ -235,14 +280,22 @@
             this.WebView.Location = new System.Drawing.Point(0, 24);
             this.WebView.Name = "WebView";
             this.WebView.Size = new System.Drawing.Size(1184, 915);
-            this.WebView.TabIndex = 2;
+            this.WebView.TabIndex = 1;
             this.WebView.ZoomFactor = 1D;
             // 
-            // placeholderToolStripMenuItem
+            // toolStripStatusLanguage
             // 
-            this.placeholderToolStripMenuItem.Name = "placeholderToolStripMenuItem";
-            this.placeholderToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.placeholderToolStripMenuItem.Text = "<placeholder>";
+            this.toolStripStatusLanguage.Name = "toolStripStatusLanguage";
+            this.toolStripStatusLanguage.Size = new System.Drawing.Size(59, 17);
+            this.toolStripStatusLanguage.Text = "Language";
+            // 
+            // goToToolStripMenuItem
+            // 
+            this.goToToolStripMenuItem.Name = "goToToolStripMenuItem";
+            this.goToToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.G)));
+            this.goToToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.goToToolStripMenuItem.Text = "&Go To...";
+            this.goToToolStripMenuItem.Click += new System.EventHandler(this.GoToToolStripMenuItem_Click);
             // 
             // Main
             // 
@@ -259,6 +312,8 @@
             this.Text = "DevPad";
             this.MainMenu.ResumeLayout(false);
             this.MainMenu.PerformLayout();
+            this.StatusStrip.ResumeLayout(false);
+            this.StatusStrip.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.WebView)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -290,6 +345,12 @@
         private System.Windows.Forms.ToolStripMenuItem viewToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem setLanguageToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem placeholderToolStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator5;
+        private System.Windows.Forms.ToolStripMenuItem preferencesToolStripMenuItem;
+        private System.Windows.Forms.ToolStripStatusLabel toolStripStatusPosition;
+        private System.Windows.Forms.ToolStripStatusLabel toolStripStatusSelection;
+        private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLanguage;
+        private System.Windows.Forms.ToolStripMenuItem goToToolStripMenuItem;
     }
 }
 

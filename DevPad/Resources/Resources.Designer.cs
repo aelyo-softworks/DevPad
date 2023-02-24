@@ -79,6 +79,15 @@ namespace Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Appearance.
+        /// </summary>
+        internal static string Appearance {
+            get {
+                return ResourceManager.GetString("Appearance", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Confirmation.
         /// </summary>
         internal static string Confirmation {
@@ -130,6 +139,24 @@ namespace Resources {
         internal static string OneFileFilter {
             get {
                 return ResourceManager.GetString("OneFileFilter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Ln: {0} Ch: {1}.
+        /// </summary>
+        internal static string StatusPosition {
+            get {
+                return ResourceManager.GetString("StatusPosition", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Selection: {0}.
+        /// </summary>
+        internal static string StatusSelection {
+            get {
+                return ResourceManager.GetString("StatusSelection", resourceCulture);
             }
         }
         

@@ -19,23 +19,39 @@ namespace DevPad.MonacoModel
 
             _languagesById = new ConcurrentDictionary<string, LanguageExtensionPoint>(StringComparer.OrdinalIgnoreCase);
             _languagesByExtension = new ConcurrentDictionary<string, IReadOnlyList<LanguageExtensionPoint>>(StringComparer.OrdinalIgnoreCase);
-            foreach (var language in languages)
+            if (languages != null)
             {
-                _languagesById[language.Id] = language;
-                if (language.Extensions != null)
+                foreach (var language in languages)
                 {
-                    foreach (var ext in language.Extensions)
+                    _languagesById[language.Id] = language;
+                    if (language.Extensions != null)
                     {
-                        if (!_languagesByExtension.TryGetValue(ext, out var list))
+                        foreach (var ext in language.Extensions)
                         {
-                            var l = new List<LanguageExtensionPoint>();
-                            list = l;
-                            _languagesByExtension[ext] = list;
+                            if (!_languagesByExtension.TryGetValue(ext, out var list))
+                            {
+                                var l = new List<LanguageExtensionPoint>();
+                                list = l;
+                                _languagesByExtension[ext] = list;
+                            }
+                            ((List<LanguageExtensionPoint>)list).Add(language);
                         }
-                        ((List<LanguageExtensionPoint>)list).Add(language);
                     }
                 }
             }
+        }
+
+        public static async ValueTask<string> GetLanguageName(this WebView2 webView, string id)
+        {
+            if (id == null)
+                return null;
+
+            var languages = await GetLanguages(webView);
+            languages.TryGetValue(id, out var lang);
+            if (lang != null)
+                return lang.Name;
+
+            return null;
         }
 
         public static async ValueTask<IDictionary<string, IReadOnlyList<LanguageExtensionPoint>>> GetLanguagesByExtension(this WebView2 webView)

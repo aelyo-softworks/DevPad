@@ -31,7 +31,27 @@
         });
 
         editor.getModel().onDidChangeContent(evt => {
-            chrome.webview.hostObjects.sync.devPad.onEvent(2, JSON.stringify(evt));
+            chrome.webview.hostObjects.sync.devPad.onEvent(2);
+        });
+
+        editor.onDidChangeModelLanguage(evt => {
+            chrome.webview.hostObjects.sync.devPad.onEvent(10, JSON.stringify(evt));
+        });
+
+        editor.onDidBlurEditorText(evt => {
+            chrome.webview.hostObjects.sync.devPad.onEvent(6, JSON.stringify(evt));
+        });
+
+        editor.onDidFocusEditorText(evt => {
+            chrome.webview.hostObjects.sync.devPad.onEvent(7, JSON.stringify(evt));
+        });
+
+        editor.onDidChangeCursorPosition(evt => {
+            chrome.webview.hostObjects.sync.devPad.onEvent(8, JSON.stringify(evt));
+        });
+
+        editor.onDidChangeCursorSelection(evt => {
+            chrome.webview.hostObjects.sync.devPad.onEvent(9, JSON.stringify(evt));
         });
 
         editor.onKeyUp(evt => {

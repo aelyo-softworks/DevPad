@@ -123,6 +123,9 @@
   <data name="AllKnownFilesFilter" xml:space="preserve">
     <value>|All known files|{0}</value>
   </data>
+  <data name="Appearance" xml:space="preserve">
+    <value>Appearance</value>
+  </data>
   <data name="Confirmation" xml:space="preserve">
     <value>Confirmation</value>
   </data>
@@ -141,6 +144,12 @@
   </data>
   <data name="OneFileFilter" xml:space="preserve">
     <value>{0} files ({1})|{1}</value>
+  </data>
+  <data name="StatusPosition" xml:space="preserve">
+    <value>Ln: {0} Ch: {1}</value>
+  </data>
+  <data name="StatusSelection" xml:space="preserve">
+    <value>Selection: {0}</value>
   </data>
   <data name="Warning" xml:space="preserve">
     <value>Warning</value>

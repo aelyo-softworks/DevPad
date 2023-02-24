@@ -5,6 +5,8 @@ using System.IO;
 using System.Linq;
 using System.Xml.Serialization;
 using DevPad.Utilities;
+using MonacoModel;
+using Resources;
 
 namespace DevPad
 {
@@ -25,7 +27,12 @@ namespace DevPad
         public virtual List<RecentFile> RecentFilesPaths { get => GetPropertyValue((List<RecentFile>)null); set { SetPropertyValue(value); } }
 
         [XmlIgnore]
+        [Browsable(false)]
         public string UserDataFolder { get; set; } = DefaultUserDataFolder;
+
+        [LocalizedCategory("Appearance")]
+        [TypeConverter(typeof(ThemeConverter))]
+        public virtual string Theme { get => GetPropertyValue("vs"); set { SetPropertyValue(value); } }
 
         private Dictionary<string, DateTime> GetRecentFiles()
         {
@@ -58,6 +65,14 @@ namespace DevPad
             {
                 RecentFilesPaths = list;
             }
+        }
+
+        public void CopyFrom(Settings settings)
+        {
+            if (settings == null || settings == this)
+                return;
+
+            Theme = settings.Theme;
         }
 
         public void CleanRecentFiles() => SaveRecentFiles(GetRecentFiles());

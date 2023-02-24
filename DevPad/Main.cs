@@ -16,10 +16,15 @@ namespace DevPad
     {
         private readonly DevPadObject _dpo = new DevPadObject();
         private string _documentText;
+        private bool _languagesLoaded;
 
         public Main()
         {
             InitializeComponent();
+            toolStripStatusPosition.Text = string.Empty;
+            toolStripStatusSelection.Text = string.Empty;
+            toolStripStatusLanguage.Alignment = ToolStripItemAlignment.Right;
+            toolStripStatusLanguage.Text = LanguageExtensionPoint.DefaultLanguageName;
             Task.Run(() => Settings.Current.CleanRecentFiles());
             Icon = Resources.Resources.DevPadIcon;
             Text = WinformsUtilities.ApplicationName;
@@ -78,6 +83,51 @@ namespace DevPad
             }
         }
 
+        protected override void WndProc(ref Message m)
+        {
+            if (m.Msg != MessageDecoder.WM_SETCURSOR && m.Msg != MessageDecoder.WM_GETICON && m.Msg != MessageDecoder.WM_NCMOUSEMOVE)
+            {
+                //Program.Trace(MessageDecoder.Decode(m));
+            }
+
+            if (m.Msg == MessageDecoder.WM_SYSKEYUP)
+            {
+                if (((Keys)(int)(long)m.WParam) == Keys.Escape)
+                {
+                    _ = FocusEditorAsync();
+                }
+            }
+
+            if (m.Msg == MessageDecoder.WM_PARENTNOTIFY)
+            {
+                var lo = MessageDecoder.LOWORD(m.WParam);
+                switch (lo)
+                {
+                    case MessageDecoder.WM_RBUTTONDOWN:
+                    case MessageDecoder.WM_MBUTTONDOWN:
+                    case MessageDecoder.WM_LBUTTONDOWN:
+                    case MessageDecoder.WM_XBUTTONDOWN:
+                        var x = MessageDecoder.LOWORD(m.LParam);
+                        var y = MessageDecoder.HIWORD(m.LParam);
+                        //Program.Trace("x:" + x + " y:" + y);
+                        if (y < MainMenu.Height)
+                        {
+                            this.SafeBeginInvoke(async () =>
+                            {
+                                await BlurEditorAsync();
+                                MainMenu.Focus();
+                            });
+                        }
+                        else
+                        {
+                            _ = FocusEditorAsync();
+                        }
+                        break;
+                }
+            }
+            base.WndProc(ref m);
+        }
+
         private async Task InitializeAsync()
         {
             var udf = Settings.Current.UserDataFolder;
@@ -89,6 +139,29 @@ namespace DevPad
             WebView.CoreWebView2.AddHostObjectToScript("devPad", _dpo);
             WebView.Source = new Uri(Path.Combine(Application.StartupPath, @"Monaco\index.html"));
             IsMonacoReady = true;
+        }
+
+        private async Task FocusEditorAsync()
+        {
+            MainMenu.HideDropDowns();
+            await WebView.ExecuteScriptAsync("editor.focus()");
+            WebView.Focus();
+        }
+
+        private async Task BlurEditorAsync()
+        {
+            await WebView.ExecuteScriptAsync("editor.blur()");
+        }
+
+        private async Task SetEditorThemeAsync(string theme = null)
+        {
+            theme = theme.Nullify() ?? "vs";
+            await WebView.ExecuteScriptAsync($"monaco.editor.setTheme('{theme}')");
+        }
+
+        private async Task SetEditorPositionAsync(int lineNumber = 0, int column = 0)
+        {
+            //await WebView.ExecuteScriptAsync("editor.setPosition({lineNumber:" + lineNumber + ",column:" + column + "})");
         }
 
         private void SetFilePath(string filePath)
@@ -118,6 +191,18 @@ namespace DevPad
             return this.ShowConfirm(Resources.Resources.ConfirmDiscard) == DialogResult.Yes;
         }
 
+        private static string UnescapeEditorText(string text)
+        {
+            if (text == null)
+                return null;
+
+            if (text.Length > 1 && text[0] == '"' && text[text.Length - 1] == '"')
+            {
+                text = text.Substring(1, text.Length - 2);
+            }
+            return Regex.Unescape(text);
+        }
+
         private async Task<string> GetEditorTextAsync()
         {
             var text = await WebView.ExecuteScriptAsync("editor.getValue()");
@@ -126,12 +211,7 @@ namespace DevPad
                 this.ShowError(Resources.Resources.ErrorGetText);
                 return null;
             }
-
-            if (text.Length > 1 && text[0] == '"' && text[text.Length - 1] == '"')
-            {
-                text = text.Substring(1, text.Length - 2);
-            }
-            return Regex.Unescape(text);
+            return UnescapeEditorText(text);
         }
 
         private Task SetEditorLanguage(string lang) => WebView.ExecuteScriptAsync($"monaco.editor.setModelLanguage(editor.getModel(), '{lang}');");
@@ -146,7 +226,7 @@ namespace DevPad
             }
             else
             {
-                lang = "plaintext";
+                lang = LanguageExtensionPoint.DefaultLanguageId;
             }
             await SetEditorLanguage(lang);
         }
@@ -204,7 +284,7 @@ namespace DevPad
             }
             else
             {
-                lang = "plaintext";
+                lang = LanguageExtensionPoint.DefaultLanguageId;
             }
 
             // not this the most performant load system... we should make chunks
@@ -212,6 +292,7 @@ namespace DevPad
             await WebView.ExecuteScriptAsync($"loadFromHost('{lang}')");
             HasContentChanged = false;
             SetFilePath(filePath);
+            await SetEditorPositionAsync();
         }
 
         private async Task NewAsync()
@@ -222,6 +303,8 @@ namespace DevPad
             _documentText = string.Empty;
             await WebView.ExecuteScriptAsync("loadFromHost('plaintext')");
             HasContentChanged = false;
+            await FocusEditorAsync();
+            await SetEditorPositionAsync();
         }
 
         private async Task SaveAsAsync()
@@ -264,10 +347,14 @@ namespace DevPad
 
         private async void DevPadEvent(object sender, DevPadEventArgs e)
         {
+            Program.Trace(e);
             switch (e.EventType)
             {
                 case DevPadEventType.ContentChanged:
                     HasContentChanged = true;
+                    break;
+
+                case DevPadEventType.EditorLostFocus:
                     break;
 
                 case DevPadEventType.KeyDown:
@@ -279,12 +366,58 @@ namespace DevPad
                 case DevPadEventType.EditorCreated:
                     HasContentChanged = false;
                     IsEditorCreated = true;
-                    await WebView.ExecuteScriptAsync($"editor.focus()");
+                    await SetEditorThemeAsync(Settings.Current.Theme);
+                    await FocusEditorAsync();
                     var open = CommandLine.GetNullifiedArgument(0);
                     if (open != null)
                     {
                         await OpenFileAsync(open);
                     }
+                    break;
+
+                case DevPadEventType.ModelLanguageChanged:
+                    var langId = e.RootElement.GetNullifiedValue("newLanguage");
+                    if (langId != null)
+                    {
+                        this.SafeBeginInvoke(async () =>
+                        {
+                            var text = await WebView.GetLanguageName(langId);
+                            toolStripStatusLanguage.Text = text ?? langId;
+                        });
+                    }
+                    else
+                    {
+                        toolStripStatusLanguage.Text = string.Empty;
+                    }
+                    break;
+
+                case DevPadEventType.CursorPositionChange:
+                    var line = e.RootElement.GetValue("position.lineNumber", -1);
+                    var column = e.RootElement.GetValue("position.column", -1);
+                    if (line >= 0 && column >= 0)
+                    {
+                        toolStripStatusPosition.Text = string.Format(Resources.Resources.StatusPosition, line, column);
+                    }
+                    else
+                    {
+                        toolStripStatusPosition.Text = string.Empty;
+                    }
+                    break;
+
+                case DevPadEventType.CursorSelectionChanged:
+                    this.SafeBeginInvoke(async () =>
+                    {
+                        var text = await WebView.ExecuteScriptAsync("editor.getModel().getValueInRange(editor.getSelection())");
+                        text = UnescapeEditorText(text) ?? string.Empty;
+                        if (text.Length == 0)
+                        {
+                            toolStripStatusSelection.Text = string.Empty;
+                        }
+                        else
+                        {
+                            toolStripStatusSelection.Text = string.Format(Resources.Resources.StatusSelection, text.Length);
+                        }
+                    });
                     break;
             }
         }
@@ -329,23 +462,64 @@ namespace DevPad
             openRecentToolStripMenuItem.Enabled = openRecentToolStripMenuItem.DropDownItems.Count > fixedRecentItemsCount;
         }
 
-        private bool _loaded;
-        private async void viewToolStripMenuItem_DropDownOpening(object sender, EventArgs e)
+        private async void ViewToolStripMenuItem_DropDownOpening(object sender, EventArgs e)
         {
-            if (_loaded)
+            if (_languagesLoaded)
                 return;
 
-            _loaded = true;
             var langs = await WebView.GetLanguages();
             setLanguageToolStripMenuItem.DropDownItems.Clear();
-            foreach (var kv in langs.OrderBy(k => k.Value.Name))
+            foreach (var group in langs.OrderBy(k => k.Value.Name).GroupBy(n => n.Value.Name.Substring(0, 1), comparer: StringComparer.OrdinalIgnoreCase))
             {
-                var item = setLanguageToolStripMenuItem.DropDownItems.Add(kv.Value.Name);
-                item.Click += async (s, e2) =>
+                var subLangs = group.OrderBy(l => l.Value.Name).ToArray();
+                if (subLangs.Length > 1)
                 {
-                    await SetEditorLanguage(kv.Key);
-                };
+                    var item = new ToolStripMenuItem(group.Key.ToUpperInvariant());
+                    setLanguageToolStripMenuItem.DropDownItems.Add(item);
+                    foreach (var lang in group.OrderBy(l => l.Value.Name))
+                    {
+                        var subItem = item.DropDownItems.Add(lang.Value.Name);
+                        subItem.Click += async (s, e2) =>
+                        {
+                            await SetEditorLanguage(lang.Key);
+                        };
+                    }
+                }
+                else
+                {
+                    var item = setLanguageToolStripMenuItem.DropDownItems.Add(subLangs[0].Value.Name);
+                    item.Click += async (s, e2) =>
+                    {
+                        await SetEditorLanguage(subLangs[0].Key);
+                    };
+                }
             }
+            _languagesLoaded = true;
+        }
+
+        private void PreferencesToolStripMenuItem_Click(object sender, EventArgs e2)
+        {
+            var dlg = new SettingsForm();
+            dlg.Settings.PropertyChanged += async (s, e) =>
+            {
+                switch (e.PropertyName)
+                {
+                    case nameof(Settings.Theme):
+                        await SetEditorThemeAsync(dlg.Settings.Theme);
+                        break;
+                }
+            };
+
+            if (dlg.ShowDialog(this) == DialogResult.OK)
+            {
+                Settings.Current.CopyFrom(dlg.Settings);
+                Settings.Current.SerializeToConfiguration();
+            }
+            _ = SetEditorThemeAsync(Settings.Current.Theme);
+        }
+
+        private void GoToToolStripMenuItem_Click(object sender, EventArgs e)
+        {
         }
     }
 }
