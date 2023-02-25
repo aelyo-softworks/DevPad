@@ -1,0 +1,1 @@
+..\bin\release\DevPad.Setup.exe /buildpath:..\..\DevPad\bin\release /outpath:DevPad.Setup.exe

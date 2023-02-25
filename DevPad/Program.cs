@@ -26,6 +26,12 @@ namespace DevPad
         [STAThread]
         static void Main()
         {
+            if (IntPtr.Size == 4)
+            {
+                WinformsUtilities.ShowError(null, Resources.Resources.Only64BitWindows);
+                return;
+            }
+
             WindowsApplication.PublisherName = AssemblyUtilities.GetCompany();
 
             // for some reason, if I add these, they will not appear as recent items in TaskBar's JumpList...

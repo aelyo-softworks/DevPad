@@ -191,7 +191,7 @@ namespace DevPad
 
         private async Task SetEditorPositionAsync(int lineNumber = 0, int column = 0)
         {
-            //await WebView.ExecuteScriptAsync("editor.setPosition({lineNumber:" + lineNumber + ",column:" + column + "})");
+            await WebView.ExecuteScriptAsync("editor.setPosition({lineNumber:" + lineNumber + ",column:" + column + "})");
         }
 
         private void SetFilePath(string filePath)

@@ -6,7 +6,9 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+#if !NO_JSON
 using System.Text.Json;
+#endif
 
 namespace DevPad.Utilities
 {
@@ -743,8 +745,10 @@ namespace DevPad.Utilities
                 return true;
             }
 
+#if !NO_JSON
             if (input is JsonElement element)
                 return TryChangeType(element.ToString(), conversionType, provider, out value);
+#endif
 
             if (conversionType.IsEnum)
                 return EnumTryParse(conversionType, input, out value);
@@ -1845,7 +1849,7 @@ namespace DevPad.Utilities
         [DllImport("shlwapi", CharSet = CharSet.Unicode)]
         private static extern long StrFormatByteSizeW(long qdw, [MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszBuf, int cchBuf);
 
-
+#if !NO_JSON
         public static string GetNullifiedValue(this JsonElement element, string jsonPath) => GetValue<string>(element, jsonPath, null).Nullify();
         public static string GetNullifiedValue(this IDictionary<string, JsonElement> element, string key, string defaultValue = null, IFormatProvider provider = null)
         {
@@ -1969,5 +1973,6 @@ namespace DevPad.Utilities
                     throw new NotSupportedException();
             }
         }
+#endif
     }
 }

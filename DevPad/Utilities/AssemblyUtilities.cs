@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
@@ -27,15 +26,6 @@ namespace DevPad.Utilities
 
         public static string GetInformationalVersion() => GetInformationalVersion(null);
         public static string GetInformationalVersion(this Assembly assembly) => (assembly ?? Assembly.GetEntryAssembly())?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
-
-        public static string GetMetatadaAttribute(string key) => GetMetatadaAttribute(null, key);
-        public static string GetMetatadaAttribute(this Assembly assembly, string key)
-        {
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
-
-            return (assembly ?? Assembly.GetEntryAssembly())?.GetCustomAttributes<AssemblyMetadataAttribute>()?.FirstOrDefault(a => a.Key.EqualsIgnoreCase(key))?.Value;
-        }
 
         public static string GetProduct() => GetProduct(null);
         public static string GetProduct(this Assembly assembly) => (assembly ?? Assembly.GetEntryAssembly())?.GetCustomAttribute<AssemblyProductAttribute>()?.Product;

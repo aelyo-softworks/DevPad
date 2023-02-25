@@ -61,6 +61,7 @@
     <Compile Include="MonacoModel\LanguageExtensionPoint.cs" />
     <Compile Include="MonacoModel\ThemeConverter.cs" />
     <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyVersionInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RecentFile.cs" />
     <Compile Include="Resources\LocalizedCategoryAttribute.cs" />

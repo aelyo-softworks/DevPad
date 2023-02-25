@@ -145,6 +145,9 @@
   <data name="OneFileFilter" xml:space="preserve">
     <value>{0} files ({1})|{1}</value>
   </data>
+  <data name="Only64BitWindows" xml:space="preserve">
+    <value>DevPad only supports 64-bit versions of Windows.</value>
+  </data>
   <data name="StatusPosition" xml:space="preserve">
     <value>Ln: {0} Ch: {1}</value>
   </data>

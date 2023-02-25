@@ -143,6 +143,15 @@ namespace Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to DevPad only supports 64-bit versions of Windows..
+        /// </summary>
+        internal static string Only64BitWindows {
+            get {
+                return ResourceManager.GetString("Only64BitWindows", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Ln: {0} Ch: {1}.
         /// </summary>
         internal static string StatusPosition {
