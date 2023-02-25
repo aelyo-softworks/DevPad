@@ -17,6 +17,23 @@ namespace DevPad.Utilities
         public static void ShowError(this IWin32Window owner, string text) => MessageBox.Show(owner, text, ApplicationTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
         public static void ShowWarning(this IWin32Window owner, string text) => MessageBox.Show(owner, text, ApplicationTitle + " - " + Resources.Resources.Warning, MessageBoxButtons.OK, MessageBoxIcon.Warning);
 
+        public static void TaskShowMessage(this IWin32Window owner, string text) => MessageBox.Show(owner, text, ApplicationTitle, MessageBoxButtons.OK, MessageBoxIcon.Information);
+        public static DialogResult TaskShowConfirm(this IWin32Window owner, string text) => MessageBox.Show(owner, text, ApplicationTitle + " - " + Resources.Resources.Confirmation, MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
+        public static DialogResult TaskShowQuestion(this IWin32Window owner, string text) => MessageBox.Show(owner, text, ApplicationTitle + " - " + Resources.Resources.Confirmation, MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
+
+        public static void TaskShowError(this IWin32Window owner, string text)
+        {
+            var td = new TaskDialog();
+            td.Flags |= TASKDIALOG_FLAGS.TDF_SIZE_TO_CONTENT | TASKDIALOG_FLAGS.TDF_ENABLE_HYPERLINKS | TASKDIALOG_FLAGS.TDF_POSITION_RELATIVE_TO_WINDOW;
+            td.MainIcon = TaskDialog.TD_ERROR_ICON;
+            td.Title = ApplicationTitle;
+            td.MainInstruction = text;
+            //td.Content = text;
+            td.Show(owner);
+        }
+
+        public static void TaskShowWarning(this IWin32Window owner, string text) => MessageBox.Show(owner, text, ApplicationTitle + " - " + Resources.Resources.Warning, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+
         public static void HideDropDowns(this MenuStrip menu)
         {
             if (menu == null)

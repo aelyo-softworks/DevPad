@@ -56,7 +56,7 @@
     <Compile Include="MonacoModel\DevPadLoadEventArgs.cs" />
     <Compile Include="MonacoModel\DevPadObject.cs" />
     <Compile Include="MonacoModel\DevPadEventType.cs" />
-    <Compile Include="MonacoModel\Extensions.cs" />
+    <Compile Include="MonacoModel\MonacoExtensions.cs" />
     <Compile Include="MonacoModel\KeyCode.cs" />
     <Compile Include="MonacoModel\LanguageExtensionPoint.cs" />
     <Compile Include="MonacoModel\ThemeConverter.cs" />
@@ -85,6 +85,11 @@
     <Compile Include="Utilities\MessageDecoder.cs" />
     <Compile Include="Utilities\Serializable.cs" />
     <Compile Include="Utilities\SHARD.cs" />
+    <Compile Include="Utilities\TaskDialog.cs" />
+    <Compile Include="Utilities\TaskDialogEventArgs.cs" />
+    <Compile Include="Utilities\TASKDIALOG_COMMON_BUTTON_FLAGS.cs" />
+    <Compile Include="Utilities\TASKDIALOG_FLAGS.cs" />
+    <Compile Include="Utilities\TASKDIALOG_NOTIFICATIONS.cs" />
     <Compile Include="Utilities\WindowsApp.cs" />
     <Compile Include="Utilities\WindowsUtilities.cs" />
     <Compile Include="Utilities\WinformsUtilities.cs" />

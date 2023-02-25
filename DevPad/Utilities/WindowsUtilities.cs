@@ -67,7 +67,7 @@ namespace DevPad.Utilities
         private static extern int GetWindowTextLength(IntPtr hWnd);
 
         [DllImport("user32")]
-        private static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
+        public static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
 
         [DllImport("kernel32")]
         public static extern IntPtr GetConsoleWindow();
@@ -540,13 +540,40 @@ namespace DevPad.Utilities
             }
         }
 
+        public static void OpenFile(string fileName)
+        {
+            if (fileName == null)
+                throw new ArgumentNullException(nameof(fileName));
+
+            var psi = new ProcessStartInfo
+            {
+                FileName = fileName,
+                UseShellExecute = true
+            };
+            Process.Start(psi);
+        }
+
+        public static void OpenUrl(Uri uri) => OpenUrl(uri?.ToString());
+        public static void OpenUrl(string url)
+        {
+            if (url == null)
+                return;
+
+            Process.Start(url);
+        }
+
         public static void OpenExplorer(string directoryPath)
         {
             if (directoryPath == null)
-                throw new ArgumentNullException(nameof(directoryPath));
+                return;
+
+            if (!IOUtilities.PathIsDirectory(directoryPath))
+                return;
 
             // see http://support.microsoft.com/kb/152457/en-us
+#pragma warning disable S4036
             Process.Start("explorer.exe", "/e,/root,/select," + directoryPath);
+#pragma warning restore S4036
         }
 
         public static RegistryKey EnsureSubKey(RegistryKey root, string name)

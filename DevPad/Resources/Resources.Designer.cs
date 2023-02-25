@@ -168,5 +168,23 @@ namespace Resources {
                 return ResourceManager.GetString("Warning", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &lt;A HREF=&quot;https://go.microsoft.com/fwlink/p/?LinkId=2124703&quot;&gt;Click here to download the WebView2 Runtime.&lt;/A&gt;.
+        /// </summary>
+        internal static string WebViewDownload {
+            get {
+                return ResourceManager.GetString("WebViewDownload", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to An error occurred trying to initialize the WebView..
+        /// </summary>
+        internal static string WebViewError {
+            get {
+                return ResourceManager.GetString("WebViewError", resourceCulture);
+            }
+        }
     }
 }

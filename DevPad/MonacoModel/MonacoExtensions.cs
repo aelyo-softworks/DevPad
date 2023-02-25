@@ -7,7 +7,7 @@ using Microsoft.Web.WebView2.WinForms;
 
 namespace DevPad.MonacoModel
 {
-    public static class Extensions
+    public static class MonacoExtensions
     {
         private static ConcurrentDictionary<string, LanguageExtensionPoint> _languagesById;
         private static ConcurrentDictionary<string, IReadOnlyList<LanguageExtensionPoint>> _languagesByExtension;

@@ -9,6 +9,7 @@ using System.Windows.Forms;
 using DevPad.MonacoModel;
 using DevPad.Utilities;
 using Microsoft.Web.WebView2.Core;
+using Utilities;
 
 namespace DevPad
 {
@@ -130,15 +131,44 @@ namespace DevPad
 
         private async Task InitializeAsync()
         {
-            var udf = Settings.Current.UserDataFolder;
-            var env = await CoreWebView2Environment.CreateAsync(null, udf);
-            await WebView.EnsureCoreWebView2Async(env);
+            try
+            {
+                var udf = Settings.Current.UserDataFolder;
+                var env = await CoreWebView2Environment.CreateAsync(null, udf);
+                await WebView.EnsureCoreWebView2Async(env);
 
-            // this is the name of the host object in js code
-            // called like this: chrome.webview.hostObjects.sync.devPad.MyCustomMethod();
-            WebView.CoreWebView2.AddHostObjectToScript("devPad", _dpo);
-            WebView.Source = new Uri(Path.Combine(Application.StartupPath, @"Monaco\index.html"));
-            IsMonacoReady = true;
+                // this is the name of the host object in js code
+                // called like this: chrome.webview.hostObjects.sync.devPad.MyCustomMethod();
+                WebView.CoreWebView2.AddHostObjectToScript("devPad", _dpo);
+                WebView.Source = new Uri(Path.Combine(Application.StartupPath, @"Monaco\index.html"));
+                IsMonacoReady = true;
+            }
+            catch (Exception ex)
+            {
+                // handle WebViewRuntime not properly installed
+                // point to evergreen for download
+                Program.Trace(ex);
+                using (var td = new TaskDialog())
+                {
+                    td.Event += (s, e) =>
+                    {
+                        if (e.Message == TASKDIALOG_NOTIFICATIONS.TDN_HYPERLINK_CLICKED)
+                        {
+                            WindowsUtilities.SendMessage(e.Hwnd, MessageDecoder.WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+                        }
+                    };
+                    td.Flags |= TASKDIALOG_FLAGS.TDF_SIZE_TO_CONTENT | TASKDIALOG_FLAGS.TDF_ENABLE_HYPERLINKS | TASKDIALOG_FLAGS.TDF_ALLOW_DIALOG_CANCELLATION;
+                    td.MainIcon = TaskDialog.TD_ERROR_ICON;
+                    td.Title = WinformsUtilities.ApplicationTitle;
+                    td.MainInstruction = Resources.Resources.WebViewError;
+                    var msg = ex.GetAllMessages();
+                    msg += Environment.NewLine + Environment.NewLine;
+                    msg += Resources.Resources.WebViewDownload;
+                    td.Content = msg;
+                    td.Show(this);
+                }
+                Close();
+            }
         }
 
         private async Task FocusEditorAsync()

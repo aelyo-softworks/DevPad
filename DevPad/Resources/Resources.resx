@@ -154,4 +154,10 @@
   <data name="Warning" xml:space="preserve">
     <value>Warning</value>
   </data>
+  <data name="WebViewDownload" xml:space="preserve">
+    <value>&lt;A HREF="https://go.microsoft.com/fwlink/p/?LinkId=2124703"&gt;Click here to download the WebView2 Runtime.&lt;/A&gt;</value>
+  </data>
+  <data name="WebViewError" xml:space="preserve">
+    <value>An error occurred trying to initialize the WebView.</value>
+  </data>
 </root>
