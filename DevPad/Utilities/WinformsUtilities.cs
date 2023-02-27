@@ -3,6 +3,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
+#if SETUP
+using Resources = DevPad.Setup.Resources;
+#endif
+
 namespace DevPad.Utilities
 {
     public static class WinformsUtilities

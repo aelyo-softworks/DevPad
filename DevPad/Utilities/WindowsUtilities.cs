@@ -19,10 +19,12 @@ namespace DevPad.Utilities
         [DllImport("shell32")]
         public static extern int SetCurrentProcessExplicitAppUserModelID(string AppID);
 
+#if !SETUP
         public static void SHAddToRecentDocs(string filePath) => SHAddToRecentDocs(SHARD.SHARD_PATHW, filePath);
 
         [DllImport("shell32")]
         public static extern void SHAddToRecentDocs(SHARD uFlags, [MarshalAs(UnmanagedType.LPWStr)] string AppID);
+#endif
 
         [DllImport("user32")]
         public static extern IntPtr GetDesktopWindow();

@@ -80,6 +80,25 @@ namespace DevPad
             return true;
         }
 
+        public static void DirectoryDelete(string path, bool recursive = false, bool throwOnError = true)
+        {
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
+
+            if (!PathIsDirectory(path))
+                return;
+
+            try
+            {
+                Directory.Delete(path, recursive);
+            }
+            catch
+            {
+                if (throwOnError)
+                    throw;
+            }
+        }
+
         public static bool DirectoryCheckCanWrite(string directoryPath)
         {
             if (directoryPath == null)

@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("Release")]
 #endif
 [assembly: AssemblyCompany("Aelyo Softworks")]
-[assembly: AssemblyProduct("Aelyo Softworks DevPad")]
+[assembly: AssemblyProduct("Aelyo DevPad")]
 [assembly: AssemblyCopyright("Copyright (C) 2022-2023 Aelyo Softworks. All rights reserved.")]
 [assembly: AssemblyCulture("")]
 [assembly: ComVisible(false)]

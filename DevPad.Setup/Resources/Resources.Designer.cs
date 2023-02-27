@@ -61,6 +61,42 @@ namespace DevPad.Setup.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Are you sure you want to cancel the setup?.
+        /// </summary>
+        internal static string CancelConfirm {
+            get {
+                return ResourceManager.GetString("CancelConfirm", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Confirmation.
+        /// </summary>
+        internal static string Confirmation {
+            get {
+                return ResourceManager.GetString("Confirmation", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Copying {0}....
+        /// </summary>
+        internal static string CopyingFile {
+            get {
+                return ResourceManager.GetString("CopyingFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Creating shortcut {0]....
+        /// </summary>
+        internal static string CreatingShortcut {
+            get {
+                return ResourceManager.GetString("CreatingShortcut", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
         /// </summary>
         internal static System.Drawing.Icon DevPadIcon {
@@ -80,6 +116,33 @@ namespace DevPad.Setup.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to An error occurred trying to run setup: {0}.
+        /// </summary>
+        internal static string ErrorOccurred {
+            get {
+                return ResourceManager.GetString("ErrorOccurred", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Installation completed successfully..
+        /// </summary>
+        internal static string InstallCompleted {
+            get {
+                return ResourceManager.GetString("InstallCompleted", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Installation was cancelled..
+        /// </summary>
+        internal static string InstallWasCancelled {
+            get {
+                return ResourceManager.GetString("InstallWasCancelled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to This file has been corrupted, setup cannot continue..
         /// </summary>
         internal static string InvalidFile {
@@ -94,6 +157,33 @@ namespace DevPad.Setup.Resources {
         internal static string Only64BitWindows {
             get {
                 return ResourceManager.GetString("Only64BitWindows", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Removing {0}....
+        /// </summary>
+        internal static string RemovingFile {
+            get {
+                return ResourceManager.GetString("RemovingFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Uninstallation completed successfully..
+        /// </summary>
+        internal static string UninstallCompleted {
+            get {
+                return ResourceManager.GetString("UninstallCompleted", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Warning.
+        /// </summary>
+        internal static string Warning {
+            get {
+                return ResourceManager.GetString("Warning", resourceCulture);
             }
         }
     }

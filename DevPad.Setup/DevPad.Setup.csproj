@@ -34,7 +34,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;NO_JSON</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;NO_JSON;SETUP</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
@@ -44,7 +44,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE;NO_JSON</DefineConstants>
+    <DefineConstants>TRACE;NO_JSON;SETUP</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
@@ -83,6 +83,15 @@
     <Compile Include="..\DevPad\Utilities\IOUtilities.cs">
       <Link>Utilities\IOUtilities.cs</Link>
     </Compile>
+    <Compile Include="..\DevPad\Utilities\WindowsApp.cs">
+      <Link>Utilities\WindowsApp.cs</Link>
+    </Compile>
+    <Compile Include="..\DevPad\Utilities\WindowsUtilities.cs">
+      <Link>Utilities\WindowsUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\DevPad\Utilities\WinformsUtilities.cs">
+      <Link>Utilities\WinformsUtilities.cs</Link>
+    </Compile>
     <Compile Include="Main.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -96,6 +105,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="Utilities\Link.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Main.resx">

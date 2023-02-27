@@ -27,6 +27,8 @@ namespace DevPad.Setup
 #endif
         }
 
+        public static WindowsApp WindowsApplication { get; } = new WindowsApp("Aelyo.DevPad", AssemblyUtilities.GetTitle());
+
         public static string ApplicationName => AssemblyUtilities.GetTitle();
         public static string ApplicationVersion => AssemblyUtilities.GetFileVersion();
         public static string ApplicationTitle => ApplicationName + " V" + ApplicationVersion;
@@ -40,6 +42,9 @@ namespace DevPad.Setup
                 return;
             }
 
+            WindowsApplication.PublisherName = AssemblyUtilities.GetCompany();
+
+            // building mode
             var buildPath = CommandLine.GetNullifiedArgument("buildpath");
             var outPath = CommandLine.GetNullifiedArgument("outpath");
             if (buildPath != null && outPath != null)
@@ -55,6 +60,14 @@ namespace DevPad.Setup
                 return;
             }
 
+            var uninstall = CommandLine.GetArgument<bool>("uninstall");
+            if (uninstall)
+            {
+                Setup.Main.Uninstall();
+                return;
+            }
+
+            string tempFilePath = null;
             var path = Process.GetCurrentProcess().MainModule.FileName;
             var fileSize = new FileInfo(path).Length;
             var exeSize = 0L;
@@ -85,64 +98,82 @@ namespace DevPad.Setup
                 }
 
                 var overlaySize = fileSize - exeSize;
-                MessageBox.Show(overlaySize.ToString(), ApplicationTitle, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                file.Seek(exeSize, SeekOrigin.Begin);
+                tempFilePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+                try
+                {
+                    using (var tempFile = new FileStream(tempFilePath, FileMode.Create, FileAccess.ReadWrite))
+                    {
+                        file.CopyTo(tempFile);
+                    }
+                }
+                catch
+                {
+                    IOUtilities.FileDelete(tempFilePath, true, false);
+                    throw;
+                }
             }
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Main());
+            Application.Run(new Main(tempFilePath));
         }
 
         private static void Build(string inPath, string outFilePath)
         {
             Trace("inpath:" + inPath + " outpath:" + outFilePath);
             var temp = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-
-            using (var zfile = new FileStream(temp, FileMode.Create, FileAccess.ReadWrite))
+            try
             {
-                using (var archive = new ZipArchive(zfile, ZipArchiveMode.Create))
-                {
-                    addDirectory(inPath, string.Empty);
-                    void addDirectory(string dir, string relativePath)
-                    {
-                        var dirName = Path.GetFileName(dir);
-                        if (dirName.EqualsIgnoreCase("win-x86"))
-                            return;
 
-                        foreach (var file in Directory.EnumerateFiles(dir))
+                using (var zfile = new FileStream(temp, FileMode.Create, FileAccess.ReadWrite))
+                {
+                    using (var archive = new ZipArchive(zfile, ZipArchiveMode.Create))
+                    {
+                        addDirectory(inPath, string.Empty);
+                        void addDirectory(string dir, string relativePath)
                         {
-                            var ext = Path.GetExtension(file);
+                            var dirName = Path.GetFileName(dir);
+                            if (dirName.EqualsIgnoreCase("win-x86"))
+                                return;
+
+                            foreach (var file in Directory.EnumerateFiles(dir))
+                            {
+                                var ext = Path.GetExtension(file);
 #if !DEBUG
                             if (ext.EqualsIgnoreCase(".pdb"))
                                 continue;
 #endif
-                            var fileName = Path.GetFileName(file);
-                            if (fileName.EqualsIgnoreCase("DevPad.exe.config"))
-                                continue;
+                                var fileName = Path.GetFileName(file);
+                                if (fileName.EqualsIgnoreCase("DevPad.exe.config"))
+                                    continue;
 
-                            archive.CreateEntryFromFile(file, Path.Combine(relativePath, fileName), CompressionLevel.Optimal);
-                        }
+                                archive.CreateEntryFromFile(file, Path.Combine(relativePath, fileName), CompressionLevel.Optimal);
+                            }
 
-                        foreach (var subDir in Directory.EnumerateDirectories(dir))
-                        {
-                            addDirectory(subDir, Path.Combine(relativePath, Path.GetFileName(subDir)));
+                            foreach (var subDir in Directory.EnumerateDirectories(dir))
+                            {
+                                addDirectory(subDir, Path.Combine(relativePath, Path.GetFileName(subDir)));
+                            }
                         }
                     }
                 }
-            }
 
-            var path = Process.GetCurrentProcess().MainModule.FileName;
-            IOUtilities.FileOverwrite(path, outFilePath);
-            using (var exeFile = new FileStream(outFilePath, FileMode.Open, FileAccess.ReadWrite))
-            {
-                exeFile.Seek(0, SeekOrigin.End);
-                using (var tempFile = new FileStream(temp, FileMode.Open, FileAccess.Read))
+                var path = Process.GetCurrentProcess().MainModule.FileName;
+                IOUtilities.FileOverwrite(path, outFilePath);
+                using (var exeFile = new FileStream(outFilePath, FileMode.Open, FileAccess.ReadWrite))
                 {
-                    tempFile.CopyTo(exeFile);
+                    exeFile.Seek(0, SeekOrigin.End);
+                    using (var tempFile = new FileStream(temp, FileMode.Open, FileAccess.Read))
+                    {
+                        tempFile.CopyTo(exeFile);
+                    }
                 }
             }
-
-            IOUtilities.FileDelete(temp, true, false);
+            finally
+            {
+                IOUtilities.FileDelete(temp, true, false);
+            }
         }
 
         [DllImport("dbghelp")]

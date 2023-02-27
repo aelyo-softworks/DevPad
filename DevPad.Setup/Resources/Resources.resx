@@ -117,6 +117,18 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="CancelConfirm" xml:space="preserve">
+    <value>Are you sure you want to cancel the setup?</value>
+  </data>
+  <data name="Confirmation" xml:space="preserve">
+    <value>Confirmation</value>
+  </data>
+  <data name="CopyingFile" xml:space="preserve">
+    <value>Copying {0}...</value>
+  </data>
+  <data name="CreatingShortcut" xml:space="preserve">
+    <value>Creating shortcut {0]...</value>
+  </data>
   <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
   <data name="DevPadIcon" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\..\DevPad\Resources\DevPad.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
@@ -124,10 +136,28 @@
   <data name="Error" xml:space="preserve">
     <value>Error</value>
   </data>
+  <data name="ErrorOccurred" xml:space="preserve">
+    <value>An error occurred trying to run setup: {0}</value>
+  </data>
+  <data name="InstallCompleted" xml:space="preserve">
+    <value>Installation completed successfully.</value>
+  </data>
+  <data name="InstallWasCancelled" xml:space="preserve">
+    <value>Installation was cancelled.</value>
+  </data>
   <data name="InvalidFile" xml:space="preserve">
     <value>This file has been corrupted, setup cannot continue.</value>
   </data>
   <data name="Only64BitWindows" xml:space="preserve">
     <value>DevPad only supports 64-bit versions of Windows.</value>
+  </data>
+  <data name="RemovingFile" xml:space="preserve">
+    <value>Removing {0}...</value>
+  </data>
+  <data name="UninstallCompleted" xml:space="preserve">
+    <value>Uninstallation completed successfully.</value>
+  </data>
+  <data name="Warning" xml:space="preserve">
+    <value>Warning</value>
   </data>
 </root>
