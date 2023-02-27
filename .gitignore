@@ -348,3 +348,5 @@ MigrationBackup/
 
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
+/DevPad.Setup/Build/DevPad.Setup.Debug.exe
+/DevPad.Setup/Build/DevPad.Setup.exe
