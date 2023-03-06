@@ -6,11 +6,31 @@ using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using DevPad.Utilities.Grid;
 
 namespace DevPad.Utilities
 {
     public static class IconUtilities
     {
+        public static ImageSource GetStockIconImageSource(StockIconId id, SHGSI flags = SHGSI.SHGSI_ICON | SHGSI.SHGSI_SMALLICON)
+        {
+            var hicon = GetStockIconHandle(id, flags);
+            if (hicon == IntPtr.Zero)
+                return null;
+
+            var image = Imaging.CreateBitmapSourceFromHIcon(hicon, new Int32Rect(0, 0, 16, 16), BitmapSizeOptions.FromEmptyOptions());
+            DestroyIcon(hicon);
+            return image;
+        }
+
+        public static IntPtr GetStockIconHandle(StockIconId id, SHGSI flags = SHGSI.SHGSI_ICON | SHGSI.SHGSI_SMALLICON)
+        {
+            var info = new SHSTOCKICONINFO();
+            info.cbSize = Marshal.SizeOf<SHSTOCKICONINFO>();
+            SHGetStockIconInfo(id, flags, ref info);
+            return info.hIcon;
+        }
+
         public static ImageSource GetExtensionIconAsImageSource(string ext, SHIL shil)
         {
             if (ext == null)
@@ -309,6 +329,17 @@ namespace DevPad.Utilities
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        private struct SHSTOCKICONINFO
+        {
+            public int cbSize;
+            public IntPtr hIcon;
+            public int iSysIconIndex;
+            public int iIcon;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)]
+            public string szPath;
+        }
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         private struct WIN32_FIND_DATA
         {
             public FileAttributes fileAttributes;
@@ -347,6 +378,9 @@ namespace DevPad.Utilities
 
         [DllImport("ole32")]
         private static extern int CreateBindCtx(int reserved, out IBindCtx ppbc);
+
+        [DllImport("Shell32")]
+        private static extern int SHGetStockIconInfo(StockIconId siid, SHGSI uFlags, ref SHSTOCKICONINFO psii);
 
         [ComImport, Guid("43826d1e-e718-42ee-bc55-a1e261c37bfe"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
         private partial interface IShellItem

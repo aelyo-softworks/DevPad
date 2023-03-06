@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Forms;
@@ -37,6 +38,7 @@ namespace DevPad.Utilities
         public virtual IntPtr MainIcon { get; set; }
         public virtual IntPtr FooterIcon { get; set; }
         public virtual int Width { get; set; }
+        public virtual IDictionary<int, string> CustomButtons { get; } = new Dictionary<int, string>();
 
         public int ResultButton { get; protected set; }
         public int ResultRadioButton { get; protected set; }
@@ -81,6 +83,30 @@ namespace DevPad.Utilities
             }
 
             config.cxWidth = Width;
+
+            if (CustomButtons != null)
+            {
+                var list = new List<TASKDIALOG_BUTTON>();
+                foreach (var kv in CustomButtons)
+                {
+                    if (!string.IsNullOrWhiteSpace(kv.Value))
+                    {
+                        list.Add(new TASKDIALOG_BUTTON { nButtonID = kv.Key, pszButtonText = Marshal.StringToCoTaskMemUni(kv.Value) });
+                    }
+                }
+
+                if (list.Count > 0)
+                {
+                    config.cButtons = list.Count;
+                    var size = Marshal.SizeOf<TASKDIALOG_BUTTON>();
+                    config.pButtons = Marshal.AllocCoTaskMem(list.Count * size);
+                    for (var i = 0; i < list.Count; i++)
+                    {
+                        Marshal.StructureToPtr(list[i], config.pButtons + i * size, false);
+                    }
+                }
+            }
+
             try
             {
                 var hr = TaskDialogIndirect(ref config, out var button, out var radioButton, out var verificationFlagChecked);
@@ -96,6 +122,13 @@ namespace DevPad.Utilities
             {
                 // if you're here, make sure you've enabled Microsoft.Windows.Common-Controls in app.manifest
                 return DialogResult.Abort;
+            }
+            finally
+            {
+                if (config.pButtons != IntPtr.Zero)
+                {
+                    Marshal.FreeCoTaskMem(config.pButtons);
+                }
             }
         }
 
@@ -152,6 +185,13 @@ namespace DevPad.Utilities
                 // continue
                 return 0;
             }
+        }
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode, Pack = 1)]
+        private struct TASKDIALOG_BUTTON
+        {
+            public int nButtonID;
+            public IntPtr pszButtonText;
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode, Pack = 1)]

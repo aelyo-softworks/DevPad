@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using DevPad.MonacoModel;
@@ -49,6 +50,23 @@ namespace DevPad.Model
             IsMonacoReady = true;
         }
 
+        public Task SetEditorLanguageAsync(string lang) => WebView.ExecuteScriptAsync($"monaco.editor.setModelLanguage(editor.getModel(), '{lang}');");
+        public async Task SetEditorLanguageFromFilePathAsync(string filePath)
+        {
+            var ext = Path.GetExtension(filePath);
+            var langs = await WebView.GetLanguagesByExtension();
+            string lang;
+            if (langs.TryGetValue(ext, out var langObject))
+            {
+                lang = langObject[0].Id;
+            }
+            else
+            {
+                lang = LanguageExtensionPoint.DefaultLanguageId;
+            }
+            await SetEditorLanguageAsync(lang);
+        }
+
         public async Task SetEditorThemeAsync(string theme = null)
         {
             theme = theme.Nullify() ?? "vs";
@@ -74,8 +92,11 @@ namespace DevPad.Model
 
         private async void DevPadEvent(object sender, DevPadEventArgs e)
         {
-            Program.Trace(e);
+            //Program.Trace(e);
             string text;
+            int line;
+            int column;
+            string langId;
             switch (e.EventType)
             {
                 case DevPadEventType.ContentChanged:
@@ -96,6 +117,16 @@ namespace DevPad.Model
                     IsEditorCreated = true;
                     await SetEditorThemeAsync(Settings.Current.Theme);
                     await FocusEditorAsync();
+
+                    // this will force CursorPosition text to update
+                    var pos = await WebView.ExecuteScriptAsync<JsonElement>("editor.getPosition()");
+                    line = pos.GetValue("lineNumber", -1);
+                    column = pos.GetValue("column", -1);
+                    setPosition();
+
+                    langId = await WebView.ExecuteScriptAsync("editor.getModel().getLanguageId()");
+                    langId = UnescapeEditorText(langId);
+                    await setLang();
                     //var open = CommandLine.GetNullifiedArgument(0);
                     //if (open != null)
                     //{
@@ -104,29 +135,14 @@ namespace DevPad.Model
                     break;
 
                 case DevPadEventType.ModelLanguageChanged:
-                    var langId = e.RootElement.GetNullifiedValue("newLanguage");
-                    if (langId != null)
-                    {
-                        text = await WebView.GetLanguageName(langId);
-                        ModelLanguageName = text ?? langId;
-                    }
-                    else
-                    {
-                        ModelLanguageName = string.Empty;
-                    }
+                    langId = e.RootElement.GetNullifiedValue("newLanguage");
+                    await setLang();
                     break;
 
                 case DevPadEventType.CursorPositionChanged:
-                    var line = e.RootElement.GetValue("position.lineNumber", -1);
-                    var column = e.RootElement.GetValue("position.column", -1);
-                    if (line >= 0 && column >= 0)
-                    {
-                        CursorPosition = string.Format(Resources.Resources.StatusPosition, line, column);
-                    }
-                    else
-                    {
-                        CursorPosition = string.Empty;
-                    }
+                    line = e.RootElement.GetValue("position.lineNumber", -1);
+                    column = e.RootElement.GetValue("position.column", -1);
+                    setPosition();
                     break;
 
                 case DevPadEventType.CursorSelectionChanged:
@@ -141,6 +157,31 @@ namespace DevPad.Model
                         CursorSelection = string.Format(Resources.Resources.StatusSelection, text.Length);
                     }
                     break;
+            }
+
+            async Task setLang()
+            {
+                if (langId != null)
+                {
+                    text = await WebView.GetLanguageName(langId);
+                    ModelLanguageName = text ?? langId;
+                }
+                else
+                {
+                    ModelLanguageName = string.Empty;
+                }
+            }
+
+            void setPosition()
+            {
+                if (line >= 0 && column >= 0)
+                {
+                    CursorPosition = string.Format(Resources.Resources.StatusPosition, line, column);
+                }
+                else
+                {
+                    CursorPosition = string.Empty;
+                }
             }
         }
 

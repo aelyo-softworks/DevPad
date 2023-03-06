@@ -4,9 +4,9 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Xml.Serialization;
-using DevPad.MonacoModel;
 using DevPad.Resources;
 using DevPad.Utilities;
+using DevPad.Utilities.Grid;
 
 namespace DevPad
 {
@@ -31,7 +31,7 @@ namespace DevPad
         public string UserDataFolder { get; set; } = DefaultUserDataFolder;
 
         [LocalizedCategory("Appearance")]
-        [TypeConverter(typeof(ThemeConverter))]
+        [PropertyGridOptions(IsEnum = true, EnumNames = new[] { "vs", "vs-dark", "hc-light", "hc-black" })]
         public virtual string Theme { get => GetPropertyValue("vs"); set { SetPropertyValue(value); } }
 
         private Dictionary<string, DateTime> GetRecentFiles()

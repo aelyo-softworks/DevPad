@@ -71,5 +71,28 @@ namespace DevPad.MonacoModel
             }
             return _languagesById;
         }
+
+        public static async Task<T> ExecuteScriptAsync<T>(this WebView2 webView, string javaScript, JsonSerializerOptions options = null)
+        {
+            if (javaScript == null)
+                throw new ArgumentNullException(nameof(javaScript));
+
+            if (webView == null)
+                return default;
+
+            var json = await webView.ExecuteScriptAsync(javaScript);
+            if (json == null)
+                return default;
+
+            try
+            {
+                return JsonSerializer.Deserialize<T>(json, options);
+            }
+            catch (Exception ex)
+            {
+                Program.Trace(ex);
+                return default;
+            }
+        }
     }
 }

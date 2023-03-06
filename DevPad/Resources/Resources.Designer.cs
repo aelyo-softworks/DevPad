@@ -161,6 +161,42 @@ namespace DevPad.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Preferences.
+        /// </summary>
+        internal static string Preferences {
+            get {
+                return ResourceManager.GetString("Preferences", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Process.
+        /// </summary>
+        internal static string Process {
+            get {
+                return ResourceManager.GetString("Process", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Security.
+        /// </summary>
+        internal static string Security {
+            get {
+                return ResourceManager.GetString("Security", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Software.
+        /// </summary>
+        internal static string Software {
+            get {
+                return ResourceManager.GetString("Software", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Ln: {0} Ch: {1}.
         /// </summary>
         internal static string StatusPosition {
@@ -175,6 +211,24 @@ namespace DevPad.Resources {
         internal static string StatusSelection {
             get {
                 return ResourceManager.GetString("StatusSelection", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to System.
+        /// </summary>
+        internal static string System {
+            get {
+                return ResourceManager.GetString("System", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to System Info.
+        /// </summary>
+        internal static string SystemInfo {
+            get {
+                return ResourceManager.GetString("SystemInfo", resourceCulture);
             }
         }
         

@@ -16,6 +16,58 @@ namespace DevPad.Utilities
     {
         public const int ApplicationIcon = 32512;
 
+        private static readonly Lazy<Process> _currentProcess = new Lazy<Process>(() => Process.GetCurrentProcess(), true);
+        public static Process CurrentProcess => _currentProcess.Value;
+
+        private static readonly Lazy<Process> _parentProcess = new Lazy<Process>(() => GetParentProcess(), true);
+        public static Process ParentProcess => _parentProcess.Value; // can be null
+
+        private static readonly Lazy<Version> _kernelVersion = new Lazy<Version>(() =>
+        {
+            var vi = FileVersionInfo.GetVersionInfo(Path.Combine(Environment.SystemDirectory, "kernel32.dll"));
+            return new Version(vi.FileMajorPart, vi.FileMinorPart, vi.FileBuildPart, vi.FilePrivatePart);
+        }, true);
+        public static Version KernelVersion => _kernelVersion.Value;
+
+        public static Process GetParentProcess() => GetParentProcess(CurrentProcess.Handle);
+        public static Process GetParentProcess(int id)
+        {
+            try
+            {
+                var process = Process.GetProcessById(id);
+                return GetParentProcess((process?.Handle).GetValueOrDefault());
+            }
+            catch
+            {
+                // continue
+                return null;
+            }
+        }
+
+        public static Process GetParentProcess(IntPtr handle)
+        {
+            if (handle == IntPtr.Zero)
+                return null;
+
+            var pbi = new PROCESS_BASIC_INFORMATION();
+            var status = NtQueryInformationProcess(handle, 0, ref pbi, Marshal.SizeOf(pbi), out _);
+            if (status == 0)
+            {
+                try
+                {
+                    return Process.GetProcessById((int)pbi.InheritedFromUniqueProcessId.ToInt64());
+                }
+                catch
+                {
+                    // continue
+                }
+            }
+            return null;
+        }
+
+        [DllImport("ntdll")]
+        private static extern int NtQueryInformationProcess(IntPtr processHandle, int processInformationClass, ref PROCESS_BASIC_INFORMATION processInformation, int processInformationLength, out int returnLength);
+
         [DllImport("shell32")]
         public static extern int SetCurrentProcessExplicitAppUserModelID(string AppID);
 
@@ -112,6 +164,17 @@ namespace DevPad.Utilities
 
         [DllImport("user32")]
         private static extern int MapWindowPoints(IntPtr hWndFrom, IntPtr hWndTo, ref RECT rect, int cPoints);
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct PROCESS_BASIC_INFORMATION
+        {
+            public IntPtr Reserved1;
+            public IntPtr PebBaseAddress;
+            public IntPtr Reserved2_0;
+            public IntPtr Reserved2_1;
+            public IntPtr UniqueProcessId;
+            public IntPtr InheritedFromUniqueProcessId;
+        }
 
         [StructLayout(LayoutKind.Sequential)]
         private struct RECT
@@ -522,26 +585,6 @@ namespace DevPad.Utilities
             }
         }
 
-        public static bool SetConsoleIcon(int resourceId)
-        {
-            try
-            {
-                const int ICON_SMALL = 0;
-                const int ICON_BIG = 1;
-                const int WM_SETICON = 0x80;
-
-                IntPtr hwnd = GetConsoleWindow();
-                IntPtr icon = (resourceId <= 0 || resourceId > ushort.MaxValue) ? IntPtr.Zero : LoadIcon(Process.GetCurrentProcess().MainModule.BaseAddress, resourceId);
-                SendMessage(hwnd, WM_SETICON, new IntPtr(ICON_SMALL), icon);
-                SendMessage(hwnd, WM_SETICON, new IntPtr(ICON_BIG), icon);
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
         public static void OpenFile(string fileName)
         {
             if (fileName == null)
@@ -590,24 +633,13 @@ namespace DevPad.Utilities
             if (key != null)
                 return key;
 
-            string parentName = Path.GetDirectoryName(name);
+            var parentName = Path.GetDirectoryName(name);
             if (string.IsNullOrEmpty(parentName))
                 return root.CreateSubKey(name);
 
-            using (RegistryKey parentKey = EnsureSubKey(root, parentName))
+            using (var parentKey = EnsureSubKey(root, parentName))
             {
                 return parentKey.CreateSubKey(Path.GetFileName(name));
-            }
-        }
-
-        // http://www.vexentricity.com/?p=61
-        // https://stackoverflow.com/questions/22928992/wpf-webbrowser-control-warns-about-intranet-settings
-        public static void RemoveIEIntranetWarning()
-        {
-            string path = @"Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\localhost";
-            using (var key = EnsureSubKey(Registry.CurrentUser, path))
-            {
-                key.SetValue("http", 1);
             }
         }
 

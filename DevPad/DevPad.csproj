@@ -48,6 +48,7 @@
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.Management" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xaml">
       <RequiredTargetFramework>4.0</RequiredTargetFramework>
@@ -58,10 +59,17 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
+    <Page Include="About.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="App.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Compile Include="About.xaml.cs">
+      <DependentUpon>About.xaml</DependentUpon>
+    </Compile>
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="Model\MonacoAddTab.cs" />
     <Compile Include="MonacoModel\DevPadEventArgs.cs" />
@@ -72,7 +80,6 @@
     <Compile Include="MonacoModel\KeyCode.cs" />
     <Compile Include="MonacoModel\LanguageExtensionPoint.cs" />
     <Compile Include="MonacoModel\MonacoExtensions.cs" />
-    <Compile Include="MonacoModel\ThemeConverter.cs" />
     <Compile Include="Model\MonacoTab.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyVersionInfo.cs" />
@@ -89,18 +96,54 @@
     <Compile Include="Utilities\Conversions.cs" />
     <Compile Include="Utilities\DataBindingEvaluator.cs" />
     <Compile Include="Utilities\DecamelizeOptions.cs" />
+    <Compile Include="Utilities\DEVMODE.cs" />
     <Compile Include="Utilities\DictionaryObject.cs" />
     <Compile Include="Utilities\DictionaryObjectProperty.cs" />
     <Compile Include="Utilities\DictionaryObjectPropertyChangedEventArgs.cs" />
     <Compile Include="Utilities\DictionaryObjectPropertyChangingEventArgs.cs" />
     <Compile Include="Utilities\DictionaryObjectPropertyRollbackEventArgs.cs" />
     <Compile Include="Utilities\DictionaryObjectPropertySetOptions.cs" />
+    <Compile Include="Utilities\DisplayConfig.cs" />
+    <Compile Include="Utilities\DISPLAYCONFIG_2DREGION.cs" />
+    <Compile Include="Utilities\DISPLAYCONFIG_ADAPTER_NAME.cs" />
+    <Compile Include="Utilities\DISPLAYCONFIG_DESKTOP_IMAGE_INFO.cs" />
+    <Compile Include="Utilities\DISPLAYCONFIG_DEVICE_INFO_HEADER.cs" />
+    <Compile Include="Utilities\DISPLAYCONFIG_DEVICE_INFO_TYPE.cs" />
+    <Compile Include="Utilities\DISPLAYCONFIG_MODE_INFO.cs" />
+    <Compile Include="Utilities\DISPLAYCONFIG_MODE_INFO_TYPE.cs" />
+    <Compile Include="Utilities\DISPLAYCONFIG_MODE_INFO_union.cs" />
+    <Compile Include="Utilities\DISPLAYCONFIG_PATH.cs" />
+    <Compile Include="Utilities\DISPLAYCONFIG_PATH_INFO.cs" />
+    <Compile Include="Utilities\DISPLAYCONFIG_PATH_SOURCE_INFO.cs" />
+    <Compile Include="Utilities\DISPLAYCONFIG_PATH_TARGET_INFO.cs" />
+    <Compile Include="Utilities\DISPLAYCONFIG_PIXELFORMAT.cs" />
+    <Compile Include="Utilities\DISPLAYCONFIG_RATIONAL.cs" />
+    <Compile Include="Utilities\DISPLAYCONFIG_ROTATION.cs" />
+    <Compile Include="Utilities\DISPLAYCONFIG_SCALING.cs" />
+    <Compile Include="Utilities\DISPLAYCONFIG_SCANLINE_ORDERING.cs" />
+    <Compile Include="Utilities\DISPLAYCONFIG_SOURCE_DEVICE_NAME.cs" />
+    <Compile Include="Utilities\DISPLAYCONFIG_SOURCE_FLAGS.cs" />
+    <Compile Include="Utilities\DISPLAYCONFIG_SOURCE_MODE.cs" />
+    <Compile Include="Utilities\DISPLAYCONFIG_TARGET_DEVICE_NAME.cs" />
+    <Compile Include="Utilities\DISPLAYCONFIG_TARGET_DEVICE_NAME_FLAGS.cs" />
+    <Compile Include="Utilities\DISPLAYCONFIG_TARGET_FLAGS.cs" />
+    <Compile Include="Utilities\DISPLAYCONFIG_TARGET_MODE.cs" />
+    <Compile Include="Utilities\DISPLAYCONFIG_TOPOLOGY_ID.cs" />
+    <Compile Include="Utilities\DISPLAYCONFIG_VIDEO_OUTPUT_TECHNOLOGY.cs" />
+    <Compile Include="Utilities\DISPLAYCONFIG_VIDEO_SIGNAL_INFO.cs" />
+    <Compile Include="Utilities\DISPLAY_DEVICE.cs" />
+    <Compile Include="Utilities\DISPLAY_DEVICE_FLAGS.cs" />
+    <Compile Include="Utilities\DMDFO.cs" />
+    <Compile Include="Utilities\DMDO.cs" />
     <Compile Include="Utilities\DynamicObject.cs" />
     <Compile Include="Utilities\DynamicObjectProperty.cs" />
     <Compile Include="Utilities\DevPadExtensions.cs" />
+    <Compile Include="Utilities\EDS.cs" />
+    <Compile Include="Utilities\Grid\StockIconId.cs" />
     <Compile Include="Utilities\IconUtilities.cs" />
     <Compile Include="Utilities\IDictionaryObject.cs" />
     <Compile Include="Utilities\IOUtilities.cs" />
+    <Compile Include="Utilities\LUID.cs" />
     <Compile Include="Utilities\MessageDecoder.cs" />
     <Compile Include="Utilities\Grid\ByteArrayControl.cs" />
     <Compile Include="Utilities\Grid\DateTimePicker.cs" />
@@ -122,14 +165,30 @@
     <Compile Include="Utilities\Grid\PropertyGridProperty.cs" />
     <Compile Include="Utilities\Grid\PropertyGridWindowManager.cs" />
     <Compile Include="Utilities\Grid\PropertyGridWindowOptions.cs" />
+    <Compile Include="Utilities\MFW.cs" />
+    <Compile Include="Utilities\Monitor.cs" />
+    <Compile Include="Utilities\MONITORINFO.cs" />
+    <Compile Include="Utilities\MONITORINFOEX.cs" />
+    <Compile Include="Utilities\MONITOR_DPI_TYPE.cs" />
+    <Compile Include="Utilities\MONITOR_FLAGS.cs" />
+    <Compile Include="Utilities\ObjectProperties.xaml.cs">
+      <DependentUpon>ObjectProperties.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Utilities\POINT.cs" />
+    <Compile Include="Utilities\QDC.cs" />
+    <Compile Include="Utilities\RECT.cs" />
     <Compile Include="Utilities\Serializable.cs" />
     <Compile Include="Utilities\SHARD.cs" />
+    <Compile Include="Utilities\SHGSI.cs" />
     <Compile Include="Utilities\SHIL.cs" />
+    <Compile Include="Utilities\SystemInformation.cs" />
+    <Compile Include="Utilities\SystemUtilities.cs" />
     <Compile Include="Utilities\TaskDialog.cs" />
     <Compile Include="Utilities\TaskDialogEventArgs.cs" />
     <Compile Include="Utilities\TASKDIALOG_COMMON_BUTTON_FLAGS.cs" />
     <Compile Include="Utilities\TASKDIALOG_FLAGS.cs" />
     <Compile Include="Utilities\TASKDIALOG_NOTIFICATIONS.cs" />
+    <Compile Include="Utilities\TokenElevationType.cs" />
     <Compile Include="Utilities\UniversalConverter.cs" />
     <Compile Include="Utilities\UniversalConverterCase.cs" />
     <Compile Include="Utilities\UniversalConverterInput.cs" />
@@ -156,6 +215,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="Utilities\ObjectProperties.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs">
@@ -169,6 +232,7 @@
     <Content Include="Monaco\**">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Resource Include="Resources\DevPad48.png" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Monaco\vs\base\browser\ui\codicons\codicon\codicon.ttf" />

@@ -21,12 +21,38 @@
             x:Name="MenuMain"
             Grid.Row="0"
             IsMainMenu="True">
-            <MenuItem Height="24" Header="_File">
+            <MenuItem
+                Height="24"
+                Header="_File"
+                SubmenuOpened="OnFileOpened">
+                <MenuItem Click="OnNewTab" Header="New _Tab" />
+                <MenuItem Click="OnNewWindow" Header="New _Window" />
                 <Separator />
+                <MenuItem Click="OnOpen" Header="_Open" />
+                <Separator />
+                <MenuItem Click="OnClose" Header="_Close" />
+                <MenuItem Click="OnCloseAll" Header="Close A_ll" />
+                <Separator />
+                <MenuItem Click="OnSave" Header="Save" />
+                <MenuItem Click="OnSaveAs" Header="Save _As..." />
+                <Separator />
+                <MenuItem Click="OnPreferences" Header="_Preferences..." />
                 <MenuItem
-                    Name="Exit"
-                    Click="OnExitClick"
-                    Header="Exit" />
+                    x:Name="RestartAsAdminMenuItem"
+                    Click="OnRestartAsAdmin"
+                    Header="_Restart as Administrator"
+                    Visibility="Collapsed" />
+                <Separator />
+                <MenuItem Click="OnExitClick" Header="E_xit" />
+            </MenuItem>
+            <MenuItem Header="_Edit" />
+            <MenuItem Header="_View">
+                <MenuItem
+                    x:Name="LanguagesMenuItem"
+                    Header="Languages"
+                    SubmenuOpened="OnLanguagesOpened">
+                    <MenuItem Header="(Lazy)" />
+                </MenuItem>
             </MenuItem>
             <MenuItem Header="_Help">
                 <MenuItem Click="OnAboutClick" Header="About DevPad..." />
@@ -61,6 +87,16 @@
                 </DataTemplate>
             </TabControl.ContentTemplate>
         </TabControl>
-        <StatusBar Grid.Row="2" />
+        <StatusBar Grid.Row="2">
+            <StatusBarItem>
+                <TextBlock Text="{Binding CursorPosition}" />
+            </StatusBarItem>
+            <StatusBarItem>
+                <TextBlock Text="{Binding CursorSelection}" />
+            </StatusBarItem>
+            <StatusBarItem HorizontalAlignment="Right">
+                <TextBlock Margin="0,0,10,0" Text="{Binding ModelLanguageName}" />
+            </StatusBarItem>
+        </StatusBar>
     </Grid>
 </Window>

@@ -764,7 +764,7 @@ namespace DevPad.Utilities
                 return !conversionType.IsValueType;
 
             var inputType = input.GetType();
-            if (inputType.IsAssignableFrom(conversionType))
+            if (conversionType.IsAssignableFrom(inputType))
             {
                 value = input;
                 return true;

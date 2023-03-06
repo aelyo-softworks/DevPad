@@ -1,0 +1,47 @@
+﻿<Window
+    x:Class="DevPad.About"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="About Aelyo DevPad"
+    ResizeMode="NoResize"
+    SizeToContent="WidthAndHeight"
+    WindowStartupLocation="CenterOwner">
+    <Grid MinWidth="300" MinHeight="110">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <StackPanel
+            Grid.Row="0"
+            Margin="10,0,0,0"
+            Orientation="Horizontal">
+            <Image
+                Name="Image"
+                Height="48"
+                HorizontalAlignment="Left"
+                Source="pack://application:,,,./Resources/devPad48.png" />
+            <TextBlock Name="Copyright" Margin="10,10,10,10">Aelyo DevPad</TextBlock>
+        </StackPanel>
+        <Button
+            Name="OK"
+            Grid.Row="1"
+            Width="75"
+            Height="23"
+            Margin="0,0,10,10"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Bottom"
+            Click="OK_Click"
+            Content="_OK"
+            IsDefault="True" />
+        <Button
+            Name="Details"
+            Grid.Row="1"
+            Width="75"
+            Height="23"
+            Margin="0,0,215,10"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Bottom"
+            Click="Details_Click"
+            Content="_System Info" />
+    </Grid>
+</Window>

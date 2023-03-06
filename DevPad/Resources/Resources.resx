@@ -151,11 +151,29 @@
   <data name="Only64BitWindows" xml:space="preserve">
     <value>DevPad only supports 64-bit versions of Windows.</value>
   </data>
+  <data name="Preferences" xml:space="preserve">
+    <value>Preferences</value>
+  </data>
+  <data name="Process" xml:space="preserve">
+    <value>Process</value>
+  </data>
+  <data name="Security" xml:space="preserve">
+    <value>Security</value>
+  </data>
+  <data name="Software" xml:space="preserve">
+    <value>Software</value>
+  </data>
   <data name="StatusPosition" xml:space="preserve">
     <value>Ln: {0} Ch: {1}</value>
   </data>
   <data name="StatusSelection" xml:space="preserve">
     <value>Selection: {0}</value>
+  </data>
+  <data name="System" xml:space="preserve">
+    <value>System</value>
+  </data>
+  <data name="SystemInfo" xml:space="preserve">
+    <value>System Info</value>
   </data>
   <data name="Untitled" xml:space="preserve">
     <value>(Untitled)</value>
