@@ -163,7 +163,7 @@ namespace DevPad.Utilities
                         !int.TryParse(dateName[2], out day))
                         continue;
 
-                    var dt = DateTime.MinValue;
+                    DateTime dt;
                     try
                     {
                         dt = new DateTime(year, month, day);

@@ -1,14 +1,17 @@
 ﻿using System;
-using System.Drawing;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
+using System.Windows;
+using System.Windows.Interop;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace DevPad.Utilities
 {
     public static class IconUtilities
     {
-        public static Icon GetExtensionIconAsIcon(string ext, SHIL shil)
+        public static ImageSource GetExtensionIconAsImageSource(string ext, SHIL shil)
         {
             if (ext == null)
                 throw new ArgumentNullException(nameof(ext));
@@ -21,7 +24,7 @@ namespace DevPad.Utilities
             if (item == null)
                 return null;
 
-            return GetItemIconAsIcon(item, shil);
+            return GetItemIconAsImageSource(item, shil);
         }
 
         public static IntPtr GetExtensionIconHandle(string ext, SHIL shil)
@@ -40,7 +43,7 @@ namespace DevPad.Utilities
             return GetItemIconHandle(item, shil);
         }
 
-        public static Icon GetItemIconAsIcon(string path, SHIL shil)
+        public static ImageSource GetItemIconAsImageSource(string path, SHIL shil)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
@@ -49,7 +52,7 @@ namespace DevPad.Utilities
             if (item == null)
                 return null;
 
-            return GetItemIconAsIcon(item, shil);
+            return GetItemIconAsImageSource(item, shil);
         }
 
         public static IntPtr GetItemIconHandle(string path, SHIL shil)
@@ -64,14 +67,35 @@ namespace DevPad.Utilities
             return GetItemIconHandle(item, shil);
         }
 
-        private static Icon GetItemIconAsIcon(IShellItem item, SHIL shil)
+        private static ImageSource GetItemIconAsImageSource(IShellItem item, SHIL shil)
         {
             var hicon = GetItemIconHandle(item, shil);
             if (hicon == IntPtr.Zero)
                 return null;
 
-            // caller will have to call DestroyIcon
-            return Icon.FromHandle(hicon);
+            int size;
+            switch (shil)
+            {
+                case SHIL.SHIL_JUMBO:
+                    size = 256;
+                    break;
+
+                case SHIL.SHIL_EXTRALARGE:
+                    size = 48;
+                    break;
+
+                case SHIL.SHIL_LARGE:
+                    size = 32;
+                    break;
+
+                default:
+                    size = 16;
+                    break;
+            }
+
+            var image = Imaging.CreateBitmapSourceFromHIcon(hicon, new Int32Rect(0, 0, size, size), BitmapSizeOptions.FromEmptyOptions());
+            DestroyIcon(hicon);
+            return image;
         }
 
         private static IntPtr GetItemIconHandle(IShellItem item, SHIL shil)
@@ -342,7 +366,9 @@ namespace DevPad.Utilities
         [ComImport, Guid("46eb5926-582e-4017-9fdf-e8998daa0950"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
         private partial interface IImageList
         {
-            void _VtblGap0_7();
+#pragma warning disable IDE1006 // Naming Styles
+            void _VtblGap0_7(); // this name is special (hardcoded)
+#pragma warning restore IDE1006 // Naming Styles
 
             [PreserveSig]
             int GetIcon(int i, ILD flags, out IntPtr picon);

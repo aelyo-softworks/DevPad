@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace MonacoModel
+namespace DevPad.MonacoModel
 {
     public class ThemeConverter : TypeConverter
     {

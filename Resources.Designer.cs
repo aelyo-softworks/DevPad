@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace DevPad.Resources {
+namespace Resources {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace DevPad.Resources {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("DevPad.Resources.Resources", typeof(Resources).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Resources.Resources", typeof(Resources).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -97,20 +97,11 @@ namespace DevPad.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to There are unsaved changes to the &apos;{0}&apos; document, are you sure you want to discard them?.
+        ///   Looks up a localized string similar to There are unsaved changes to the document, are you sure you want to discard them?.
         /// </summary>
-        internal static string ConfirmDiscardDocument {
+        internal static string ConfirmDiscard {
             get {
-                return ResourceManager.GetString("ConfirmDiscardDocument", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to There are unsaved changes to the {0} documents, are you sure you want to discard them?.
-        /// </summary>
-        internal static string ConfirmDiscardDocuments {
-            get {
-                return ResourceManager.GetString("ConfirmDiscardDocuments", resourceCulture);
+                return ResourceManager.GetString("ConfirmDiscard", resourceCulture);
             }
         }
         

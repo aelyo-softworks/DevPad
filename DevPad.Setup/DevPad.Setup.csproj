@@ -77,8 +77,8 @@
     <Compile Include="..\DevPad\Utilities\DecamelizeOptions.cs">
       <Link>Utilities\DecamelizeOptions.cs</Link>
     </Compile>
-    <Compile Include="..\DevPad\Utilities\Extensions.cs">
-      <Link>Utilities\Extensions.cs</Link>
+    <Compile Include="..\DevPad\Utilities\DevPadExtensions.cs">
+      <Link>Utilities\DevPadExtensions.cs</Link>
     </Compile>
     <Compile Include="..\DevPad\Utilities\IOUtilities.cs">
       <Link>Utilities\IOUtilities.cs</Link>

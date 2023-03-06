@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using System.Windows;
 using System.Windows.Forms;
+using System.Windows.Interop;
 
 namespace DevPad.Utilities
 {
@@ -40,7 +42,16 @@ namespace DevPad.Utilities
         public int ResultRadioButton { get; protected set; }
         public bool ResultVerificationFlagChecked { get; protected set; }
 
-        public DialogResult Show(IWin32Window window) => Show(window?.Handle ?? IntPtr.Zero);
+        public MessageBoxResult Show(Window window)
+        {
+            if (window == null)
+                return (MessageBoxResult)Show(IntPtr.Zero);
+
+            return (MessageBoxResult)Show(new WindowInteropHelper(window).Handle);
+        }
+
+        public DialogResult Show(System.Windows.Interop.IWin32Window window) => Show(window?.Handle ?? IntPtr.Zero);
+        public DialogResult Show(System.Windows.Forms.IWin32Window window) => Show(window?.Handle ?? IntPtr.Zero);
         public virtual DialogResult Show(IntPtr hwnd)
         {
             var config = new TASKDIALOGCONFIG();

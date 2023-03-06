@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Specialized;
-using System.Configuration;
 using System.Diagnostics;
 using System.Diagnostics.Eventing;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using System.Windows.Forms;
 using DevPad.Utilities;
 
 namespace DevPad
@@ -28,12 +25,6 @@ namespace DevPad
         [STAThread]
         static void Main()
         {
-            // see https://stackoverflow.com/a/75641142/403671
-            if (ConfigurationManager.GetSection("System.Windows.Forms.ApplicationConfigurationSection") is NameValueCollection section)
-            {
-                section["DpiAwareness"] = "PerMonitorV2";
-            }
-
             if (IntPtr.Size == 4)
             {
                 WinformsUtilities.ShowError(null, Resources.Resources.Only64BitWindows);
@@ -57,9 +48,9 @@ namespace DevPad
             }
 
             WindowsApplication.Register();
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Main());
+            var app = new App();
+            app.InitializeComponent();
+            app.Run();
         }
     }
 }

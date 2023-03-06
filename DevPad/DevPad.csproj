@@ -1,69 +1,81 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{4E686FA1-6816-4A31-8190-C6913C840A41}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>DevPad</RootNamespace>
+    <AssemblyName>DevPad</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <WarningLevel>4</WarningLevel>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <ApplicationIcon>Resources\DevPad.ico</ApplicationIcon>
-    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
-    <TargetFrameworkProfile />
-    <ProjectGuid>{D6EB8EE0-A2CA-4CCC-A7F4-2724A6B93CA7}</ProjectGuid>
-    <OutputType>WinExe</OutputType>
-    <StartupObject />
-    <Prefer32Bit>false</Prefer32Bit>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>Resources\DevPad.ico</ApplicationIcon>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="System.Configuration" />
-    <Reference Include="System.Core" />
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
+    <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xaml">
+      <RequiredTargetFramework>4.0</RequiredTargetFramework>
+    </Reference>
     <Reference Include="System.Xml" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AboutForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="AboutForm.designer.cs">
-      <DependentUpon>AboutForm.cs</DependentUpon>
-    </Compile>
+    <Page Include="App.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Compile Include="GlobalSuppressions.cs" />
-    <Compile Include="Main.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Main.Designer.cs">
-      <DependentUpon>Main.cs</DependentUpon>
-    </Compile>
+    <Compile Include="Model\MonacoAddTab.cs" />
     <Compile Include="MonacoModel\DevPadEventArgs.cs" />
+    <Compile Include="MonacoModel\DevPadEventType.cs" />
     <Compile Include="MonacoModel\DevPadKeyEventArgs.cs" />
     <Compile Include="MonacoModel\DevPadLoadEventArgs.cs" />
     <Compile Include="MonacoModel\DevPadObject.cs" />
-    <Compile Include="MonacoModel\DevPadEventType.cs" />
-    <Compile Include="MonacoModel\MonacoExtensions.cs" />
     <Compile Include="MonacoModel\KeyCode.cs" />
     <Compile Include="MonacoModel\LanguageExtensionPoint.cs" />
+    <Compile Include="MonacoModel\MonacoExtensions.cs" />
     <Compile Include="MonacoModel\ThemeConverter.cs" />
+    <Compile Include="Model\MonacoTab.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyVersionInfo.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RecentFile.cs" />
     <Compile Include="Resources\LocalizedCategoryAttribute.cs" />
     <Compile Include="Resources\Resources.Designer.cs">
@@ -72,20 +84,44 @@
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
     <Compile Include="Settings.cs" />
-    <Compile Include="SettingsForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="SettingsForm.designer.cs">
-      <DependentUpon>SettingsForm.cs</DependentUpon>
-    </Compile>
     <Compile Include="Utilities\AssemblyUtilities.cs" />
     <Compile Include="Utilities\CommandLine.cs" />
     <Compile Include="Utilities\Conversions.cs" />
+    <Compile Include="Utilities\DataBindingEvaluator.cs" />
     <Compile Include="Utilities\DecamelizeOptions.cs" />
-    <Compile Include="Utilities\Extensions.cs" />
+    <Compile Include="Utilities\DictionaryObject.cs" />
+    <Compile Include="Utilities\DictionaryObjectProperty.cs" />
+    <Compile Include="Utilities\DictionaryObjectPropertyChangedEventArgs.cs" />
+    <Compile Include="Utilities\DictionaryObjectPropertyChangingEventArgs.cs" />
+    <Compile Include="Utilities\DictionaryObjectPropertyRollbackEventArgs.cs" />
+    <Compile Include="Utilities\DictionaryObjectPropertySetOptions.cs" />
+    <Compile Include="Utilities\DynamicObject.cs" />
+    <Compile Include="Utilities\DynamicObjectProperty.cs" />
+    <Compile Include="Utilities\DevPadExtensions.cs" />
     <Compile Include="Utilities\IconUtilities.cs" />
+    <Compile Include="Utilities\IDictionaryObject.cs" />
     <Compile Include="Utilities\IOUtilities.cs" />
     <Compile Include="Utilities\MessageDecoder.cs" />
+    <Compile Include="Utilities\Grid\ByteArrayControl.cs" />
+    <Compile Include="Utilities\Grid\DateTimePicker.cs" />
+    <Compile Include="Utilities\Grid\IPropertyGridCommandHandler.cs" />
+    <Compile Include="Utilities\Grid\IPropertyGridEditor.cs" />
+    <Compile Include="Utilities\Grid\IPropertyGridObject.cs" />
+    <Compile Include="Utilities\Grid\PropertyGrid.xaml.cs">
+      <DependentUpon>PropertyGrid.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Utilities\Grid\PropertyGridAttribute.cs" />
+    <Compile Include="Utilities\Grid\PropertyGridComboBoxExtension.cs" />
+    <Compile Include="Utilities\Grid\PropertyGridConverter.cs" />
+    <Compile Include="Utilities\Grid\PropertyGridDataProvider.cs" />
+    <Compile Include="Utilities\Grid\PropertyGridDataTemplate.cs" />
+    <Compile Include="Utilities\Grid\PropertyGridDataTemplateSelector.cs" />
+    <Compile Include="Utilities\Grid\PropertyGridEventArgs.cs" />
+    <Compile Include="Utilities\Grid\PropertyGridItem.cs" />
+    <Compile Include="Utilities\Grid\PropertyGridOptionsAttribute.cs" />
+    <Compile Include="Utilities\Grid\PropertyGridProperty.cs" />
+    <Compile Include="Utilities\Grid\PropertyGridWindowManager.cs" />
+    <Compile Include="Utilities\Grid\PropertyGridWindowOptions.cs" />
     <Compile Include="Utilities\Serializable.cs" />
     <Compile Include="Utilities\SHARD.cs" />
     <Compile Include="Utilities\SHIL.cs" />
@@ -94,31 +130,48 @@
     <Compile Include="Utilities\TASKDIALOG_COMMON_BUTTON_FLAGS.cs" />
     <Compile Include="Utilities\TASKDIALOG_FLAGS.cs" />
     <Compile Include="Utilities\TASKDIALOG_NOTIFICATIONS.cs" />
+    <Compile Include="Utilities\UniversalConverter.cs" />
+    <Compile Include="Utilities\UniversalConverterCase.cs" />
+    <Compile Include="Utilities\UniversalConverterInput.cs" />
+    <Compile Include="Utilities\UniversalConverterOperator.cs" />
+    <Compile Include="Utilities\UniversalConverterOptions.cs" />
     <Compile Include="Utilities\ValueChangedEventArgs.cs" />
     <Compile Include="Utilities\WindowsApp.cs" />
     <Compile Include="Utilities\WindowsUtilities.cs" />
     <Compile Include="Utilities\WinformsUtilities.cs" />
-    <Compile Include="WebPage.cs">
-      <SubType>Component</SubType>
+    <Compile Include="Utilities\WpfUtilities.cs" />
+    <Page Include="MainWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Compile Include="App.xaml.cs">
+      <DependentUpon>App.xaml</DependentUpon>
+      <SubType>Code</SubType>
     </Compile>
-    <Compile Include="WebPageCloseButtonState.cs" />
-    <EmbeddedResource Include="AboutForm.resx">
-      <DependentUpon>AboutForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Main.resx">
-      <DependentUpon>Main.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Resources\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    <Compile Include="MainWindow.xaml.cs">
+      <DependentUpon>MainWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Page Include="Utilities\Grid\PropertyGrid.xaml">
+      <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="SettingsForm.resx">
-      <DependentUpon>SettingsForm.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <None Include="app.manifest" />
-    <None Include="Monaco\vs\base\browser\ui\codicons\codicon\codicon.ttf" />
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Properties\AssemblyInfo.cs">
+      <SubType>Code</SubType>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\DevPad.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Monaco\**">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Monaco\vs\base\browser\ui\codicons\codicon\codicon.ttf" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Web.WebView2">
@@ -129,10 +182,14 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Monaco\**">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <EmbeddedResource Include="Resources\DevPad.ico" />
+    <None Include="app.manifest" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -16,7 +16,7 @@ namespace DevPad.Utilities
     {
         private static readonly char[] _enumSeparators = new char[] { ',', ';', '+', '|', ' ' };
 
-        public static bool IsFlagsEnum(Type enumType)
+        public static bool IsFlagsEnum(this Type enumType)
         {
             if (enumType == null)
                 throw new ArgumentNullException(nameof(enumType));
@@ -28,7 +28,7 @@ namespace DevPad.Utilities
         }
 
         public static T CoerceToEnum<T>(object input) => (T)CoerceToEnum(typeof(T), input);
-        public static object CoerceToEnum(Type enumType, object input)
+        public static object CoerceToEnum(this Type enumType, object input)
         {
             if (enumType == null)
                 throw new ArgumentNullException(nameof(enumType));
@@ -102,6 +102,31 @@ namespace DevPad.Utilities
 
             value = Activator.CreateInstance(enumType);
             return false;
+        }
+
+        public static Type GetElementType(Type collectionType)
+        {
+            if (collectionType == null)
+                throw new ArgumentNullException(nameof(collectionType));
+
+            foreach (var iface in collectionType.GetInterfaces())
+            {
+                if (!iface.IsGenericType)
+                    continue;
+
+                if (iface.GetGenericTypeDefinition() == typeof(IDictionary<,>))
+                    return iface.GetGenericArguments()[1];
+
+                if (iface.GetGenericTypeDefinition() == typeof(IList<>))
+                    return iface.GetGenericArguments()[0];
+
+                if (iface.GetGenericTypeDefinition() == typeof(ICollection<>))
+                    return iface.GetGenericArguments()[0];
+
+                if (iface.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                    return iface.GetGenericArguments()[0];
+            }
+            return typeof(object);
         }
 
         public static string Decamelize(string text) => Decamelize(text, DecamelizeOptions.Default);
@@ -635,8 +660,8 @@ namespace DevPad.Utilities
             return sb.ToString();
         }
 
-        public static List<T> SplitToList<T>(string text, params char[] separators) => SplitToList<T>(text, null, separators);
-        public static List<T> SplitToList<T>(string text, IFormatProvider provider, params char[] separators)
+        public static List<T> SplitToList<T>(this string text, params char[] separators) => SplitToList<T>(text, null, separators);
+        public static List<T> SplitToList<T>(this string text, IFormatProvider provider, params char[] separators)
         {
             var al = new List<T>();
             if (text == null || separators == null || separators.Length == 0)
@@ -1654,6 +1679,37 @@ namespace DevPad.Utilities
             return false;
         }
 
+        public static int GetEnumMaxPower(Type enumType)
+        {
+            if (enumType == null)
+                throw new ArgumentNullException(nameof(enumType));
+
+            if (!enumType.IsEnum)
+                throw new ArgumentException(null, nameof(enumType));
+
+            return GetEnumUnderlyingTypeMaxPower(Enum.GetUnderlyingType(enumType));
+        }
+
+        public static int GetEnumUnderlyingTypeMaxPower(Type underlyingType)
+        {
+            if (underlyingType == null)
+                throw new ArgumentNullException(nameof(underlyingType));
+
+            if (underlyingType == typeof(long) || underlyingType == typeof(ulong))
+                return 64;
+
+            if (underlyingType == typeof(int) || underlyingType == typeof(uint))
+                return 32;
+
+            if (underlyingType == typeof(short) || underlyingType == typeof(ushort))
+                return 16;
+
+            if (underlyingType == typeof(byte) || underlyingType == typeof(sbyte))
+                return 8;
+
+            throw new ArgumentException(null, nameof(underlyingType));
+        }
+
         public static object EnumToObject(Type enumType, object value)
         {
             if (enumType == null)
@@ -1831,7 +1887,7 @@ namespace DevPad.Utilities
             return false;
         }
 
-        public static bool IsNullable(Type type)
+        public static bool IsNullable(this Type type)
         {
             if (type == null)
                 throw new ArgumentNullException(nameof(type));

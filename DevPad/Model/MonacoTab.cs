@@ -1,0 +1,177 @@
+﻿using System;
+using System.Diagnostics;
+using System.IO;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using DevPad.MonacoModel;
+using DevPad.Utilities;
+using Microsoft.Web.WebView2.Core;
+using Microsoft.Web.WebView2.Wpf;
+
+namespace DevPad.Model
+{
+    public class MonacoTab : DictionaryObject, IDisposable
+    {
+        private readonly DevPadObject _dpo = new DevPadObject();
+        private string _documentText;
+        private bool _disposedValue;
+
+        public MonacoTab()
+        {
+            _dpo.Load += DevPadOnLoad;
+            _dpo.Event += DevPadEvent;
+        }
+
+        public WebView2 WebView { get; } = new WebView2();
+        public bool IsAdd => this is MonacoAddTab;
+        public virtual string FontFamily => null;
+        public bool IsMonacoReady { get => DictionaryObjectGetPropertyValue(false); private set => DictionaryObjectSetPropertyValue(value); }
+        public bool HasContentChanged { get => DictionaryObjectGetPropertyValue(false); private set => DictionaryObjectSetPropertyValue(value); }
+        public bool IsEditorCreated { get => DictionaryObjectGetPropertyValue(false); private set => DictionaryObjectSetPropertyValue(value); }
+        public virtual string Name { get => DictionaryObjectGetNullifiedPropertyValue(Resources.Resources.Untitled); set => DictionaryObjectSetPropertyValue(value); }
+        public string ModelLanguageName { get => DictionaryObjectGetNullifiedPropertyValue(); private set => DictionaryObjectSetPropertyValue(value); }
+        public string CursorPosition { get => DictionaryObjectGetNullifiedPropertyValue(); private set => DictionaryObjectSetPropertyValue(value); }
+        public string CursorSelection { get => DictionaryObjectGetNullifiedPropertyValue(); private set => DictionaryObjectSetPropertyValue(value); }
+
+        public override string ToString() => Name;
+
+        public async Task InitializeAsync()
+        {
+            var udf = Settings.Current.UserDataFolder;
+            var env = await CoreWebView2Environment.CreateAsync(null, udf);
+            await WebView.EnsureCoreWebView2Async(env);
+
+            // this is the name of the host object in js code
+            // called like this: chrome.webview.hostObjects.sync.devPad.MyCustomMethod();
+            WebView.CoreWebView2.AddHostObjectToScript("devPad", _dpo);
+            var startupPath = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName);
+            WebView.Source = new Uri(Path.Combine(startupPath, @"Monaco\index.html"));
+            IsMonacoReady = true;
+        }
+
+        public async Task SetEditorThemeAsync(string theme = null)
+        {
+            theme = theme.Nullify() ?? "vs";
+            await WebView.ExecuteScriptAsync($"monaco.editor.setTheme('{theme}')");
+        }
+
+        public async Task FocusEditorAsync()
+        {
+            //MainMenu.HideDropDowns();
+            await WebView.ExecuteScriptAsync("editor.focus()");
+            WebView.Focus();
+        }
+
+        public async Task BlurEditorAsync()
+        {
+            await WebView.ExecuteScriptAsync("editor.blur()");
+        }
+
+        private void DevPadOnLoad(object sender, DevPadLoadEventArgs e)
+        {
+            e.DocumentText = _documentText;
+        }
+
+        private async void DevPadEvent(object sender, DevPadEventArgs e)
+        {
+            Program.Trace(e);
+            string text;
+            switch (e.EventType)
+            {
+                case DevPadEventType.ContentChanged:
+                    HasContentChanged = true;
+                    break;
+
+                case DevPadEventType.EditorLostFocus:
+                    break;
+
+                case DevPadEventType.KeyDown:
+                    var ke = (DevPadKeyEventArgs)e;
+                    //Trace.WriteLine("Key " + ke.Code + " " + ke.KeyCode + " Alt:" + ke.Alt + " Shift:" + ke.Shift + " Ctrl:" + ke.Ctrl + " Meta:" + ke.Meta + " AltG:" + ke.AltGraph + " Keys:" + ke.Keys);
+                    //OnKeyDown(new KeyEventArgs(ke.Keys));
+                    break;
+
+                case DevPadEventType.EditorCreated:
+                    HasContentChanged = false;
+                    IsEditorCreated = true;
+                    await SetEditorThemeAsync(Settings.Current.Theme);
+                    await FocusEditorAsync();
+                    //var open = CommandLine.GetNullifiedArgument(0);
+                    //if (open != null)
+                    //{
+                    //    await OpenFileAsync(open);
+                    //}
+                    break;
+
+                case DevPadEventType.ModelLanguageChanged:
+                    var langId = e.RootElement.GetNullifiedValue("newLanguage");
+                    if (langId != null)
+                    {
+                        text = await WebView.GetLanguageName(langId);
+                        ModelLanguageName = text ?? langId;
+                    }
+                    else
+                    {
+                        ModelLanguageName = string.Empty;
+                    }
+                    break;
+
+                case DevPadEventType.CursorPositionChanged:
+                    var line = e.RootElement.GetValue("position.lineNumber", -1);
+                    var column = e.RootElement.GetValue("position.column", -1);
+                    if (line >= 0 && column >= 0)
+                    {
+                        CursorPosition = string.Format(Resources.Resources.StatusPosition, line, column);
+                    }
+                    else
+                    {
+                        CursorPosition = string.Empty;
+                    }
+                    break;
+
+                case DevPadEventType.CursorSelectionChanged:
+                    text = await WebView.ExecuteScriptAsync("editor.getModel().getValueInRange(editor.getSelection())");
+                    text = UnescapeEditorText(text) ?? string.Empty;
+                    if (text.Length == 0)
+                    {
+                        CursorSelection = string.Empty;
+                    }
+                    else
+                    {
+                        CursorSelection = string.Format(Resources.Resources.StatusSelection, text.Length);
+                    }
+                    break;
+            }
+        }
+
+        private static string UnescapeEditorText(string text)
+        {
+            if (text == null)
+                return null;
+
+            if (text.Length > 1 && text[0] == '"' && text[text.Length - 1] == '"')
+            {
+                text = text.Substring(1, text.Length - 2);
+            }
+            return Regex.Unescape(text);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposedValue)
+            {
+                if (disposing)
+                {
+                    // dispose managed state (managed objects)
+                    WebView?.Dispose();
+                }
+
+                // free unmanaged resources (unmanaged objects) and override finalizer
+                // set large fields to null
+                _disposedValue = true;
+            }
+        }
+
+        public void Dispose() { Dispose(disposing: true); GC.SuppressFinalize(this); }
+    }
+}

@@ -4,7 +4,7 @@ using System.Text;
 
 namespace DevPad.Utilities
 {
-    public static class Extensions
+    public static class DevPadExtensions
     {
         public static string Nullify(this string text)
         {

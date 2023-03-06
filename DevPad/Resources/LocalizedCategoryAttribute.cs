@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace Resources
+namespace DevPad.Resources
 {
     public class LocalizedCategoryAttribute : CategoryAttribute
     {

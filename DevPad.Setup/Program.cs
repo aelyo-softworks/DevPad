@@ -134,7 +134,7 @@ namespace DevPad.Setup
                         void addDirectory(string dir, string relativePath)
                         {
                             var dirName = Path.GetFileName(dir);
-                            if (dirName.EqualsIgnoreCase("win-x86"))
+                            if (dirName.EqualsIgnoreCase("win-x86")) // we'll never support x86
                                 return;
 
                             foreach (var file in Directory.EnumerateFiles(dir))
@@ -145,7 +145,8 @@ namespace DevPad.Setup
                                 continue;
 #endif
                                 var fileName = Path.GetFileName(file);
-                                if (fileName.EqualsIgnoreCase("DevPad.exe.config"))
+                                if (fileName.EqualsIgnoreCase("DevPad.exe.config") ||
+                                    fileName.EqualsIgnoreCase("Microsoft.Web.WebView2.WinForms.dll"))
                                     continue;
 
                                 archive.CreateEntryFromFile(file, Path.Combine(relativePath, fileName), CompressionLevel.Optimal);

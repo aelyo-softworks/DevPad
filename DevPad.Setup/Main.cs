@@ -17,7 +17,6 @@ namespace DevPad.Setup
         private readonly string _tempFilePath;
         private readonly CancellationTokenSource _cancelSource = new CancellationTokenSource();
         private bool _paused;
-        private bool _completed;
 
         public Main(string tempFileSize)
         {
@@ -219,9 +218,6 @@ namespace DevPad.Setup
             _paused = true;
             if (this.ShowConfirm(Resources.Resources.CancelConfirm) == DialogResult.Yes)
             {
-                if (_completed)
-                    return;
-
                 _cancelSource.Cancel();
                 return;
             }

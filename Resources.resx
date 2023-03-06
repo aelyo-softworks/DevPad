@@ -117,10 +117,53 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <metadata name="MainMenu.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>17, 17</value>
-  </metadata>
-  <metadata name="StatusStrip.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>132, 17</value>
-  </metadata>
+  <data name="AllFilesFilter" xml:space="preserve">
+    <value>|All files (*.*)|*.*</value>
+  </data>
+  <data name="AllKnownFilesFilter" xml:space="preserve">
+    <value>|All known files|{0}</value>
+  </data>
+  <data name="Appearance" xml:space="preserve">
+    <value>Appearance</value>
+  </data>
+  <data name="Confirmation" xml:space="preserve">
+    <value>Confirmation</value>
+  </data>
+  <data name="ConfirmDiscard" xml:space="preserve">
+    <value>There are unsaved changes to the document, are you sure you want to discard them?</value>
+  </data>
+  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
+  <data name="DevPadIcon" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>DevPad.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Error" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="ErrorGetText" xml:space="preserve">
+    <value>An error occurred trying to get the text from the editor.</value>
+  </data>
+  <data name="OneFileFilter" xml:space="preserve">
+    <value>{0} files ({1})|{1}</value>
+  </data>
+  <data name="Only64BitWindows" xml:space="preserve">
+    <value>DevPad only supports 64-bit versions of Windows.</value>
+  </data>
+  <data name="StatusPosition" xml:space="preserve">
+    <value>Ln: {0} Ch: {1}</value>
+  </data>
+  <data name="StatusSelection" xml:space="preserve">
+    <value>Selection: {0}</value>
+  </data>
+  <data name="Untitled" xml:space="preserve">
+    <value>(Untitled)</value>
+  </data>
+  <data name="Warning" xml:space="preserve">
+    <value>Warning</value>
+  </data>
+  <data name="WebViewDownload" xml:space="preserve">
+    <value>&lt;A HREF="https://go.microsoft.com/fwlink/p/?LinkId=2124703"&gt;Click here to download the WebView2 Runtime.&lt;/A&gt;</value>
+  </data>
+  <data name="WebViewError" xml:space="preserve">
+    <value>An error occurred trying to initialize the WebView.</value>
+  </data>
 </root>

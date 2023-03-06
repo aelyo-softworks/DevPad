@@ -4,9 +4,9 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Xml.Serialization;
+using DevPad.MonacoModel;
+using DevPad.Resources;
 using DevPad.Utilities;
-using MonacoModel;
-using Resources;
 
 namespace DevPad
 {
@@ -19,7 +19,7 @@ namespace DevPad
         {
             BackupFromConfiguration(new TimeSpan(7, 0, 0, 0));
             return DeserializeFromConfiguration();
-        }, true);
+        });
         public static Settings Current => _current.Value;
 
         [DefaultValue(null)]
