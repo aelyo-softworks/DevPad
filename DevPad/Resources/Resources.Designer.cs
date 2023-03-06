@@ -170,6 +170,15 @@ namespace Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to (Untitled).
+        /// </summary>
+        internal static string Untitled {
+            get {
+                return ResourceManager.GetString("Untitled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Warning.
         /// </summary>
         internal static string Warning {

@@ -154,6 +154,9 @@
   <data name="StatusSelection" xml:space="preserve">
     <value>Selection: {0}</value>
   </data>
+  <data name="Untitled" xml:space="preserve">
+    <value>(Untitled)</value>
+  </data>
   <data name="Warning" xml:space="preserve">
     <value>Warning</value>
   </data>

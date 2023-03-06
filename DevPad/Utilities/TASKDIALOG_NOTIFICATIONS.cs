@@ -1,4 +1,4 @@
-﻿namespace Utilities
+﻿namespace DevPad.Utilities
 {
     public enum TASKDIALOG_NOTIFICATIONS
     {

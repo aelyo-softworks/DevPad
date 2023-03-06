@@ -10,7 +10,7 @@
         EditorCreated = 5,
         EditorLostFocus = 6,
         EditorGotFocus = 7,
-        CursorPositionChange = 8,
+        CursorPositionChanged = 8,
         CursorSelectionChanged = 9,
         ModelLanguageChanged = 10,
     }

@@ -1,27 +1,36 @@
 ﻿using System;
 using System.Diagnostics;
-using System.IO;
+using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using DevPad.MonacoModel;
 using DevPad.Utilities;
-using Microsoft.Web.WebView2.Core;
-using Utilities;
+using Microsoft.Web.WebView2.WinForms;
 
 namespace DevPad
 {
     public partial class Main : Form
     {
-        private readonly DevPadObject _dpo = new DevPadObject();
-        private string _documentText;
         private bool _languagesLoaded;
+        private Font _symbolsFont;
+        private Font _symbolsFontBigger;
+        private const int _basePadding = 6;
+        private readonly Button _addButton = new Button();
 
         public Main()
         {
             InitializeComponent();
+            SetupFonts();
+
+            _addButton.Font = _symbolsFontBigger;
+            _addButton.Text = "🞣";
+            _addButton.FlatStyle = FlatStyle.Flat;
+            _addButton.FlatAppearance.BorderSize = 0;
+            _addButton.Click += OnAddClick;
+            Controls.Add(_addButton);
+            _addButton.BringToFront();
+
             toolStripStatusPosition.Text = string.Empty;
             toolStripStatusSelection.Text = string.Empty;
             toolStripStatusLanguage.Alignment = ToolStripItemAlignment.Right;
@@ -29,15 +38,158 @@ namespace DevPad
             Task.Run(() => Settings.Current.CleanRecentFiles());
             Icon = Resources.Resources.DevPadIcon;
             Text = WinformsUtilities.ApplicationName;
-            _dpo.Load += DevPadOnLoad;
-            _dpo.Event += DevPadEvent;
-            _ = InitializeAsync();
+
+            tabControlMain.DrawMode = TabDrawMode.OwnerDrawFixed;
+            tabControlMain.DrawItem += OnTabControlDrawItem;
+            tabControlMain.Padding = new Point(_basePadding * 3, _basePadding);
+            tabControlMain.MouseMove += OnTabControlMouseMove;
+            tabControlMain.SelectedIndexChanged += OnTabSelectedIndexChanged;
+
+            AddWebPage();
+
+            //_ = CurrentPage.InitializeAsync();
         }
 
-        public bool IsMonacoReady { get; private set; }
-        public bool IsEditorCreated { get; private set; }
-        public bool HasContentChanged { get; private set; }
-        public string CurrentFilePath { get; private set; }
+        public WebPage CurrentPage => (WebPage)tabControlMain.SelectedTab;
+        public WebView2 CurrentWebView => CurrentPage.WebView;
+
+        protected override void OnDpiChanged(DpiChangedEventArgs e)
+        {
+            base.OnDpiChanged(e);
+            SetupFonts();
+        }
+
+        private void SetupFonts()
+        {
+            _symbolsFont?.Dispose();
+            _symbolsFont = new Font("Segoe UI Symbol", Font.Size);
+            _symbolsFontBigger?.Dispose();
+            _symbolsFontBigger = new Font("Segoe UI Symbol", Font.Size, FontStyle.Bold);
+        }
+
+        private void OnTabSelectedIndexChanged(object sender, EventArgs e)
+        {
+            toolStripStatusSelection.Text = CurrentPage.CursorSelection;
+            toolStripStatusPosition.Text = CurrentPage.CursorPosition;
+            toolStripStatusLanguage.Text = CurrentPage.ModelLanguage;
+        }
+
+        private void OnAddClick(object sender, EventArgs e)
+        {
+            AddWebPage();
+        }
+
+        private void AddWebPage()
+        {
+            var wp = new WebPage();
+            wp.FilePathChanged += OnFilePathChanged;
+            wp.ModelLanguageChanged += OnModelLanguageChanged;
+            wp.CursorPositionChanged += OnCursorPositionChanged;
+            wp.CursorSelectionChanged += OnCursorSelectionChanged;
+            tabControlMain.TabPages.Add(wp);
+        }
+
+        private void OnCursorSelectionChanged(object sender, EventArgs e)
+        {
+            toolStripStatusSelection.Text = CurrentPage.CursorSelection;
+        }
+
+        private void OnCursorPositionChanged(object sender, EventArgs e)
+        {
+            toolStripStatusPosition.Text = CurrentPage.CursorPosition;
+        }
+
+        private void OnModelLanguageChanged(object sender, EventArgs e)
+        {
+            toolStripStatusLanguage.Text = CurrentPage.ModelLanguage;
+        }
+
+        private void OnFilePathChanged(object sender, EventArgs e)
+        {
+            Text = WinformsUtilities.ApplicationName + " - " + CurrentPage.FilePath;
+        }
+
+        private void OnTabControlMouseMove(object sender, MouseEventArgs e)
+        {
+            var mouseOverTab = GetTabWithMouseOverCloseButton();
+            var changed = false;
+            for (var i = 0; i < tabControlMain.TabPages.Count; i++)
+            {
+                var tab = (WebPage)tabControlMain.TabPages[i];
+                var state = tab.CloseButtonState;
+                if (tab == mouseOverTab)
+                {
+                    tab.CloseButtonState = WebPageCloseButtonState.Hover;
+                }
+                else
+                {
+                    tab.CloseButtonState = WebPageCloseButtonState.Normal;
+                }
+
+                if (state != tab.CloseButtonState)
+                {
+                    changed = true;
+                }
+            }
+
+            if (changed)
+            {
+                tabControlMain.Refresh();
+            }
+        }
+
+        private WebPage GetTabWithMouseOverCloseButton()
+        {
+            var pos = tabControlMain.PointToClient(Cursor.Position);
+            for (var i = 0; i < tabControlMain.TabPages.Count; i++)
+            {
+                var tab = (WebPage)tabControlMain.TabPages[i];
+                var rc = tab.CloseButtonRect;
+                rc.Inflate(_basePadding, _basePadding);
+                if (rc.Contains(pos))
+                    return tab;
+            }
+            return null;
+        }
+
+        private void OnTabControlDrawItem(object sender, DrawItemEventArgs e)
+        {
+            Program.Trace("i:" + e.Index + " state:" + e.State + " b:" + e.Bounds + " clip:" + e.Graphics.VisibleClipBounds);
+            //e.Graphics.FillRectangle(Brushes.White, e.Bounds);
+
+            var tab = (WebPage)tabControlMain.TabPages[e.Index];
+            using (var foreBrush = new SolidBrush(ForeColor))
+            {
+                var size = e.Graphics.MeasureString(tab.Text, e.Font);
+                e.Graphics.DrawString(tab.Text, e.Font, foreBrush, e.Bounds.X + _basePadding, (e.Bounds.Height - size.Height) / 2);
+
+                const string closeIcon = "✕";
+                size = e.Graphics.MeasureString(closeIcon, _symbolsFont);
+                var pt = new PointF(e.Bounds.X + e.Bounds.Width - size.Width - _basePadding, (e.Bounds.Height - size.Height) / 2);
+
+                if (tab.CloseButtonState == WebPageCloseButtonState.Hover)
+                {
+                    e.Graphics.DrawString(closeIcon, _symbolsFontBigger, foreBrush, pt);
+                }
+                else
+                {
+                    e.Graphics.DrawString(closeIcon, _symbolsFont, foreBrush, pt);
+                }
+
+                tab.CloseButtonRect = new RectangleF(pt.X, pt.Y, size.Width, size.Height);
+                if (e.State == DrawItemState.Focus)
+                {
+                    //e.DrawFocusRectangle();
+                }
+            }
+
+            if (e.Index == tabControlMain.TabPages.Count - 1)
+            {
+                var rc = tab.CloseButtonRect;
+                _addButton.Size = new Size(e.Bounds.Size.Height, e.Bounds.Size.Height); // square
+                _addButton.Location = new Point((int)rc.Right + _basePadding, tabControlMain.Top);
+            }
+        }
 
         protected override void OnKeyDown(KeyEventArgs e)
         {
@@ -47,13 +199,13 @@ namespace DevPad
 
             if (e.KeyCode == Keys.N && e.Control)
             {
-                _ = NewAsync();
+                _ = CurrentPage.NewAsync();
                 return;
             }
 
             if (e.KeyCode == Keys.O && e.Control)
             {
-                _ = OpenAsync();
+                _ = CurrentPage.OpenAsync();
                 return;
             }
 
@@ -61,11 +213,11 @@ namespace DevPad
             {
                 if (e.Shift)
                 {
-                    _ = SaveAsAsync();
+                    _ = CurrentPage.SaveAsAsync();
                 }
                 else
                 {
-                    _ = SaveAsync();
+                    _ = CurrentPage.SaveAsync();
                 }
                 return;
             }
@@ -75,10 +227,10 @@ namespace DevPad
                 var lastRecent = Settings.Current.RecentFilesPaths?.FirstOrDefault();
                 if (lastRecent != null)
                 {
-                    if (!DiscardChanges())
+                    if (!CurrentPage.DiscardChanges())
                         return;
 
-                    _ = OpenFileAsync(lastRecent.FilePath);
+                    _ = CurrentPage.OpenFileAsync(lastRecent.FilePath);
                 }
                 return;
             }
@@ -95,7 +247,7 @@ namespace DevPad
             {
                 if (((Keys)(int)(long)m.WParam) == Keys.Escape)
                 {
-                    _ = FocusEditorAsync();
+                    _ = CurrentPage.FocusEditorAsync();
                 }
             }
 
@@ -115,13 +267,13 @@ namespace DevPad
                         {
                             this.SafeBeginInvoke(async () =>
                             {
-                                await BlurEditorAsync();
+                                await CurrentPage.BlurEditorAsync();
                                 MainMenu.Focus();
                             });
                         }
                         else
                         {
-                            _ = FocusEditorAsync();
+                            _ = CurrentPage.FocusEditorAsync();
                         }
                         break;
                 }
@@ -129,342 +281,14 @@ namespace DevPad
             base.WndProc(ref m);
         }
 
-        private async Task InitializeAsync()
-        {
-            try
-            {
-                var udf = Settings.Current.UserDataFolder;
-                var env = await CoreWebView2Environment.CreateAsync(null, udf);
-                await WebView.EnsureCoreWebView2Async(env);
-
-                // this is the name of the host object in js code
-                // called like this: chrome.webview.hostObjects.sync.devPad.MyCustomMethod();
-                WebView.CoreWebView2.AddHostObjectToScript("devPad", _dpo);
-                WebView.Source = new Uri(Path.Combine(Application.StartupPath, @"Monaco\index.html"));
-                IsMonacoReady = true;
-            }
-            catch (Exception ex)
-            {
-                // handle WebViewRuntime not properly installed
-                // point to evergreen for download
-                Program.Trace(ex);
-                using (var td = new TaskDialog())
-                {
-                    td.Event += (s, e) =>
-                    {
-                        if (e.Message == TASKDIALOG_NOTIFICATIONS.TDN_HYPERLINK_CLICKED)
-                        {
-                            WindowsUtilities.SendMessage(e.Hwnd, MessageDecoder.WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
-                        }
-                    };
-                    td.Flags |= TASKDIALOG_FLAGS.TDF_SIZE_TO_CONTENT | TASKDIALOG_FLAGS.TDF_ENABLE_HYPERLINKS | TASKDIALOG_FLAGS.TDF_ALLOW_DIALOG_CANCELLATION;
-                    td.MainIcon = TaskDialog.TD_ERROR_ICON;
-                    td.Title = WinformsUtilities.ApplicationTitle;
-                    td.MainInstruction = Resources.Resources.WebViewError;
-                    var msg = ex.GetAllMessages();
-                    msg += Environment.NewLine + Environment.NewLine;
-                    msg += Resources.Resources.WebViewDownload;
-                    td.Content = msg;
-                    td.Show(this);
-                }
-                Close();
-            }
-        }
-
-        private async Task FocusEditorAsync()
-        {
-            MainMenu.HideDropDowns();
-            await WebView.ExecuteScriptAsync("editor.focus()");
-            WebView.Focus();
-        }
-
-        private async Task BlurEditorAsync()
-        {
-            await WebView.ExecuteScriptAsync("editor.blur()");
-        }
-
-        private async Task SetEditorThemeAsync(string theme = null)
-        {
-            theme = theme.Nullify() ?? "vs";
-            await WebView.ExecuteScriptAsync($"monaco.editor.setTheme('{theme}')");
-        }
-
-        private async Task SetEditorPositionAsync(int lineNumber = 0, int column = 0)
-        {
-            await WebView.ExecuteScriptAsync("editor.setPosition({lineNumber:" + lineNumber + ",column:" + column + "})");
-        }
-
-        private void SetFilePath(string filePath)
-        {
-            if (CurrentFilePath.EqualsIgnoreCase(filePath))
-                return;
-
-            CurrentFilePath = filePath;
-            if (filePath == null)
-            {
-                Text = WinformsUtilities.ApplicationName;
-                return;
-            }
-
-            Text = WinformsUtilities.ApplicationName + " - " + filePath;
-            Settings.Current.AddRecentFile(filePath);
-            Settings.Current.SerializeToConfiguration();
-            WindowsUtilities.SHAddToRecentDocs(filePath);
-            //Program.WindowsApplication.PublishRecentList();
-        }
-
-        private bool DiscardChanges()
-        {
-            if (!HasContentChanged)
-                return true;
-
-            return this.ShowConfirm(Resources.Resources.ConfirmDiscard) == DialogResult.Yes;
-        }
-
-        private static string UnescapeEditorText(string text)
-        {
-            if (text == null)
-                return null;
-
-            if (text.Length > 1 && text[0] == '"' && text[text.Length - 1] == '"')
-            {
-                text = text.Substring(1, text.Length - 2);
-            }
-            return Regex.Unescape(text);
-        }
-
-        private async Task<string> GetEditorTextAsync()
-        {
-            var text = await WebView.ExecuteScriptAsync("editor.getValue()");
-            if (text == null)
-            {
-                this.ShowError(Resources.Resources.ErrorGetText);
-                return null;
-            }
-            return UnescapeEditorText(text);
-        }
-
-        private Task SetEditorLanguage(string lang) => WebView.ExecuteScriptAsync($"monaco.editor.setModelLanguage(editor.getModel(), '{lang}');");
-        private async Task SetEditorLanguageFromFilePath(string filePath)
-        {
-            var ext = Path.GetExtension(filePath);
-            var langs = await WebView.GetLanguagesByExtension();
-            string lang;
-            if (langs.TryGetValue(ext, out var langObject))
-            {
-                lang = langObject[0].Id;
-            }
-            else
-            {
-                lang = LanguageExtensionPoint.DefaultLanguageId;
-            }
-            await SetEditorLanguage(lang);
-        }
-
-        private async Task<(string, int)> BuildFilter()
-        {
-            var languages = await WebView.GetLanguages();
-            var sb = new StringBuilder();
-            var index = 0;
-            foreach (var kv in languages.OrderBy(k => k.Value.Name))
-            {
-                if (kv.Value.Extensions == null || kv.Value.Extensions.Length == 0)
-                    continue;
-
-                if (sb.Length > 0)
-                {
-                    sb.Append('|');
-                }
-                sb.Append(string.Format(Resources.Resources.OneFileFilter, kv.Value.Name, "*" + string.Join(";*", kv.Value.Extensions)));
-                index++;
-            }
-            sb.Append(Resources.Resources.AllFilesFilter);
-            return (sb.ToString(), index);
-        }
-
-        private async Task OpenAsync()
-        {
-            if (!DiscardChanges())
-                return;
-
-            var filter = await BuildFilter();
-            var fd = new OpenFileDialog
-            {
-                RestoreDirectory = true,
-                Multiselect = false,
-                CheckFileExists = true,
-                CheckPathExists = true,
-                Filter = filter.Item1,
-                FilterIndex = filter.Item2 + 1
-            };
-            if (fd.ShowDialog(this) != DialogResult.OK)
-                return;
-
-            await OpenFileAsync(fd.FileName);
-        }
-
-        private async Task OpenFileAsync(string filePath)
-        {
-            var ext = Path.GetExtension(filePath);
-            var langs = await WebView.GetLanguagesByExtension();
-            string lang;
-            if (langs.TryGetValue(ext, out var langObject))
-            {
-                lang = langObject[0].Id;
-            }
-            else
-            {
-                lang = LanguageExtensionPoint.DefaultLanguageId;
-            }
-
-            // not this the most performant load system... we should make chunks
-            _documentText = File.ReadAllText(filePath);
-            await WebView.ExecuteScriptAsync($"loadFromHost('{lang}')");
-            HasContentChanged = false;
-            SetFilePath(filePath);
-            await SetEditorPositionAsync();
-        }
-
-        private async Task NewAsync()
-        {
-            if (!DiscardChanges())
-                return;
-
-            _documentText = string.Empty;
-            await WebView.ExecuteScriptAsync("loadFromHost('plaintext')");
-            HasContentChanged = false;
-            await FocusEditorAsync();
-            await SetEditorPositionAsync();
-        }
-
-        private async Task SaveAsAsync()
-        {
-            var filter = await BuildFilter();
-            var fd = new SaveFileDialog
-            {
-                RestoreDirectory = true,
-                CheckPathExists = true,
-                Filter = filter.Item1,
-                FilterIndex = filter.Item2 + 1
-            };
-            if (fd.ShowDialog(this) != DialogResult.OK)
-                return;
-
-            await SaveAsync(fd.FileName);
-            await SetEditorLanguageFromFilePath(fd.FileName);
-        }
-
-        private async Task SaveAsync()
-        {
-            if (CurrentFilePath == null)
-            {
-                await SaveAsAsync();
-                return;
-            }
-            await SaveAsync(CurrentFilePath);
-        }
-
-        private async Task SaveAsync(string filePath)
-        {
-            var text = await GetEditorTextAsync();
-            if (text == null)
-                return;
-
-            File.WriteAllText(filePath, text);
-            SetFilePath(filePath);
-            HasContentChanged = false;
-        }
-
-        private async void DevPadEvent(object sender, DevPadEventArgs e)
-        {
-            Program.Trace(e);
-            switch (e.EventType)
-            {
-                case DevPadEventType.ContentChanged:
-                    HasContentChanged = true;
-                    break;
-
-                case DevPadEventType.EditorLostFocus:
-                    break;
-
-                case DevPadEventType.KeyDown:
-                    var ke = (DevPadKeyEventArgs)e;
-                    //Trace.WriteLine("Key " + ke.Code + " " + ke.KeyCode + " Alt:" + ke.Alt + " Shift:" + ke.Shift + " Ctrl:" + ke.Ctrl + " Meta:" + ke.Meta + " AltG:" + ke.AltGraph + " Keys:" + ke.Keys);
-                    OnKeyDown(new KeyEventArgs(ke.Keys));
-                    break;
-
-                case DevPadEventType.EditorCreated:
-                    HasContentChanged = false;
-                    IsEditorCreated = true;
-                    await SetEditorThemeAsync(Settings.Current.Theme);
-                    await FocusEditorAsync();
-                    var open = CommandLine.GetNullifiedArgument(0);
-                    if (open != null)
-                    {
-                        await OpenFileAsync(open);
-                    }
-                    break;
-
-                case DevPadEventType.ModelLanguageChanged:
-                    var langId = e.RootElement.GetNullifiedValue("newLanguage");
-                    if (langId != null)
-                    {
-                        this.SafeBeginInvoke(async () =>
-                        {
-                            var text = await WebView.GetLanguageName(langId);
-                            toolStripStatusLanguage.Text = text ?? langId;
-                        });
-                    }
-                    else
-                    {
-                        toolStripStatusLanguage.Text = string.Empty;
-                    }
-                    break;
-
-                case DevPadEventType.CursorPositionChange:
-                    var line = e.RootElement.GetValue("position.lineNumber", -1);
-                    var column = e.RootElement.GetValue("position.column", -1);
-                    if (line >= 0 && column >= 0)
-                    {
-                        toolStripStatusPosition.Text = string.Format(Resources.Resources.StatusPosition, line, column);
-                    }
-                    else
-                    {
-                        toolStripStatusPosition.Text = string.Empty;
-                    }
-                    break;
-
-                case DevPadEventType.CursorSelectionChanged:
-                    this.SafeBeginInvoke(async () =>
-                    {
-                        var text = await WebView.ExecuteScriptAsync("editor.getModel().getValueInRange(editor.getSelection())");
-                        text = UnescapeEditorText(text) ?? string.Empty;
-                        if (text.Length == 0)
-                        {
-                            toolStripStatusSelection.Text = string.Empty;
-                        }
-                        else
-                        {
-                            toolStripStatusSelection.Text = string.Format(Resources.Resources.StatusSelection, text.Length);
-                        }
-                    });
-                    break;
-            }
-        }
-
-        private void DevPadOnLoad(object sender, DevPadLoadEventArgs e)
-        {
-            e.DocumentText = _documentText;
-        }
-
         private void AboutDevPadToolStripMenuItem_Click(object sender, EventArgs e) { var dlg = new AboutForm(); dlg.ShowDialog(this); }
-        private void OpenToolStripMenuItem_Click(object sender, EventArgs e) => _ = OpenAsync();
+        private void OpenToolStripMenuItem_Click(object sender, EventArgs e) => _ = CurrentPage.OpenAsync();
         private void ClearRecentListToolStripMenuItem_Click(object sender, EventArgs e) => Settings.Current.ClearRecentFiles();
-        private void NewToolStripMenuItem_Click(object sender, EventArgs e) => _ = NewAsync();
+        private void NewToolStripMenuItem_Click(object sender, EventArgs e) => _ = CurrentPage.NewAsync();
         private void NewWindowToolStripMenuItem_Click(object sender, EventArgs e) => Process.Start(Application.ExecutablePath);
         private void ExitToolStripMenuItem_Click(object sender, EventArgs e) => Close();
-        private void SaveToolStripMenuItem_Click(object sender, EventArgs e) => _ = SaveAsync();
-        private void SaveAsToolStripMenuItem_Click(object sender, EventArgs e) => _ = SaveAsAsync();
+        private void SaveToolStripMenuItem_Click(object sender, EventArgs e) => _ = CurrentPage.SaveAsync();
+        private void SaveAsToolStripMenuItem_Click(object sender, EventArgs e) => _ = CurrentPage.SaveAsAsync();
         private void FileToolStripMenuItem_DropDownOpening(object sender, EventArgs e)
         {
             const int fixedRecentItemsCount = 2;
@@ -482,10 +306,10 @@ namespace DevPad
                     openRecentToolStripMenuItem.DropDownItems.Insert(openRecentToolStripMenuItem.DropDownItems.Count - fixedRecentItemsCount, item);
                     item.Click += async (s, ex) =>
                     {
-                        if (!DiscardChanges())
+                        if (!CurrentPage.DiscardChanges())
                             return;
 
-                        await OpenFileAsync(recent.FilePath);
+                        await CurrentPage.OpenFileAsync(recent.FilePath);
                     };
                 }
             }
@@ -497,7 +321,7 @@ namespace DevPad
             if (_languagesLoaded)
                 return;
 
-            var langs = await WebView.GetLanguages();
+            var langs = await CurrentWebView.GetLanguages();
             setLanguageToolStripMenuItem.DropDownItems.Clear();
             foreach (var group in langs.OrderBy(k => k.Value.Name).GroupBy(n => n.Value.Name.Substring(0, 1), comparer: StringComparer.OrdinalIgnoreCase))
             {
@@ -511,7 +335,7 @@ namespace DevPad
                         var subItem = item.DropDownItems.Add(lang.Value.Name);
                         subItem.Click += async (s, e2) =>
                         {
-                            await SetEditorLanguage(lang.Key);
+                            await CurrentPage.SetEditorLanguage(lang.Key);
                         };
                     }
                 }
@@ -520,7 +344,7 @@ namespace DevPad
                     var item = setLanguageToolStripMenuItem.DropDownItems.Add(subLangs[0].Value.Name);
                     item.Click += async (s, e2) =>
                     {
-                        await SetEditorLanguage(subLangs[0].Key);
+                        await CurrentPage.SetEditorLanguage(subLangs[0].Key);
                     };
                 }
             }
@@ -535,7 +359,7 @@ namespace DevPad
                 switch (e.PropertyName)
                 {
                     case nameof(Settings.Theme):
-                        await SetEditorThemeAsync(dlg.Settings.Theme);
+                        await CurrentPage.SetEditorThemeAsync(dlg.Settings.Theme);
                         break;
                 }
             };
@@ -545,11 +369,16 @@ namespace DevPad
                 Settings.Current.CopyFrom(dlg.Settings);
                 Settings.Current.SerializeToConfiguration();
             }
-            _ = SetEditorThemeAsync(Settings.Current.Theme);
+            _ = CurrentPage.SetEditorThemeAsync(Settings.Current.Theme);
         }
 
         private void GoToToolStripMenuItem_Click(object sender, EventArgs e)
         {
+        }
+
+        private void CloseToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }

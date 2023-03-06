@@ -1,7 +1,7 @@
 ﻿using System;
 using System.ComponentModel;
 
-namespace Utilities
+namespace DevPad.Utilities
 {
     public class TaskDialogEventArgs : HandledEventArgs
     {

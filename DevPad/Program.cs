@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Specialized;
+using System.Configuration;
 using System.Diagnostics;
 using System.Diagnostics.Eventing;
 using System.Runtime.CompilerServices;
@@ -26,6 +28,12 @@ namespace DevPad
         [STAThread]
         static void Main()
         {
+            // see https://stackoverflow.com/a/75641142/403671
+            if (ConfigurationManager.GetSection("System.Windows.Forms.ApplicationConfigurationSection") is NameValueCollection section)
+            {
+                section["DpiAwareness"] = "PerMonitorV2";
+            }
+
             if (IntPtr.Size == 4)
             {
                 WinformsUtilities.ShowError(null, Resources.Resources.Only64BitWindows);
