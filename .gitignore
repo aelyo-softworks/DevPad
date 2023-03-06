@@ -350,3 +350,4 @@ MigrationBackup/
 .ionide/
 /DevPad.Setup/Build/DevPad.Setup.Debug.exe
 /DevPad.Setup/Build/DevPad.Setup.exe
+/DevPadWinforms
