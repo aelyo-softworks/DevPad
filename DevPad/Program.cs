@@ -21,6 +21,13 @@ namespace DevPad
         }
 
         public static WindowsApp WindowsApplication { get; } = new WindowsApp("Aelyo.DevPad", AssemblyUtilities.GetTitle());
+        public static bool InDebugMode { get; } = CommandLine.GetArgument("debug",
+#if DEBUG
+            true
+#else
+            false
+#endif
+            );
 
         [STAThread]
         static void Main()

@@ -48,6 +48,10 @@
             <MenuItem Header="_Edit" />
             <MenuItem Header="_View">
                 <MenuItem
+                    Header="Show _Minimap"
+                    IsCheckable="True"
+                    IsChecked="{Binding ShowMinimap, Mode=TwoWay}" />
+                <MenuItem
                     x:Name="LanguagesMenuItem"
                     Header="Languages"
                     SubmenuOpened="OnLanguagesOpened">

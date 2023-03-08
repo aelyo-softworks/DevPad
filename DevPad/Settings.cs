@@ -34,6 +34,9 @@ namespace DevPad
         [PropertyGridOptions(IsEnum = true, EnumNames = new[] { "vs", "vs-dark", "hc-light", "hc-black" })]
         public virtual string Theme { get => GetPropertyValue("vs"); set { SetPropertyValue(value); } }
 
+        [LocalizedCategory("Appearance")]
+        public virtual bool ShowMinimap { get => GetPropertyValue(true); set { SetPropertyValue(value); } }
+
         private Dictionary<string, DateTime> GetRecentFiles()
         {
             var dic = new Dictionary<string, DateTime>(StringComparer.Ordinal);

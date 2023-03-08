@@ -80,9 +80,34 @@ namespace DevPad.Model
             WebView.Focus();
         }
 
+        public async Task<bool> EditorHasFocusAsync()
+        {
+            return await WebView.ExecuteScriptAsync<bool>("editor.hasTextFocus()");
+        }
+
         public async Task BlurEditorAsync()
         {
             await WebView.ExecuteScriptAsync("editor.blur()");
+        }
+
+        public async Task MoveWidgetsToStart()
+        {
+            await WebView.ExecuteScriptAsync("moveFindWidgetToStart()");
+        }
+
+        public async Task MoveWidgetsToEnd()
+        {
+            await WebView.ExecuteScriptAsync("moveFindWidgetToEnd()");
+        }
+
+        public async Task MoveTo(int? line = null, int? column = null)
+        {
+            await WebView.ExecuteScriptAsync($"moveEditorTo({column}, {line})");
+        }
+
+        public async Task EnableMinimap(bool enabled)
+        {
+            await WebView.ExecuteScriptAsync("editor.updateOptions({minimap:{enabled:" + enabled.ToString().ToLowerInvariant() + "}})");
         }
 
         private void DevPadOnLoad(object sender, DevPadLoadEventArgs e)
@@ -97,6 +122,7 @@ namespace DevPad.Model
             int line;
             int column;
             string langId;
+            DevPadKeyEventArgs ke;
             switch (e.EventType)
             {
                 case DevPadEventType.ContentChanged:
@@ -106,15 +132,25 @@ namespace DevPad.Model
                 case DevPadEventType.EditorLostFocus:
                     break;
 
+                case DevPadEventType.KeyUp:
+                    ke = (DevPadKeyEventArgs)e;
+                    Program.Trace("Key " + ke.Code + " " + ke.KeyCode + " Alt:" + ke.Alt + " Shift:" + ke.Shift + " Ctrl:" + ke.Ctrl + " Meta:" + ke.Meta + " AltG:" + ke.AltGraph + " Keys:" + ke.Keys);
+                    break;
+
                 case DevPadEventType.KeyDown:
-                    var ke = (DevPadKeyEventArgs)e;
-                    //Trace.WriteLine("Key " + ke.Code + " " + ke.KeyCode + " Alt:" + ke.Alt + " Shift:" + ke.Shift + " Ctrl:" + ke.Ctrl + " Meta:" + ke.Meta + " AltG:" + ke.AltGraph + " Keys:" + ke.Keys);
+                    ke = (DevPadKeyEventArgs)e;
+                    Program.Trace("Key " + ke.Code + " " + ke.KeyCode + " Alt:" + ke.Alt + " Shift:" + ke.Shift + " Ctrl:" + ke.Ctrl + " Meta:" + ke.Meta + " AltG:" + ke.AltGraph + " Keys:" + ke.Keys);
                     //OnKeyDown(new KeyEventArgs(ke.Keys));
                     break;
 
                 case DevPadEventType.EditorCreated:
                     HasContentChanged = false;
                     IsEditorCreated = true;
+
+                    if (!Settings.Current.ShowMinimap)
+                    {
+                        await EnableMinimap(false);
+                    }
                     await SetEditorThemeAsync(Settings.Current.Theme);
                     await FocusEditorAsync();
 

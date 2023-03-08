@@ -30,6 +30,17 @@
             language: 'plaintext'
         });
 
+        monaco.editor.addKeybindingRules([
+            {
+                keybinding: monaco.KeyCode.F1,
+                command: null,
+            }
+        ]);
+
+        editor.onDidFocusEditorWidget(evt => {
+            console.log(evt);
+        });
+
         editor.getModel().onDidChangeContent(evt => {
             chrome.webview.hostObjects.sync.devPad.onEvent(2);
         });
@@ -61,6 +72,45 @@
         editor.onKeyDown(evt => {
             chrome.webview.hostObjects.sync.devPad.onEvent(4, JSON.stringify(evt));
         });
+
+        function moveFindWidgetToEnd() {
+            var widget = document.querySelector("div[widgetid='editor.contrib.findWidget'] textarea");
+            if (widget != document.activeElement)
+                return;
+
+            widget.setSelectionRange(Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER);
+        }
+
+        function moveFindWidgetToStart() {
+            var widget = document.querySelector("div[widgetid='editor.contrib.findWidget'] textarea");
+            if (widget != document.activeElement)
+                return;
+
+            widget.setSelectionRange(0, 0);
+        }
+
+        function moveEditorTo(column, lineNumber) {
+            if (column === undefined) {
+                if (lineNumber === undefined)
+                    return;
+
+                column = editor.getPosition().column;
+            }
+
+            if (lineNumber === undefined) {
+                lineNumber = editor.getPosition().lineNumber;
+            }
+
+            if (column == 2147483647) {
+                column = editor.getModel().getLineLength(editor.getPosition().lineNumber) + 1;
+            }
+
+            if (lineNumber == 2147483647) {
+                lineNumber = editor.getModel().getLineCount();
+            }
+
+            editor.setPosition({ column: column, lineNumber: lineNumber });
+        }
 
         function loadFromHost(lang) {
             monaco.editor.setModelLanguage(editor.getModel(), lang);

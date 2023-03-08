@@ -27,6 +27,7 @@ namespace DevPad.MonacoModel
             switch (type)
             {
                 case DevPadEventType.KeyDown:
+                case DevPadEventType.KeyUp:
                     e = new DevPadKeyEventArgs(type, json);
                     break;
 

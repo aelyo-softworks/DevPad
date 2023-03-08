@@ -3,9 +3,11 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using DevPad.Model;
 using DevPad.MonacoModel;
 using DevPad.Utilities;
@@ -48,11 +50,20 @@ namespace DevPad
             public WindowDataContext(MainWindow main)
             {
                 _main = main;
+                Settings.Current.PropertyChanged += OnSettingsPropertyChanged; ;
             }
 
-            private void OnPropertyChanged(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+            private void OnSettingsPropertyChanged(object sender, PropertyChangedEventArgs e)
+            {
+                if (e.PropertyName == nameof(Settings.ShowMinimap))
+                {
+                    OnPropertyChanged(e.PropertyName);
+                }
+            }
 
-            public void RaisePropertyChanged(string propertyName = null)
+            private void OnPropertyChanged([CallerMemberName] string name = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+
+            public void RaisePropertyChanged(string propertyName)
             {
                 if (propertyName != null)
                 {
@@ -63,11 +74,28 @@ namespace DevPad
                 OnPropertyChanged(nameof(CursorPosition));
                 OnPropertyChanged(nameof(CursorSelection));
                 OnPropertyChanged(nameof(ModelLanguageName));
+                OnPropertyChanged(nameof(ShowMinimap));
             }
 
             public string CursorPosition => _main.CurrentTab?.CursorPosition;
             public string CursorSelection => _main.CurrentTab?.CursorSelection;
             public string ModelLanguageName => _main.CurrentTab?.ModelLanguageName;
+
+            public bool ShowMinimap
+            {
+                get => Settings.Current.ShowMinimap;
+                set
+                {
+                    if (ShowMinimap == value)
+                        return;
+
+                    Settings.Current.ShowMinimap = value;
+                    Settings.Current.SerializeToConfiguration();
+                    OnPropertyChanged();
+
+                    _ = _main.CurrentTab?.EnableMinimap(value);
+                }
+            }
         }
 
         protected override void OnClosing(CancelEventArgs e)
@@ -78,6 +106,71 @@ namespace DevPad
                 e.Cancel = true;
                 return;
             }
+        }
+
+        protected override void OnActivated(EventArgs e)
+        {
+            base.OnActivated(e);
+            Program.Trace("activated");
+        }
+
+        protected override void OnGotFocus(RoutedEventArgs e)
+        {
+            base.OnGotFocus(e);
+            Program.Trace("focused");
+        }
+
+        protected override async void OnPreviewKeyDown(KeyEventArgs e)
+        {
+            if (e.Key == Key.F12 && !Program.InDebugMode)
+            {
+                e.Handled = true;
+            }
+
+            // for some reason, Home and End are completely eaten by WebView/Monaco?
+            // so we capture them and do it "manually"
+            if (e.Key == Key.Home)
+            {
+                e.Handled = true;
+                var hasFocus = await CurrentTab?.EditorHasFocusAsync();
+                if (hasFocus) // because widgets (find, etc.) can get focus too
+                {
+                    if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+                    {
+                        _ = CurrentTab?.MoveTo(1, 1);
+                    }
+                    else
+                    {
+                        _ = CurrentTab?.MoveTo(column: 1);
+                    }
+                }
+                else
+                {
+                    await CurrentTab?.MoveWidgetsToStart();
+                }
+            }
+
+            if (e.Key == Key.End)
+            {
+                e.Handled = true;
+                var hasFocus = await CurrentTab?.EditorHasFocusAsync();
+                if (hasFocus)
+                {
+                    if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+                    {
+                        _ = CurrentTab?.MoveTo(int.MaxValue, int.MaxValue);
+                    }
+                    else
+                    {
+                        _ = CurrentTab?.MoveTo(column: int.MaxValue);
+                    }
+                }
+                else
+                {
+                    await CurrentTab?.MoveWidgetsToEnd(); ;
+                }
+            }
+            base.OnPreviewKeyDown(e);
         }
 
         private void RemoveTab(MonacoTab tab = null)
@@ -233,7 +326,7 @@ namespace DevPad
             {
                 tab.PropertyChanged += TabPropertyChanged;
                 _previousTab = tab;
-                _dataContext.RaisePropertyChanged();
+                _dataContext.RaisePropertyChanged(null);
             }
 
             // never end up with + tab selected
@@ -247,7 +340,7 @@ namespace DevPad
         {
             if (e.PropertyName == nameof(MonacoTab.IsEditorCreated))
             {
-                _dataContext.RaisePropertyChanged();
+                _dataContext.RaisePropertyChanged(null);
             }
             else
             {
