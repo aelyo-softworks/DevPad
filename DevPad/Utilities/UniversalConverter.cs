@@ -22,14 +22,91 @@ namespace DevPad.Utilities
             {
                 if (sw.Matches(value, parameter, culture))
                 {
+                    object converted;
                     if (sw.Options.HasFlag(UniversalConverterOptions.ConvertedValueIsConverterParameter))
-                        return Conversions.ChangeType(parameter, targetType, culture);
+                    {
+                        converted = Conversions.ChangeType(parameter, targetType, culture);
+                    }
+                    else
+                    {
+                        if (!sw.HasConvertedValue)
+                        {
+                            converted = Conversions.ChangeType(value, targetType, null, culture);
+                        }
+                        else
+                        {
+                            converted = Conversions.ChangeType(sw.ConvertedValue, targetType, null, culture);
+                        }
+                    }
 
-                    return Conversions.ChangeType(sw.ConvertedValue, targetType, null, culture);
+                    if (sw.Operator == UniversalConverterOperator.Negate)
+                    {
+                        converted = Negate(converted);
+                    }
+                    return converted;
                 }
             }
 
             return Conversions.ChangeType(DefaultValue, targetType, null, culture);
+        }
+
+        private static object Negate(object value)
+        {
+            if (value == null)
+                return value;
+
+            var type = value.GetType();
+            var tc = Type.GetTypeCode(type);
+            switch (tc)
+            {
+                case TypeCode.Boolean:
+                    return !(bool)value;
+
+                case TypeCode.Char:
+                    return -(char)value;
+
+                case TypeCode.SByte:
+                    return -(sbyte)value;
+
+                case TypeCode.Byte:
+                    return -(byte)value;
+
+                case TypeCode.Int16:
+                    return -(short)value;
+
+                case TypeCode.UInt16:
+                    return -(ushort)value;
+
+                case TypeCode.Int32:
+                    return -(int)value;
+
+                case TypeCode.UInt32:
+                    return -(uint)value;
+
+                case TypeCode.Int64:
+                    return -(long)value;
+
+                case TypeCode.UInt64:
+                    return (ulong)-(long)(ulong)value;
+
+                case TypeCode.Single:
+                    return -(float)value;
+
+                case TypeCode.Double:
+                    return -(double)value;
+
+                case TypeCode.Decimal:
+                    return -(decimal)value;
+
+                case TypeCode.String:
+                    return "-" + value;
+
+                case TypeCode.Object:
+                    if (value is TimeSpan ts)
+                        return -ts;
+                    break;
+            }
+            return value;
         }
 
         private static CultureInfo CultureInfoFromName(string language)

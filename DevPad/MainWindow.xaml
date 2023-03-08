@@ -61,7 +61,6 @@
         <TabControl
             x:Name="TabMain"
             Grid.Row="1"
-            MouseUp="OnTabMouseUp"
             SelectionChanged="OnTabSelectionChanged">
             <TabControl.ItemTemplate>
                 <DataTemplate>
@@ -78,6 +77,14 @@
                             Content="✕"
                             FontFamily="Segoe UI Symbol"
                             Visibility="{Binding IsAdd, Converter={StaticResource ResourceKey=ReverseBooleanToVisibilityConverter}}" />
+                        <Button
+                            Margin="-3,-2,-4,-3"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Click="OnAddTab"
+                            Content=" 🞣 "
+                            FontFamily="Segoe UI Symbol"
+                            Visibility="{Binding IsAdd, Converter={StaticResource ResourceKey=BooleanToVisibilityConverter}}" />
                     </DockPanel>
                 </DataTemplate>
             </TabControl.ItemTemplate>

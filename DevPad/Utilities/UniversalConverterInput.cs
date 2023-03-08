@@ -101,6 +101,10 @@ namespace DevPad.Utilities
             UniversalConverterInput clone;
             switch (Operator)
             {
+                case UniversalConverterOperator.Negate: // always match
+                    ret = true;
+                    break;
+
                 case UniversalConverterOperator.Equal:
                     if (Value == null)
                     {

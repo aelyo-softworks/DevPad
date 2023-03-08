@@ -13,6 +13,7 @@
         EndsWith,
         Contains,
         IsType,
-        IsOfType
+        IsOfType,
+        Negate
     }
 }

@@ -5,14 +5,26 @@ namespace DevPad.Utilities
 {
     public class UniversalConverterCase
     {
+        private object _convertedValue;
+
         public virtual object Value { get; set; }
-        public virtual object ConvertedValue { get; set; }
         public virtual object MinimumValue { get; set; }
         public virtual object MaximumValue { get; set; }
         public virtual UniversalConverterOptions Options { get; set; }
         public virtual UniversalConverterOperator Operator { get; set; }
         public virtual StringComparison StringComparison { get; set; } = StringComparison.CurrentCultureIgnoreCase;
         public virtual bool Reverse { get; set; }
+        public bool HasConvertedValue { get; private set; }
+
+        public virtual object ConvertedValue
+        {
+            get => _convertedValue;
+            set
+            {
+                _convertedValue = value;
+                HasConvertedValue = true;
+            }
+        }
 
         public virtual bool Matches(object value, object parameter, CultureInfo culture)
         {
@@ -28,5 +40,7 @@ namespace DevPad.Utilities
             input.ConverterParameter = parameter;
             return input.Matches(culture);
         }
+
+        public override string ToString() => Operator.ToString();
     }
 }

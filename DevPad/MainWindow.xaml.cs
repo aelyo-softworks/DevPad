@@ -6,7 +6,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using DevPad.Model;
 using DevPad.MonacoModel;
 using DevPad.Utilities;
@@ -16,7 +15,6 @@ namespace DevPad
     public partial class MainWindow : Window
     {
         private readonly ObservableCollection<MonacoTab> _tabs = new ObservableCollection<MonacoTab>();
-        private bool _removing;
         private bool _languagesLoaded;
         private WindowDataContext _dataContext;
         private MonacoTab _previousTab;
@@ -179,15 +177,7 @@ namespace DevPad
             if (!DiscardChanges(tab))
                 return;
 
-            _removing = true;
-            try
-            {
-                RemoveTab(tab);
-            }
-            finally
-            {
-                _removing = false;
-            }
+            RemoveTab(tab);
         }
 
         private void CloseAllTabs()
@@ -226,17 +216,16 @@ namespace DevPad
             dlg.ShowDialog();
         }
 
-        private async void OnTabSelectionChanged(object sender, SelectionChangedEventArgs e)
+        private async void OnAddTab(object sender, RoutedEventArgs e)
+        {
+            await AddTab();
+        }
+
+        private void OnTabSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (_previousTab != null)
             {
                 _previousTab.PropertyChanged -= TabPropertyChanged;
-            }
-
-            if (!_removing && TabMain.Items.Count > 1 && e.AddedItems.Count == 1 && e.AddedItems[0] is MonacoAddTab)
-            {
-                e.Handled = true;
-                await AddTab();
             }
 
             var tab = CurrentTab;
@@ -247,7 +236,7 @@ namespace DevPad
                 _dataContext.RaisePropertyChanged();
             }
 
-            // never end up with + selected
+            // never end up with + tab selected
             if (TabMain.SelectedItem is MonacoAddTab && TabMain.Items.Count > 1)
             {
                 TabMain.SelectedIndex = TabMain.Items.Count - 2;
@@ -263,19 +252,6 @@ namespace DevPad
             else
             {
                 _dataContext.RaisePropertyChanged(e.PropertyName);
-            }
-        }
-
-        private void OnTabMouseUp(object sender, MouseButtonEventArgs e)
-        {
-
-            // this studid code is to circumvent a bug that happens when you click the + the first time
-            // if you remove this code, the + doesn't work anymore (just once) unless you click somewhere else...
-            if (TabMain.Items.Count == 3)
-            {
-                var index = TabMain.SelectedIndex;
-                TabMain.SelectedIndex = index - 1;
-                TabMain.SelectedIndex = index;
             }
         }
 
