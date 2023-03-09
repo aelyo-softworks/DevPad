@@ -37,10 +37,6 @@
             }
         ]);
 
-        editor.onDidFocusEditorWidget(evt => {
-            console.log(evt);
-        });
-
         editor.getModel().onDidChangeContent(evt => {
             chrome.webview.hostObjects.sync.devPad.onEvent(2);
         });
@@ -73,8 +69,12 @@
             chrome.webview.hostObjects.sync.devPad.onEvent(4, JSON.stringify(evt));
         });
 
+        function getFindWidget() {
+            return document.querySelector("div[widgetid='editor.contrib.findWidget'] textarea");
+        }
+
         function moveFindWidgetToEnd() {
-            var widget = document.querySelector("div[widgetid='editor.contrib.findWidget'] textarea");
+            var widget = getFindWidget();
             if (widget != document.activeElement)
                 return;
 
@@ -82,7 +82,7 @@
         }
 
         function moveFindWidgetToStart() {
-            var widget = document.querySelector("div[widgetid='editor.contrib.findWidget'] textarea");
+            var widget = getFindWidget();
             if (widget != document.activeElement)
                 return;
 

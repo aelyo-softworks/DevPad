@@ -88,6 +88,15 @@ namespace DevPad.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Clear this list.
+        /// </summary>
+        internal static string ClearRecentList {
+            get {
+                return ResourceManager.GetString("ClearRecentList", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Confirmation.
         /// </summary>
         internal static string Confirmation {

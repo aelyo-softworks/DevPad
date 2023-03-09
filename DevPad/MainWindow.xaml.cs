@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -11,6 +12,7 @@ using System.Windows.Input;
 using DevPad.Model;
 using DevPad.MonacoModel;
 using DevPad.Utilities;
+using Microsoft.Win32;
 
 namespace DevPad
 {
@@ -18,7 +20,7 @@ namespace DevPad
     {
         private readonly ObservableCollection<MonacoTab> _tabs = new ObservableCollection<MonacoTab>();
         private bool _languagesLoaded;
-        private WindowDataContext _dataContext;
+        private readonly WindowDataContext _dataContext;
         private MonacoTab _previousTab;
 
         public MainWindow()
@@ -27,19 +29,15 @@ namespace DevPad
             _dataContext = new WindowDataContext(this);
             DataContext = _dataContext;
             TabMain.ItemsSource = _tabs;
+            Task.Run(() => Settings.Current.CleanRecentFiles());
 
             _tabs.Add(new MonacoAddTab());
-            _ = AddTab();
+
+            var open = CommandLine.GetNullifiedArgument(0);
+            _ = AddTab(open);
         }
 
-        public MonacoTab CurrentTab
-        {
-            get
-            {
-                var tab = TabMain.SelectedItem as MonacoTab;
-                return tab != null && !tab.IsAdd ? tab : null;
-            }
-        }
+        public MonacoTab CurrentTab => TabMain.SelectedItem is MonacoTab tab && !tab.IsAdd ? tab : null;
 
         private class WindowDataContext : INotifyPropertyChanged
         {
@@ -173,7 +171,28 @@ namespace DevPad
             base.OnPreviewKeyDown(e);
         }
 
-        private void RemoveTab(MonacoTab tab = null)
+        private async Task OpenFileAsync(string filePath)
+        {
+            var tab = _tabs.FirstOrDefault(t => t.FilePath.EqualsIgnoreCase(filePath));
+            if (tab != null)
+            {
+                TabMain.SelectedItem = tab;
+                return;
+            }
+
+            if (_tabs.Count == 2 && _tabs[0].FilePath == null && !_tabs[0].HasContentChanged)
+            {
+                RemoveTab(_tabs[0], false);
+            }
+
+            tab = await AddTab(filePath);
+            Settings.Current.AddRecentFile(filePath);
+            Settings.Current.SerializeToConfiguration();
+            WindowsUtilities.SHAddToRecentDocs(filePath);
+            Program.WindowsApplication.PublishRecentList();
+        }
+
+        private void RemoveTab(MonacoTab tab = null, bool checkAtLeastOneTab = true)
         {
             tab = tab ?? CurrentTab;
             if (tab == null || tab.IsAdd)
@@ -183,21 +202,22 @@ namespace DevPad
             tab.Dispose();
 
             // always ensure we have one (untitled) tab opened
-            if (_tabs.Count == 1)
+            if (checkAtLeastOneTab && _tabs.Count == 1)
             {
-                _ = AddTab();
+                _ = AddTab(null);
             }
         }
 
-        private async Task AddTab()
+        private async Task<MonacoTab> AddTab(string filePath)
         {
             try
             {
-                var newTab = new MonacoTab { Name = DevPad.Resources.Resources.Untitled };
+                var newTab = new MonacoTab();
                 var c = _tabs.Count - 1;
                 _tabs.Insert(c, newTab);
                 TabMain.SelectedIndex = c;
-                await newTab.InitializeAsync();
+                await newTab.InitializeAsync(filePath);
+                return newTab;
             }
             catch (Exception ex)
             {
@@ -237,6 +257,7 @@ namespace DevPad
                     td.Show(this);
                 }
                 Close();
+                return null;
             }
         }
 
@@ -299,19 +320,15 @@ namespace DevPad
         private void OnCloseAll(object sender, RoutedEventArgs e) => CloseAllTabs();
         private void OnClose(object sender, RoutedEventArgs e) => CloseTab(CurrentTab);
         private void OnCloseTab(object sender, RoutedEventArgs e) => CloseTab(e.GetDataContext<MonacoTab>());
-        private void OnNewTab(object sender, RoutedEventArgs e) => _ = AddTab();
+        private void OnNewTab(object sender, RoutedEventArgs e) => _ = AddTab(null);
         private void OnExitClick(object sender, RoutedEventArgs e) => Close();
         private void OnRestartAsAdmin(object sender, RoutedEventArgs e) => RestartAsAdmin(true);
+        private async void OnAddTab(object sender, RoutedEventArgs e) => await AddTab(null);
         private void OnAboutClick(object sender, RoutedEventArgs e)
         {
             var dlg = new About();
             dlg.Owner = this;
             dlg.ShowDialog();
-        }
-
-        private async void OnAddTab(object sender, RoutedEventArgs e)
-        {
-            await AddTab();
         }
 
         private void OnTabSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -402,6 +419,15 @@ namespace DevPad
             _languagesLoaded = true;
         }
 
+        private void OnRecentOpened(object sender, RoutedEventArgs e)
+        {
+        }
+
+        private void OnClearRecentList(object sender, RoutedEventArgs e)
+        {
+            Settings.Current.ClearRecentFiles();
+        }
+
         private void OnSaveAs(object sender, RoutedEventArgs e)
         {
 
@@ -412,9 +438,22 @@ namespace DevPad
 
         }
 
-        private void OnOpen(object sender, RoutedEventArgs e)
+        private async void OnOpen(object sender, RoutedEventArgs e)
         {
+            var filter = await BuildFilter();
+            var fd = new OpenFileDialog
+            {
+                RestoreDirectory = true,
+                Multiselect = false,
+                CheckFileExists = true,
+                CheckPathExists = true,
+                Filter = filter.Item1,
+                FilterIndex = filter.Item2 + 1
+            };
+            if (fd.ShowDialog(this) != true)
+                return;
 
+            await OpenFileAsync(fd.FileName);
         }
 
         private void OnNewWindow(object sender, RoutedEventArgs e)
@@ -442,6 +481,51 @@ namespace DevPad
                 RestartAsAdminMenuItem.Icon = image;
                 RestartAsAdminMenuItem.Visibility = Visibility.Visible;
             }
+
+            var list = Settings.Current.RecentFilesPaths;
+            RecentFilesMenuItem.IsEnabled = list.Count > 0;
+            if (RecentFilesMenuItem.IsEnabled)
+            {
+                RecentFilesMenuItem.Items.Clear();
+                foreach (var file in list)
+                {
+                    var item = new MenuItem { Header = file };
+                    RecentFilesMenuItem.Items.Add(item);
+                    item.Click += (s, e2) =>
+                    {
+                        _ = OpenFileAsync(file.FilePath);
+                    };
+                }
+
+                RecentFilesMenuItem.Items.Add(new Separator());
+                var clear = new MenuItem { Header = DevPad.Resources.Resources.ClearRecentList };
+                RecentFilesMenuItem.Items.Add(clear);
+                clear.Click += (s, e2) =>
+                {
+                    Settings.Current.ClearRecentFiles();
+                };
+            }
+        }
+
+        private async Task<(string, int)> BuildFilter()
+        {
+            var languages = await CurrentTab.WebView.GetLanguages();
+            var sb = new StringBuilder();
+            var index = 0;
+            foreach (var kv in languages.OrderBy(k => k.Value.Name))
+            {
+                if (kv.Value.Extensions == null || kv.Value.Extensions.Length == 0)
+                    continue;
+
+                if (sb.Length > 0)
+                {
+                    sb.Append('|');
+                }
+                sb.Append(string.Format(DevPad.Resources.Resources.OneFileFilter, kv.Value.Name, "*" + string.Join(";*", kv.Value.Extensions)));
+                index++;
+            }
+            sb.Append(DevPad.Resources.Resources.AllFilesFilter);
+            return (sb.ToString(), index);
         }
     }
 }

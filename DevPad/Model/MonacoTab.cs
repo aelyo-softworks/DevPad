@@ -29,15 +29,38 @@ namespace DevPad.Model
         public bool IsMonacoReady { get => DictionaryObjectGetPropertyValue(false); private set => DictionaryObjectSetPropertyValue(value); }
         public bool HasContentChanged { get => DictionaryObjectGetPropertyValue(false); private set => DictionaryObjectSetPropertyValue(value); }
         public bool IsEditorCreated { get => DictionaryObjectGetPropertyValue(false); private set => DictionaryObjectSetPropertyValue(value); }
-        public virtual string Name { get => DictionaryObjectGetNullifiedPropertyValue(Resources.Resources.Untitled); set => DictionaryObjectSetPropertyValue(value); }
         public string ModelLanguageName { get => DictionaryObjectGetNullifiedPropertyValue(); private set => DictionaryObjectSetPropertyValue(value); }
         public string CursorPosition { get => DictionaryObjectGetNullifiedPropertyValue(); private set => DictionaryObjectSetPropertyValue(value); }
         public string CursorSelection { get => DictionaryObjectGetNullifiedPropertyValue(); private set => DictionaryObjectSetPropertyValue(value); }
+        public string FilePath
+        {
+            get => DictionaryObjectGetNullifiedPropertyValue();
+            private set
+            {
+                if (DictionaryObjectSetPropertyValue(value))
+                {
+                    OnPropertyChanged(nameof(Name));
+                }
+            }
+        }
+
+        public virtual string Name
+        {
+            get
+            {
+                var path = FilePath;
+                if (path == null)
+                    return DevPad.Resources.Resources.Untitled;
+
+                return Path.GetFileName(path);
+            }
+        }
 
         public override string ToString() => Name;
 
-        public async Task InitializeAsync()
+        public async Task InitializeAsync(string filePath)
         {
+            FilePath = filePath;
             var udf = Settings.Current.UserDataFolder;
             var env = await CoreWebView2Environment.CreateAsync(null, udf);
             await WebView.EnsureCoreWebView2Async(env);
@@ -73,9 +96,37 @@ namespace DevPad.Model
             await WebView.ExecuteScriptAsync($"monaco.editor.setTheme('{theme}')");
         }
 
+        public async Task SetEditorPositionAsync(int lineNumber = 0, int column = 0)
+        {
+            await WebView.ExecuteScriptAsync("editor.setPosition({lineNumber:" + lineNumber + ",column:" + column + "})");
+        }
+
+        private async Task LoadFileIfAny()
+        {
+            if (FilePath == null)
+                return;
+
+            var ext = Path.GetExtension(FilePath);
+            var langs = await WebView.GetLanguagesByExtension();
+            string lang;
+            if (langs.TryGetValue(ext, out var langObject) && langObject.Count > 0)
+            {
+                lang = langObject[0].Id;
+            }
+            else
+            {
+                lang = LanguageExtensionPoint.DefaultLanguageId;
+            }
+
+            // not this the most performant load system... we should make chunks
+            _documentText = File.ReadAllText(FilePath);
+
+            await WebView.ExecuteScriptAsync($"loadFromHost('{lang}')");
+            await SetEditorPositionAsync();
+        }
+
         public async Task FocusEditorAsync()
         {
-            //MainMenu.HideDropDowns();
             await WebView.ExecuteScriptAsync("editor.focus()");
             WebView.Focus();
         }
@@ -144,7 +195,6 @@ namespace DevPad.Model
                     break;
 
                 case DevPadEventType.EditorCreated:
-                    HasContentChanged = false;
                     IsEditorCreated = true;
 
                     if (!Settings.Current.ShowMinimap)
@@ -153,6 +203,9 @@ namespace DevPad.Model
                     }
                     await SetEditorThemeAsync(Settings.Current.Theme);
                     await FocusEditorAsync();
+
+                    await LoadFileIfAny();
+                    HasContentChanged = false;
 
                     // this will force CursorPosition text to update
                     var pos = await WebView.ExecuteScriptAsync<JsonElement>("editor.getPosition()");
@@ -163,11 +216,6 @@ namespace DevPad.Model
                     langId = await WebView.ExecuteScriptAsync("editor.getModel().getLanguageId()");
                     langId = UnescapeEditorText(langId);
                     await setLang();
-                    //var open = CommandLine.GetNullifiedArgument(0);
-                    //if (open != null)
-                    //{
-                    //    await OpenFileAsync(open);
-                    //}
                     break;
 
                 case DevPadEventType.ModelLanguageChanged:

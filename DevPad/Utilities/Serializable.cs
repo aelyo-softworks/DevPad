@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -153,36 +154,17 @@ namespace DevPad.Utilities
                     if (tick < 0)
                         continue;
 
-                    var dateName = name.Substring(0, tick).Split('_');
-                    if (dateName.Length != 3)
+                    var dates = name.Substring(0, tick).Split('.');
+                    if (dates.Length < 1)
                         continue;
 
-                    int month = 0, day = 0;
-                    if (!int.TryParse(dateName[0], out var year) &&
-                        !int.TryParse(dateName[1], out month) &&
-                        !int.TryParse(dateName[2], out day))
+                    var date = dates[0].Replace("_", "/");
+                    if (!DateTime.TryParse(date, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt))
                         continue;
-
-                    DateTime dt;
-                    try
-                    {
-                        dt = new DateTime(year, month, day);
-                    }
-                    catch
-                    {
-                        continue;
-                    }
 
                     if ((DateTime.Now - dt) > maxDuration.Value)
                     {
-                        try
-                        {
-                            File.Delete(file);
-                        }
-                        catch
-                        {
-                            // too bad
-                        }
+                        IOUtilities.FileDelete(file, false);
                     }
                 }
             }

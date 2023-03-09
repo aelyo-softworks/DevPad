@@ -126,6 +126,9 @@
   <data name="Appearance" xml:space="preserve">
     <value>Appearance</value>
   </data>
+  <data name="ClearRecentList" xml:space="preserve">
+    <value>Clear this list</value>
+  </data>
   <data name="Confirmation" xml:space="preserve">
     <value>Confirmation</value>
   </data>
