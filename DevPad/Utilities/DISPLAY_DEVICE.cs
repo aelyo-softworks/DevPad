@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 
@@ -101,5 +102,13 @@ namespace DevPad.Utilities
 
         [DllImport("user32", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern bool EnumDisplaySettingsEx(string lpszDeviceName, int iModeNum, ref DEVMODE lpDevMode, EDS dwFlags);
+    }
+
+    [Flags]
+    public enum EDS
+    {
+        EDS_NONE = 0,
+        EDS_RAWMODE = 0x2,
+        EDS_ROTATEDMODE = 0x4,
     }
 }

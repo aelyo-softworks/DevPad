@@ -106,7 +106,7 @@ namespace DevPad.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to There are unsaved changes to the &apos;{0}&apos; document, are you sure you want to discard them?.
+        ///   Looks up a localized string similar to There are unsaved changes to the {0} document, are you sure you want to discard them?.
         /// </summary>
         internal static string ConfirmDiscardDocument {
             get {
@@ -202,6 +202,15 @@ namespace DevPad.Resources {
         internal static string Software {
             get {
                 return ResourceManager.GetString("Software", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Startup.
+        /// </summary>
+        internal static string Startup {
+            get {
+                return ResourceManager.GetString("Startup", resourceCulture);
             }
         }
         

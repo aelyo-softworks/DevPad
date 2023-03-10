@@ -133,7 +133,7 @@
     <value>Confirmation</value>
   </data>
   <data name="ConfirmDiscardDocument" xml:space="preserve">
-    <value>There are unsaved changes to the '{0}' document, are you sure you want to discard them?</value>
+    <value>There are unsaved changes to the {0} document, are you sure you want to discard them?</value>
   </data>
   <data name="ConfirmDiscardDocuments" xml:space="preserve">
     <value>There are unsaved changes to the {0} documents, are you sure you want to discard them?</value>
@@ -165,6 +165,9 @@
   </data>
   <data name="Software" xml:space="preserve">
     <value>Software</value>
+  </data>
+  <data name="Startup" xml:space="preserve">
+    <value>Startup</value>
   </data>
   <data name="StatusPosition" xml:space="preserve">
     <value>Ln: {0} Ch: {1}</value>

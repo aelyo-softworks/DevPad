@@ -43,4 +43,19 @@ namespace DevPad.Utilities
 
         public override string ToString() => dmPelsWidth + "x" + dmPelsHeight + ", " + dmDisplayFrequency + "Hz, " + dmDisplayOrientation;
     }
+
+    public enum DMDO
+    {
+        DMDO_DEFAULT = 0,
+        DMDO_90 = 1,
+        DMDO_180 = 2,
+        DMDO_270 = 3,
+    }
+
+    public enum DMDFO
+    {
+        DMDFO_DEFAULT = 0,
+        DMDFO_STRETCH = 1,
+        DMDFO_CENTER = 2,
+    }
 }

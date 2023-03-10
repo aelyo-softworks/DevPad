@@ -37,6 +37,9 @@ namespace DevPad
         [LocalizedCategory("Appearance")]
         public virtual bool ShowMinimap { get => GetPropertyValue(true); set { SetPropertyValue(value); } }
 
+        [LocalizedCategory("Startup")]
+        public virtual bool RestoreTabs { get => GetPropertyValue(true); set { SetPropertyValue(value); } }
+
         private Dictionary<string, DateTime> GetRecentFiles()
         {
             var dic = new Dictionary<string, DateTime>(StringComparer.Ordinal);

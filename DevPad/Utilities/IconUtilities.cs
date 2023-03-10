@@ -442,4 +442,26 @@ namespace DevPad.Utilities
             int GetJunctionCLSID(out Guid pclsid);
         }
     }
+
+    [Flags]
+    public enum SHGSI
+    {
+        SHGSI_ICON = 0x100,
+        SHGSI_ICONLOCATION = 0,
+        SHGSI_LARGEICON = 0,
+        SHGSI_LINKOVERLAY = 0x8000,
+        SHGSI_SELECTED = 0x10000,
+        SHGSI_SHELLICONSIZE = 4,
+        SHGSI_SMALLICON = 1,
+        SHGSI_SYSICONINDEX = 0x4000
+    }
+
+    public enum SHIL
+    {
+        SHIL_LARGE = 0,
+        SHIL_SMALL = 1,
+        SHIL_EXTRALARGE = 2,
+        SHIL_SYSSMALL = 3,
+        SHIL_JUMBO = 4,
+    }
 }
