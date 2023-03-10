@@ -118,13 +118,16 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="AllFilesFilter" xml:space="preserve">
-    <value>|All files (*.*)|*.*</value>
+    <value>|All Files (*.*)|*.*</value>
   </data>
   <data name="AllKnownFilesFilter" xml:space="preserve">
-    <value>|All known files|{0}</value>
+    <value>|All Known Files|{0}</value>
   </data>
   <data name="Appearance" xml:space="preserve">
     <value>Appearance</value>
+  </data>
+  <data name="Behavior" xml:space="preserve">
+    <value>Behavior</value>
   </data>
   <data name="ClearRecentList" xml:space="preserve">
     <value>Clear this list</value>
@@ -149,7 +152,7 @@
     <value>An error occurred trying to get the text from the editor.</value>
   </data>
   <data name="OneFileFilter" xml:space="preserve">
-    <value>{0} files ({1})|{1}</value>
+    <value>{0} Files ({1})|{1}</value>
   </data>
   <data name="Only64BitWindows" xml:space="preserve">
     <value>DevPad only supports 64-bit versions of Windows.</value>

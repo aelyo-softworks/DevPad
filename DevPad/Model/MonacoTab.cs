@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -17,15 +18,18 @@ namespace DevPad.Model
         private string _documentText;
         private bool _disposedValue;
 
+        public event EventHandler<DevPadEventArgs> MonacoEvent;
+
         public MonacoTab()
         {
             _dpo.Load += DevPadOnLoad;
             _dpo.Event += DevPadEvent;
         }
 
+        public int Index { get; set; }
         public WebView2 WebView { get; } = new WebView2();
         public bool IsAdd => this is MonacoAddTab;
-        public virtual string FontFamily => null;
+        public virtual string FontFamily => string.Empty;
         public bool IsMonacoReady { get => DictionaryObjectGetPropertyValue(false); private set => DictionaryObjectSetPropertyValue(value); }
         public bool HasContentChanged { get => DictionaryObjectGetPropertyValue(false); private set => DictionaryObjectSetPropertyValue(value); }
         public bool IsEditorCreated { get => DictionaryObjectGetPropertyValue(false); private set => DictionaryObjectSetPropertyValue(value); }
@@ -64,6 +68,7 @@ namespace DevPad.Model
             var udf = Settings.Current.UserDataFolder;
             var env = await CoreWebView2Environment.CreateAsync(null, udf);
             await WebView.EnsureCoreWebView2Async(env);
+            WebView.CoreWebView2.ContextMenuRequested += OnContextMenuRequested;
 
             // this is the name of the host object in js code
             // called like this: chrome.webview.hostObjects.sync.devPad.MyCustomMethod();
@@ -71,6 +76,11 @@ namespace DevPad.Model
             var startupPath = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName);
             WebView.Source = new Uri(Path.Combine(startupPath, @"Monaco\index.html"));
             IsMonacoReady = true;
+        }
+
+        private void OnContextMenuRequested(object sender, CoreWebView2ContextMenuRequestedEventArgs e)
+        {
+            e.Handled = true;
         }
 
         public Task SetEditorLanguageAsync(string lang) => WebView.ExecuteScriptAsync($"monaco.editor.setModelLanguage(editor.getModel(), '{lang}');");
@@ -99,6 +109,11 @@ namespace DevPad.Model
         public async Task SetEditorPositionAsync(int lineNumber = 0, int column = 0)
         {
             await WebView.ExecuteScriptAsync("editor.setPosition({lineNumber:" + lineNumber + ",column:" + column + "})");
+        }
+
+        public async Task ShowFindUI()
+        {
+            await WebView.ExecuteScriptAsync("editor.trigger('','actions.find')");
         }
 
         public async Task SaveAsync(string filePath)
@@ -165,24 +180,34 @@ namespace DevPad.Model
             await WebView.ExecuteScriptAsync("editor.blur()");
         }
 
-        public async Task MoveWidgetsToStart()
+        public async Task MoveWidgetsToStartAsync()
         {
             await WebView.ExecuteScriptAsync("moveFindWidgetToStart()");
         }
 
-        public async Task MoveWidgetsToEnd()
+        public async Task MoveWidgetsToEndAsync()
         {
             await WebView.ExecuteScriptAsync("moveFindWidgetToEnd()");
         }
 
-        public async Task MoveTo(int? line = null, int? column = null)
+        public async Task MoveEditorToAsync(int? line = null, int? column = null)
         {
             await WebView.ExecuteScriptAsync($"moveEditorTo({column}, {line})");
         }
 
-        public async Task EnableMinimap(bool enabled)
+        public async Task<T> GetEditorOptionsAsync<T>(EditorOption option, T defaultValue = default)
+        {
+            return await WebView.ExecuteScriptAsync($"editor.getOption({(int)option})", defaultValue);
+        }
+
+        public async Task EnableMinimapAsync(bool enabled)
         {
             await WebView.ExecuteScriptAsync("editor.updateOptions({minimap:{enabled:" + enabled.ToString().ToLowerInvariant() + "}})");
+        }
+
+        public async Task SetFontSizeAsync(double size)
+        {
+            await WebView.ExecuteScriptAsync("editor.updateOptions({fontSize:'" + size.ToString(CultureInfo.InvariantCulture) + "px'})");
         }
 
         private void DevPadOnLoad(object sender, DevPadLoadEventArgs e)
@@ -192,12 +217,15 @@ namespace DevPad.Model
 
         private async void DevPadEvent(object sender, DevPadEventArgs e)
         {
-            //Program.Trace(e);
+            MonacoEvent?.Invoke(this, e);
+            if (e.Handled)
+                return;
+
             string text;
             int line;
             int column;
             string langId;
-            DevPadKeyEventArgs ke;
+            //DevPadKeyEventArgs ke;
             switch (e.EventType)
             {
                 case DevPadEventType.ContentChanged:
@@ -208,14 +236,13 @@ namespace DevPad.Model
                     break;
 
                 case DevPadEventType.KeyUp:
-                    ke = (DevPadKeyEventArgs)e;
-                    Program.Trace("Key " + ke.Code + " " + ke.KeyCode + " Alt:" + ke.Alt + " Shift:" + ke.Shift + " Ctrl:" + ke.Ctrl + " Meta:" + ke.Meta + " AltG:" + ke.AltGraph + " Keys:" + ke.Keys);
+                    //ke = (DevPadKeyEventArgs)e;
+                    //Program.Trace("Key " + ke.Code + " " + ke.KeyCode + " Alt:" + ke.Alt + " Shift:" + ke.Shift + " Ctrl:" + ke.Ctrl + " Meta:" + ke.Meta + " AltG:" + ke.AltGraph + " Keys:" + ke.Keys);
                     break;
 
                 case DevPadEventType.KeyDown:
-                    ke = (DevPadKeyEventArgs)e;
-                    Program.Trace("Key " + ke.Code + " " + ke.KeyCode + " Alt:" + ke.Alt + " Shift:" + ke.Shift + " Ctrl:" + ke.Ctrl + " Meta:" + ke.Meta + " AltG:" + ke.AltGraph + " Keys:" + ke.Keys);
-                    //OnKeyDown(new KeyEventArgs(ke.Keys));
+                    //ke = (DevPadKeyEventArgs)e;
+                    //Program.Trace("Key " + ke.Code + " " + ke.KeyCode + " Alt:" + ke.Alt + " Shift:" + ke.Shift + " Ctrl:" + ke.Ctrl + " Meta:" + ke.Meta + " AltG:" + ke.AltGraph + " Keys:" + ke.Keys);
                     break;
 
                 case DevPadEventType.EditorCreated:
@@ -223,7 +250,7 @@ namespace DevPad.Model
 
                     if (!Settings.Current.ShowMinimap)
                     {
-                        await EnableMinimap(false);
+                        await EnableMinimapAsync(false);
                     }
                     await SetEditorThemeAsync(Settings.Current.Theme);
                     await FocusEditorAsync();

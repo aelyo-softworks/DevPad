@@ -73,11 +73,13 @@
     </Compile>
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="Model\MonacoAddTab.cs" />
+    <Compile Include="MonacoModel\DevPadConfigurationChangedEventArgs.cs" />
     <Compile Include="MonacoModel\DevPadEventArgs.cs" />
     <Compile Include="MonacoModel\DevPadEventType.cs" />
     <Compile Include="MonacoModel\DevPadKeyEventArgs.cs" />
     <Compile Include="MonacoModel\DevPadLoadEventArgs.cs" />
     <Compile Include="MonacoModel\DevPadObject.cs" />
+    <Compile Include="MonacoModel\EditorOption.cs" />
     <Compile Include="MonacoModel\KeyCode.cs" />
     <Compile Include="MonacoModel\LanguageExtensionPoint.cs" />
     <Compile Include="MonacoModel\MonacoExtensions.cs" />

@@ -21,14 +21,29 @@
     <script src="./vs/editor/editor.main.nls.js"></script>
     <script src="./vs/editor/editor.main.js"></script>
     <script>
+        // https://github.com/microsoft/vscode/blob/main/src/vs/platform/opener/common/opener.ts
+        var openerService = {
+            open: function (resource, options) {
+                chrome.webview.hostObjects.sync.devPad.onEvent(12, JSON.stringify({ resource: resource, options: options }));
+            }
+        };
+
         monaco.editor.onDidCreateEditor(evt => {
             chrome.webview.hostObjects.sync.devPad.onEvent(5);
         });
 
-        var editor = monaco.editor.create(document.getElementById('container'), {
-            automaticLayout: true,
-            language: 'plaintext'
-        });
+        var editor = monaco.editor.create(document.getElementById('container'),
+            {
+                automaticLayout: true,
+                language: 'plaintext',
+                fontSize: '12px',
+                mouseWheelZoom: true,
+                contextmenu: false
+            },
+            {
+                openerService: openerService
+            }
+        );
 
         monaco.editor.addKeybindingRules([
             {
@@ -43,6 +58,14 @@
 
         editor.onDidChangeModelLanguage(evt => {
             chrome.webview.hostObjects.sync.devPad.onEvent(10, JSON.stringify(evt));
+        });
+
+        editor.onDidChangeConfiguration(evt => {
+            // get first item's index (in first array property of object) that is true
+            var index = Object.values(evt).find(e => Array.isArray(e)).findIndex(v => v);
+            if (index) {
+                chrome.webview.hostObjects.sync.devPad.onEvent(11, JSON.stringify({ index: index }));
+            }
         });
 
         editor.onDidBlurEditorText(evt => {

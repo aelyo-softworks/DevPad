@@ -1,9 +1,10 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Text.Json;
 
 namespace DevPad.MonacoModel
 {
-    public class DevPadEventArgs : EventArgs
+    public class DevPadEventArgs : HandledEventArgs
     {
         private readonly Lazy<JsonDocument> _document;
 

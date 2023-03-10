@@ -72,17 +72,17 @@ namespace DevPad.MonacoModel
             return _languagesById;
         }
 
-        public static async Task<T> ExecuteScriptAsync<T>(this WebView2 webView, string javaScript, JsonSerializerOptions options = null)
+        public static async Task<T> ExecuteScriptAsync<T>(this WebView2 webView, string javaScript, T defaultValue = default, JsonSerializerOptions options = null)
         {
             if (javaScript == null)
                 throw new ArgumentNullException(nameof(javaScript));
 
             if (webView == null)
-                return default;
+                return defaultValue;
 
             var json = await webView.ExecuteScriptAsync(javaScript);
             if (json == null)
-                return default;
+                return defaultValue;
 
             try
             {
@@ -91,7 +91,7 @@ namespace DevPad.MonacoModel
             catch (Exception ex)
             {
                 Program.Trace(ex);
-                return default;
+                return defaultValue;
             }
         }
     }

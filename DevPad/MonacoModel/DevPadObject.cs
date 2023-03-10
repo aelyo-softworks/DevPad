@@ -31,6 +31,10 @@ namespace DevPad.MonacoModel
                     e = new DevPadKeyEventArgs(type, json);
                     break;
 
+                case DevPadEventType.ConfigurationChanged:
+                    e = new DevPadConfigurationChangedEventArgs(json);
+                    break;
+
                 default:
                     e = new DevPadEventArgs(type, json);
                     break;

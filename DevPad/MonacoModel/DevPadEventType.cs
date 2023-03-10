@@ -13,5 +13,7 @@
         CursorPositionChanged = 8,
         CursorSelectionChanged = 9,
         ModelLanguageChanged = 10,
+        ConfigurationChanged = 11,
+        OpenResource = 12,
     }
 }

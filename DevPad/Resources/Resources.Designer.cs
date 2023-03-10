@@ -61,7 +61,7 @@ namespace DevPad.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to |All files (*.*)|*.*.
+        ///   Looks up a localized string similar to |All Files (*.*)|*.*.
         /// </summary>
         internal static string AllFilesFilter {
             get {
@@ -70,7 +70,7 @@ namespace DevPad.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to |All known files|{0}.
+        ///   Looks up a localized string similar to |All Known Files|{0}.
         /// </summary>
         internal static string AllKnownFilesFilter {
             get {
@@ -84,6 +84,15 @@ namespace DevPad.Resources {
         internal static string Appearance {
             get {
                 return ResourceManager.GetString("Appearance", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Behavior.
+        /// </summary>
+        internal static string Behavior {
+            get {
+                return ResourceManager.GetString("Behavior", resourceCulture);
             }
         }
         
@@ -152,7 +161,7 @@ namespace DevPad.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to {0} files ({1})|{1}.
+        ///   Looks up a localized string similar to {0} Files ({1})|{1}.
         /// </summary>
         internal static string OneFileFilter {
             get {

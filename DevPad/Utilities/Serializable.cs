@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 using System.Xml;
 using System.Xml.Serialization;
 
@@ -15,6 +16,30 @@ namespace DevPad.Utilities
         private readonly ConcurrentDictionary<string, object> _values = new ConcurrentDictionary<string, object>(StringComparer.OrdinalIgnoreCase);
 
         public event PropertyChangedEventHandler PropertyChanged;
+
+        private Timer _timer;
+
+        public void SerializeToConfigurationWhenIdle(int dueTime = 1000)
+        {
+            if (dueTime <= 0)
+            {
+                SerializeToConfiguration();
+                return;
+            }
+
+            var timer = _timer;
+            if (timer == null)
+            {
+                _timer = new Timer(state =>
+                {
+                    SerializeToConfiguration();
+                }, null, dueTime, Timeout.Infinite);
+            }
+            else
+            {
+                timer.Change(dueTime, Timeout.Infinite);
+            }
+        }
 
         public void SerializeToConfiguration() => Serialize(ConfigurationFilePath);
         public void Serialize(XmlWriter writer)

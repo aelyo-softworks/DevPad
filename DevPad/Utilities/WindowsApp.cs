@@ -97,8 +97,15 @@ namespace DevPad.Utilities
             var list = (ICustomDestinationList)new DestinationList();
             list.SetAppID(AppUserModelId);
 
-            list.BeginList(out _, typeof(IObjectArray).GUID, out _);
+            list.BeginList(out _, typeof(IObjectArray).GUID, out var removed);
             list.AppendKnownCategory(KNOWNDESTCATEGORY.KDC_RECENT);
+
+            removed.GetCount(out var removedCount);
+
+            var oa = (IObjectCollection)new EnumerableObjectCollection();
+            oa.AddObject(CreateItemFromParsingName(@"d:\temp\test2.xml"));
+            var x = list.AppendCategory("test", oa);
+
             list.CommitList();
         }
 
@@ -118,8 +125,20 @@ namespace DevPad.Utilities
             return false;
         }
 
+        private static IShellItem CreateItemFromParsingName(string path)
+        {
+            SHCreateItemFromParsingName(path, null, typeof(IShellItem).GUID, out var obj);
+            return obj as IShellItem;
+        }
+
+        [DllImport("shell32")]
+        private static extern int SHCreateItemFromParsingName([MarshalAs(UnmanagedType.LPWStr)] string pszPath, IBindCtx pbc, [MarshalAs(UnmanagedType.LPStruct)] Guid riid, [MarshalAs(UnmanagedType.IUnknown)] out object ppv);
+
         [ComImport, Guid("77f10cf0-3db5-4966-b520-b7c54fd35ed6")]
         private class DestinationList { }
+
+        [ComImport, Guid("2d3468c1-36a7-43b6-ac24-d3f02fd9607a")]
+        private class EnumerableObjectCollection { }
 
         private enum KNOWNDESTCATEGORY
         {
@@ -166,6 +185,28 @@ namespace DevPad.Utilities
 
             [PreserveSig]
             int GetAt(int uiIndex, [MarshalAs(UnmanagedType.LPStruct)] Guid riid, [MarshalAs(UnmanagedType.IUnknown)] out object ppv);
+        }
+
+        [InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid("92CA9DCD-5622-4bba-A805-5E9F541BD8C9"), ComImport]
+        private interface IObjectCollection : IObjectArray
+        {
+            [PreserveSig]
+            new int GetCount(out int count);
+
+            [PreserveSig]
+            new int GetAt(int uiIndex, [MarshalAs(UnmanagedType.LPStruct)] Guid riid, [MarshalAs(UnmanagedType.IUnknown)] out object ppv);
+
+            [PreserveSig]
+            int AddObject([MarshalAs(UnmanagedType.IUnknown)] object punk);
+
+            [PreserveSig]
+            int AddFromArray(IObjectArray poaSource);
+
+            [PreserveSig]
+            int RemoveObjectAt(int uiIndex);
+
+            [PreserveSig]
+            int Clear();
         }
 
         [InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid("43826d1e-e718-42ee-bc55-a1e261c37bfe"), ComImport]
