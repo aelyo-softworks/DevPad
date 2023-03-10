@@ -74,7 +74,7 @@ namespace DevPad.Model
         }
 
         public Task SetEditorLanguageAsync(string lang) => WebView.ExecuteScriptAsync($"monaco.editor.setModelLanguage(editor.getModel(), '{lang}');");
-        public async Task SetEditorLanguageFromFilePathAsync(string filePath)
+        private async Task SetEditorLanguageFromFilePathAsync(string filePath)
         {
             var ext = Path.GetExtension(filePath);
             var langs = await WebView.GetLanguagesByExtension();
@@ -99,6 +99,30 @@ namespace DevPad.Model
         public async Task SetEditorPositionAsync(int lineNumber = 0, int column = 0)
         {
             await WebView.ExecuteScriptAsync("editor.setPosition({lineNumber:" + lineNumber + ",column:" + column + "})");
+        }
+
+        public async Task SaveAsync(string filePath)
+        {
+            if (filePath == null)
+                throw new ArgumentNullException(nameof(filePath));
+
+            var text = await GetEditorTextAsync();
+            if (text == null)
+                return;
+
+            File.WriteAllText(filePath, text);
+            FilePath = filePath;
+            HasContentChanged = false;
+            await SetEditorLanguageFromFilePathAsync(FilePath);
+        }
+
+        private async Task<string> GetEditorTextAsync()
+        {
+            var text = await WebView.ExecuteScriptAsync("editor.getValue()");
+            if (text == null)
+                throw new InvalidOperationException();
+
+            return UnescapeEditorText(text);
         }
 
         private async Task LoadFileIfAny()

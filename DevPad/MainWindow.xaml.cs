@@ -48,7 +48,7 @@ namespace DevPad
             public WindowDataContext(MainWindow main)
             {
                 _main = main;
-                Settings.Current.PropertyChanged += OnSettingsPropertyChanged; ;
+                Settings.Current.PropertyChanged += OnSettingsPropertyChanged;
             }
 
             private void OnSettingsPropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -190,6 +190,23 @@ namespace DevPad
             Settings.Current.SerializeToConfiguration();
             WindowsUtilities.SHAddToRecentDocs(filePath);
             Program.WindowsApplication.PublishRecentList();
+            SetTitle();
+        }
+
+        private async Task SaveAs()
+        {
+            var filter = await BuildFilter();
+            var fd = new SaveFileDialog
+            {
+                RestoreDirectory = true,
+                CheckPathExists = true,
+                Filter = filter.Item1,
+                FilterIndex = filter.Item2 + 1
+            };
+            if (fd.ShowDialog(this) != true)
+                return;
+
+            await CurrentTab.SaveAsync(fd.FileName);
         }
 
         private void RemoveTab(MonacoTab tab = null, bool checkAtLeastOneTab = true)
@@ -323,12 +340,30 @@ namespace DevPad
         private void OnNewTab(object sender, RoutedEventArgs e) => _ = AddTab(null);
         private void OnExitClick(object sender, RoutedEventArgs e) => Close();
         private void OnRestartAsAdmin(object sender, RoutedEventArgs e) => RestartAsAdmin(true);
+        private void OnClearRecentList(object sender, RoutedEventArgs e) => Settings.Current.ClearRecentFiles();
         private async void OnAddTab(object sender, RoutedEventArgs e) => await AddTab(null);
+        private async void OnSaveAs(object sender, RoutedEventArgs e) => await SaveAs();
         private void OnAboutClick(object sender, RoutedEventArgs e)
         {
             var dlg = new About();
             dlg.Owner = this;
             dlg.ShowDialog();
+        }
+
+        private void SetTitle()
+        {
+            if (CurrentTab == null)
+                return;
+
+            var name = CurrentTab.FilePath ?? CurrentTab.Name;
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                Title = AssemblyUtilities.GetTitle();
+            }
+            else
+            {
+                Title = name + " - " + AssemblyUtilities.GetTitle();
+            }
         }
 
         private void OnTabSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -351,6 +386,8 @@ namespace DevPad
             {
                 TabMain.SelectedIndex = TabMain.Items.Count - 2;
             }
+
+            SetTitle();
         }
 
         private void TabPropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -419,23 +456,15 @@ namespace DevPad
             _languagesLoaded = true;
         }
 
-        private void OnRecentOpened(object sender, RoutedEventArgs e)
+        private async void OnSave(object sender, RoutedEventArgs e)
         {
-        }
+            if (CurrentTab.FilePath != null)
+            {
+                await CurrentTab.SaveAsync(CurrentTab.FilePath);
+                return;
+            }
 
-        private void OnClearRecentList(object sender, RoutedEventArgs e)
-        {
-            Settings.Current.ClearRecentFiles();
-        }
-
-        private void OnSaveAs(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-        private void OnSave(object sender, RoutedEventArgs e)
-        {
-
+            await SaveAs();
         }
 
         private async void OnOpen(object sender, RoutedEventArgs e)

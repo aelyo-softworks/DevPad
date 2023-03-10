@@ -29,10 +29,7 @@
                 <MenuItem Click="OnNewWindow" Header="New _Window" />
                 <Separator />
                 <MenuItem Click="OnOpen" Header="_Open" />
-                <MenuItem
-                    x:Name="RecentFilesMenuItem"
-                    Header="Open _Recent"
-                    SubmenuOpened="OnRecentOpened" />
+                <MenuItem x:Name="RecentFilesMenuItem" Header="Open _Recent" />
                 <Separator />
                 <MenuItem Click="OnClose" Header="_Close" />
                 <MenuItem Click="OnCloseAll" Header="Close A_ll" />
@@ -72,7 +69,7 @@
             SelectionChanged="OnTabSelectionChanged">
             <TabControl.ItemTemplate>
                 <DataTemplate>
-                    <DockPanel>
+                    <DockPanel ToolTip="{Binding FilePath}" >
                         <TextBlock
                             HorizontalAlignment="Stretch"
                             FontFamily="{Binding FontFamily}"
