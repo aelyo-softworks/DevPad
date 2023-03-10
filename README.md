@@ -1,2 +1,2 @@
 # DevPad
-A editor with syntax highlighting, based on the Monaco editor.
+A text editor with syntax highlighting, based on the Monaco editor.
