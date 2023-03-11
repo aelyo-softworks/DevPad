@@ -34,6 +34,7 @@ namespace DevPad.Utilities
         public virtual string VerificationText { get; set; }
         public virtual string ExpandedInformation { get; set; }
         public virtual string CollapsedControlText { get; set; }
+        public virtual string ExpandedControlText { get; set; }
         public virtual string Footer { get; set; }
         public virtual IntPtr MainIcon { get; set; }
         public virtual IntPtr FooterIcon { get; set; }
@@ -67,7 +68,8 @@ namespace DevPad.Utilities
             config.pszMainInstruction = MainInstruction;
             config.pszContent = Content;
             config.pszVerificationText = VerificationText;
-            config.pszExpandedControlText = ExpandedInformation;
+            config.pszExpandedInformation = ExpandedInformation;
+            config.pszExpandedControlText = ExpandedControlText;
             config.pszCollapsedControlText = CollapsedControlText;
             config.pszFooter = Footer;
             if (MainIcon != IntPtr.Zero)

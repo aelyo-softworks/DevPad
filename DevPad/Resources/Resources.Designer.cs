@@ -61,6 +61,15 @@ namespace DevPad.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Administrator.
+        /// </summary>
+        internal static string Administrator {
+            get {
+                return ResourceManager.GetString("Administrator", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to |All Files (*.*)|*.*.
         /// </summary>
         internal static string AllFilesFilter {
@@ -133,6 +142,15 @@ namespace DevPad.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to The file wasn&apos;t saved because of an unauthorized access error. Do you want to restart DevPad as Administrator?.
+        /// </summary>
+        internal static string ConfirmRestartAsAdmin {
+            get {
+                return ResourceManager.GetString("ConfirmRestartAsAdmin", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
         /// </summary>
         internal static System.Drawing.Icon DevPadIcon {
@@ -152,11 +170,29 @@ namespace DevPad.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Error Details.
+        /// </summary>
+        internal static string ErrorDetails {
+            get {
+                return ResourceManager.GetString("ErrorDetails", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to An error occurred trying to get the text from the editor..
         /// </summary>
         internal static string ErrorGetText {
             get {
                 return ResourceManager.GetString("ErrorGetText", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Hide Details.
+        /// </summary>
+        internal static string HideDetails {
+            get {
+                return ResourceManager.GetString("HideDetails", resourceCulture);
             }
         }
         
@@ -202,6 +238,15 @@ namespace DevPad.Resources {
         internal static string Security {
             get {
                 return ResourceManager.GetString("Security", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Show Details.
+        /// </summary>
+        internal static string ShowDetails {
+            get {
+                return ResourceManager.GetString("ShowDetails", resourceCulture);
             }
         }
         
@@ -256,6 +301,15 @@ namespace DevPad.Resources {
         internal static string SystemInfo {
             get {
                 return ResourceManager.GetString("SystemInfo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to An unexpected error has occurred..
+        /// </summary>
+        internal static string UnhandledException {
+            get {
+                return ResourceManager.GetString("UnhandledException", resourceCulture);
             }
         }
         

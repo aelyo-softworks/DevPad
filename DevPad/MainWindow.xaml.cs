@@ -27,6 +27,7 @@ namespace DevPad
         private readonly ObservableCollection<MonacoTab> _tabs = new ObservableCollection<MonacoTab>();
         private readonly WindowDataContext _dataContext;
         private readonly bool _loading;
+        private bool _restarting;
         private bool _languagesLoaded;
 
         public MainWindow()
@@ -136,7 +137,7 @@ namespace DevPad
         protected override void OnClosing(CancelEventArgs e)
         {
             base.OnClosing(e);
-            if (!DiscardAllChanges())
+            if (!_restarting && !DiscardAllChanges())
             {
                 e.Cancel = true;
                 return;
@@ -344,6 +345,25 @@ namespace DevPad
             Settings.Current.SerializeToConfiguration();
         }
 
+        private async Task WrapUnauthorizedAccess(Func<Task> action)
+        {
+            try
+            {
+                await action();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                throw;
+                if (WindowsUtilities.IsAdministrator)
+                    throw;
+
+                if (this.ShowConfirm(DevPad.Resources.Resources.ConfirmRestartAsAdmin) != MessageBoxResult.Yes)
+                    return;
+
+                RestartAsAdmin(false);
+            }
+        }
+
         private async Task SaveTabAsAsync(MonacoTab tab)
         {
             if (tab == null || tab.IsAdd)
@@ -361,7 +381,7 @@ namespace DevPad
             if (fd.ShowDialog(this) != true)
                 return;
 
-            await tab.SaveAsync(fd.FileName);
+            await WrapUnauthorizedAccess(async () => await tab.SaveAsync(fd.FileName));
         }
 
         private async Task SaveTabAsync(MonacoTab tab)
@@ -371,7 +391,7 @@ namespace DevPad
 
             if (tab.FilePath != null)
             {
-                await tab.SaveAsync(tab.FilePath);
+                await WrapUnauthorizedAccess(async () => await tab.SaveAsync(tab.FilePath));
                 return;
             }
             await SaveTabAsAsync(tab);
@@ -475,6 +495,11 @@ namespace DevPad
             {
                 Title = name + " - " + AssemblyUtilities.GetTitle();
             }
+
+            if (WindowsUtilities.IsAdministrator)
+            {
+                Title += " - " + DevPad.Resources.Resources.Administrator;
+            }
         }
 
         private void OnTabSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -559,6 +584,7 @@ namespace DevPad
             if (!force && WindowsUtilities.IsAdministrator)
                 return false;
 
+            _restarting = true;
             var info = new ProcessStartInfo();
             info.FileName = Environment.GetCommandLineArgs()[0];
             info.UseShellExecute = true;

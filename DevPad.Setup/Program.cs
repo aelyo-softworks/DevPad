@@ -145,8 +145,7 @@ namespace DevPad.Setup
                                 continue;
 #endif
                                 var fileName = Path.GetFileName(file);
-                                if (fileName.EqualsIgnoreCase("DevPad.exe.config") ||
-                                    fileName.EqualsIgnoreCase("Microsoft.Web.WebView2.WinForms.dll"))
+                                if (fileName.EqualsIgnoreCase("Microsoft.Web.WebView2.WinForms.dll"))
                                     continue;
 
                                 archive.CreateEntryFromFile(file, Path.Combine(relativePath, fileName), CompressionLevel.Optimal);

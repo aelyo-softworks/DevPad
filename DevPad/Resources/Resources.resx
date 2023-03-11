@@ -117,6 +117,9 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="Administrator" xml:space="preserve">
+    <value>Administrator</value>
+  </data>
   <data name="AllFilesFilter" xml:space="preserve">
     <value>|All Files (*.*)|*.*</value>
   </data>
@@ -141,6 +144,9 @@
   <data name="ConfirmDiscardDocuments" xml:space="preserve">
     <value>There are unsaved changes to the {0} documents, are you sure you want to discard them?</value>
   </data>
+  <data name="ConfirmRestartAsAdmin" xml:space="preserve">
+    <value>The file wasn't saved because of an unauthorized access error. Do you want to restart DevPad as Administrator?</value>
+  </data>
   <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
   <data name="DevPadIcon" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>DevPad.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
@@ -148,8 +154,14 @@
   <data name="Error" xml:space="preserve">
     <value>Error</value>
   </data>
+  <data name="ErrorDetails" xml:space="preserve">
+    <value>Error Details</value>
+  </data>
   <data name="ErrorGetText" xml:space="preserve">
     <value>An error occurred trying to get the text from the editor.</value>
+  </data>
+  <data name="HideDetails" xml:space="preserve">
+    <value>Hide Details</value>
   </data>
   <data name="OneFileFilter" xml:space="preserve">
     <value>{0} Files ({1})|{1}</value>
@@ -165,6 +177,9 @@
   </data>
   <data name="Security" xml:space="preserve">
     <value>Security</value>
+  </data>
+  <data name="ShowDetails" xml:space="preserve">
+    <value>Show Details</value>
   </data>
   <data name="Software" xml:space="preserve">
     <value>Software</value>
@@ -183,6 +198,9 @@
   </data>
   <data name="SystemInfo" xml:space="preserve">
     <value>System Info</value>
+  </data>
+  <data name="UnhandledException" xml:space="preserve">
+    <value>An unexpected error has occurred.</value>
   </data>
   <data name="Untitled" xml:space="preserve">
     <value>(Untitled)</value>
