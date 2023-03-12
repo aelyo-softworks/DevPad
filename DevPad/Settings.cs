@@ -12,8 +12,10 @@ namespace DevPad
 {
     public class Settings : Serializable<Settings>
     {
-        public static string TempFileDirectory { get; } = Path.Combine(Path.GetDirectoryName(ConfigurationFilePath), "files");
-        public static string DefaultUserDataFolder { get; } = Path.GetDirectoryName(ConfigurationFilePath); // will create an "EBWebView" folder in there
+        public static string AutoSavesDirectoryPath { get; } = Path.Combine(Path.GetDirectoryName(ConfigurationFilePath), "autosaves");
+        public static string DefaultUserDataFolder { get; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), typeof(Settings).Namespace); // will create an "EBWebView" folder in there
+
+        private const int _defaultAutoSavePeriod = 2;
 
         private static readonly Lazy<Settings> _current = new Lazy<Settings>(() =>
         {
@@ -21,6 +23,9 @@ namespace DevPad
             return DeserializeFromConfiguration();
         });
         public static Settings Current => _current.Value;
+
+
+        public static string GetUntitledName(int number) => string.Format(Resources.Resources.Untitled, number);
 
         [DefaultValue(null)]
         [Browsable(false)]
@@ -40,9 +45,17 @@ namespace DevPad
             get
             {
                 var list = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                foreach (var item in RecentFilesPaths)
+                var paths = RecentFilesPaths;
+                if (paths != null)
                 {
-                    list.Add(Path.GetDirectoryName(item.FilePath));
+                    foreach (var item in paths.Where(i => i.UntitledNumber == 0))
+                    {
+                        var dir = Path.GetDirectoryName(item.FilePath);
+                        if (!string.IsNullOrWhiteSpace(dir))
+                        {
+                            list.Add(dir);
+                        }
+                    }
                 }
                 return list.OrderBy(s => s).ToArray();
             }
@@ -64,6 +77,10 @@ namespace DevPad
         [LocalizedCategory("Behavior")]
         public virtual bool OpenFromCurrentTabFolder { get => GetPropertyValue(true); set { SetPropertyValue(value); } }
 
+        [LocalizedCategory("Behavior")]
+        [LocalizedDisplayName("AutoSavePeriodDisplayName")]
+        public virtual int AutoSavePeriod { get => GetPropertyValue(_defaultAutoSavePeriod); set { SetPropertyValue(value); } }
+
         private Dictionary<string, RecentFile> GetRecentFiles()
         {
             var dic = new Dictionary<string, RecentFile>(StringComparer.Ordinal);
@@ -72,10 +89,7 @@ namespace DevPad
             {
                 foreach (var recent in recents)
                 {
-                    if (recent?.FilePath == null)
-                        continue;
-
-                    if (!IOUtilities.PathIsFile(recent.FilePath))
+                    if (recent.UntitledNumber == 0 && !IOUtilities.PathIsFile(recent.FilePath))
                         continue;
 
                     dic[recent.FilePath] = recent;
@@ -97,19 +111,25 @@ namespace DevPad
             }
         }
 
-        public void CopyFrom(Settings settings)
-        {
-            if (settings == null || settings == this)
-                return;
-
-            Theme = settings.Theme;
-        }
-
         public void CleanRecentFiles() => SaveRecentFiles(GetRecentFiles());
         public void ClearRecentFiles()
         {
             RecentFilesPaths = null;
             SerializeToConfiguration();
+        }
+
+        public bool RemoveRecentUntitledFile(int untitledNumber) => RemoveRecentFile(GetUntitledName(untitledNumber));
+        public bool RemoveRecentFile(string filePath)
+        {
+            if (filePath == null)
+                throw new ArgumentNullException(nameof(filePath));
+
+            var dic = GetRecentFiles();
+            if (!dic.Remove(filePath))
+                return false;
+
+            SaveRecentFiles(dic);
+            return true;
         }
 
         public void AddRecentFile(string filePath, int openOrder)
@@ -120,8 +140,14 @@ namespace DevPad
             if (!IOUtilities.PathIsFile(filePath))
                 return;
 
+            AddRecentFile(filePath, openOrder, 0);
+        }
+
+        public void AddRecentUntitledFile(int openOrder, int untitledNumber) => AddRecentFile(GetUntitledName(untitledNumber), openOrder, untitledNumber);
+        private void AddRecentFile(string filePath, int openOrder, int untitledNumber)
+        {
             var dic = GetRecentFiles();
-            dic[filePath] = new RecentFile { FilePath = filePath, OpenOrder = openOrder };
+            dic[filePath] = new RecentFile { FilePath = filePath, OpenOrder = openOrder, UntitledNumber = untitledNumber };
             SaveRecentFiles(dic);
         }
     }

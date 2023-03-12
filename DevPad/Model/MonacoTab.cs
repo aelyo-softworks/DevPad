@@ -5,6 +5,7 @@ using System.IO;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Windows;
 using DevPad.MonacoModel;
 using DevPad.Utilities;
 using Microsoft.Web.WebView2.Core;
@@ -24,11 +25,13 @@ namespace DevPad.Model
         {
             _dpo.Load += DevPadOnLoad;
             _dpo.Event += DevPadEvent;
+            HasContentChanged = false;
         }
 
         public int Index { get; set; }
         public WebView2 WebView { get; } = new WebView2();
         public bool IsAdd => this is MonacoAddTab;
+        public bool IsUntitled => FilePath == null && !IsAdd;
         public virtual string FontFamily => string.Empty;
         public bool IsMonacoReady { get => DictionaryObjectGetPropertyValue(false); private set => DictionaryObjectSetPropertyValue(value); }
         public bool HasContentChanged { get => DictionaryObjectGetPropertyValue(false); private set => DictionaryObjectSetPropertyValue(value); }
@@ -36,6 +39,8 @@ namespace DevPad.Model
         public string ModelLanguageName { get => DictionaryObjectGetNullifiedPropertyValue(); private set => DictionaryObjectSetPropertyValue(value); }
         public string CursorPosition { get => DictionaryObjectGetNullifiedPropertyValue(); private set => DictionaryObjectSetPropertyValue(value); }
         public string CursorSelection { get => DictionaryObjectGetNullifiedPropertyValue(); private set => DictionaryObjectSetPropertyValue(value); }
+        public int UntitledNumber { get; set; }
+        public virtual string Name => IsUntitled ? Settings.GetUntitledName(UntitledNumber) : Path.GetFileName(FilePath);
         public string FilePath
         {
             get => DictionaryObjectGetNullifiedPropertyValue();
@@ -44,19 +49,23 @@ namespace DevPad.Model
                 if (DictionaryObjectSetPropertyValue(value))
                 {
                     OnPropertyChanged(nameof(Name));
+                    OnPropertyChanged(nameof(IsUntitled));
                 }
             }
         }
 
-        public virtual string Name
+        public string AutoSaveFilePath => Path.Combine(Settings.AutoSavesDirectoryPath, AutoSaveId);
+        public string AutoSaveId
         {
             get
             {
-                var path = FilePath;
-                if (path == null)
-                    return DevPad.Resources.Resources.Untitled;
-
-                return Path.GetFileName(path);
+                var id = Conversions.ComputeGuidHash(FilePath != null ? FilePath : UntitledNumber.ToString()).ToString("N");
+                var name = "." + Name;
+                if ((id.Length + name.Length) < 255)
+                {
+                    id += name;
+                }
+                return id;
             }
         }
 
@@ -76,6 +85,34 @@ namespace DevPad.Model
             var startupPath = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName);
             WebView.Source = new Uri(Path.Combine(startupPath, @"Monaco\index.html"));
             IsMonacoReady = true;
+        }
+
+        private bool DeleteAutoSave() => IOUtilities.FileDelete(AutoSaveFilePath, true, false);
+        public async Task AutoSaveWhenIdleAsync(int timer)
+        {
+            var id = AutoSaveId;
+            await DevPadExtensions.DoWhenIdle(autoSaveAsync, timer, id);
+
+            async Task autoSaveAsync()
+            {
+                Program.Trace("id:" + id);
+                try
+                {
+                    var text = await Application.Current.Dispatcher.SafeInvoke(async () => await GetEditorTextAsync());
+                    Program.Trace("text:" + text);
+                    if (text == null)
+                        return;
+
+                    var path = Path.Combine(Settings.AutoSavesDirectoryPath, id);
+                    IOUtilities.FileEnsureDirectory(path);
+                    File.WriteAllText(path, text);
+                    Program.Trace("autosave done id:" + id);
+                }
+                catch (Exception e)
+                {
+                    Program.Trace("autosave e:" + e);
+                }
+            }
         }
 
         private void OnContextMenuRequested(object sender, CoreWebView2ContextMenuRequestedEventArgs e)
@@ -111,7 +148,7 @@ namespace DevPad.Model
             await WebView.ExecuteScriptAsync("editor.setPosition({lineNumber:" + lineNumber + ",column:" + column + "})");
         }
 
-        public async Task ShowFindUI()
+        public async Task ShowFindUIAsync()
         {
             await WebView.ExecuteScriptAsync("editor.trigger('','actions.find')");
         }
@@ -140,28 +177,36 @@ namespace DevPad.Model
             return UnescapeEditorText(text);
         }
 
-        private async Task LoadFileIfAny()
+        private async Task<bool?> LoadFileIfAnyAsync()
         {
-            if (FilePath == null)
-                return;
-
-            var ext = Path.GetExtension(FilePath);
-            var langs = await WebView.GetLanguagesByExtension();
-            string lang;
-            if (langs.TryGetValue(ext, out var langObject) && langObject.Count > 0)
+            var fromAutoSave = false;
+            var filePath = FilePath;
+            var autoSavePath = AutoSaveFilePath;
+            if (autoSavePath != null && IOUtilities.PathIsFile(autoSavePath))
             {
-                lang = langObject[0].Id;
+                filePath = autoSavePath;
+                fromAutoSave = true;
             }
-            else
+            if (filePath == null)
+                return null;
+
+            var lang = LanguageExtensionPoint.DefaultLanguageId;
+            if (FilePath != null)
             {
-                lang = LanguageExtensionPoint.DefaultLanguageId;
+                var ext = Path.GetExtension(FilePath);
+                var langs = await WebView.GetLanguagesByExtension();
+                if (langs.TryGetValue(ext, out var langObject) && langObject.Count > 0)
+                {
+                    lang = langObject[0].Id;
+                }
             }
 
             // not this the most performant load system... we should make chunks
-            _documentText = File.ReadAllText(FilePath);
+            _documentText = File.ReadAllText(filePath);
 
             await WebView.ExecuteScriptAsync($"loadFromHost('{lang}')");
             await SetEditorPositionAsync();
+            return fromAutoSave;
         }
 
         public async Task FocusEditorAsync()
@@ -210,6 +255,11 @@ namespace DevPad.Model
             await WebView.ExecuteScriptAsync("editor.updateOptions({fontSize:'" + size.ToString(CultureInfo.InvariantCulture) + "px'})");
         }
 
+        public async Task FormatDocumentAsync()
+        {
+            await WebView.ExecuteScriptAsync("editor.getAction('editor.action.formatDocument').run()");
+        }
+
         private void DevPadOnLoad(object sender, DevPadLoadEventArgs e)
         {
             e.DocumentText = _documentText;
@@ -229,7 +279,11 @@ namespace DevPad.Model
             switch (e.EventType)
             {
                 case DevPadEventType.ContentChanged:
-                    HasContentChanged = true;
+                    if (IsEditorCreated)
+                    {
+                        HasContentChanged = true;
+                        _ = AutoSaveWhenIdleAsync(Settings.Current.AutoSavePeriod * 1000);
+                    }
                     break;
 
                 case DevPadEventType.EditorLostFocus:
@@ -246,8 +300,6 @@ namespace DevPad.Model
                     break;
 
                 case DevPadEventType.EditorCreated:
-                    IsEditorCreated = true;
-
                     if (!Settings.Current.ShowMinimap)
                     {
                         await EnableMinimapAsync(false);
@@ -255,8 +307,16 @@ namespace DevPad.Model
                     await SetEditorThemeAsync(Settings.Current.Theme);
                     await FocusEditorAsync();
 
-                    await LoadFileIfAny();
-                    HasContentChanged = false;
+                    if (await LoadFileIfAnyAsync() == true)
+                    {
+                        HasContentChanged = true;
+                    }
+                    else
+                    {
+                        HasContentChanged = false;
+                    }
+
+                    IsEditorCreated = true;
 
                     // this will force CursorPosition text to update
                     var pos = await WebView.ExecuteScriptAsync<JsonElement>("editor.getPosition()");
@@ -330,6 +390,18 @@ namespace DevPad.Model
                 text = text.Substring(1, text.Length - 2);
             }
             return Regex.Unescape(text);
+        }
+
+        public async Task CloseAsync(bool deleteAutoSave)
+        {
+            if (deleteAutoSave)
+            {
+                DeleteAutoSave();
+            }
+            else if (HasContentChanged)
+            {
+                await AutoSaveWhenIdleAsync(-1);
+            }
         }
 
         protected virtual void Dispose(bool disposing)

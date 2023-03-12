@@ -97,6 +97,15 @@ namespace DevPad.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Auto-Save Period (sec).
+        /// </summary>
+        internal static string AutoSavePeriodDisplayName {
+            get {
+                return ResourceManager.GetString("AutoSavePeriodDisplayName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Behavior.
         /// </summary>
         internal static string Behavior {
@@ -314,7 +323,7 @@ namespace DevPad.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to (Untitled).
+        ///   Looks up a localized string similar to (Untitled {0}).
         /// </summary>
         internal static string Untitled {
             get {

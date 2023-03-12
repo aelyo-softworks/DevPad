@@ -82,7 +82,11 @@
                 <MenuItem Click="OnExitClick" Header="E_xit" />
             </MenuItem>
             <MenuItem Header="_Edit">
-                <MenuItem Header="_Find" InputGestureText="Ctrl+F" Click="OnFind" />
+                <MenuItem
+                    Click="OnFind"
+                    Header="_Find"
+                    InputGestureText="Ctrl+F" />
+                <MenuItem Click="OnFormat" Header="F_ormat Document" />
             </MenuItem>
             <MenuItem Header="_View">
                 <MenuItem
@@ -97,10 +101,12 @@
                 </MenuItem>
             </MenuItem>
             <MenuItem Header="_Help">
+                <MenuItem Click="OnOpenConfig" Header="_Open Configuration File" />
+                <Separator />
                 <MenuItem
                     x:Name="AboutMenuItem"
                     Click="OnAboutClick"
-                    Header="About DevPad..." />
+                    Header="_About DevPad..." />
             </MenuItem>
         </Menu>
         <TabControl
@@ -114,7 +120,7 @@
                             HorizontalAlignment="Stretch"
                             FontFamily="{Binding FontFamily}"
                             Text="{Binding Name}" />
-                        <TextBlock Text="*" Visibility="{Binding HasContentChanged, Converter={StaticResource ResourceKey=BooleanToVisibilityConverter}}" />
+                        <TextBlock FontWeight="Bold" Text=" *" Visibility="{Binding HasContentChanged, Converter={StaticResource ResourceKey=BooleanToVisibilityConverter}}" />
                         <Button
                             Margin="10,0,0,0"
                             Background="Transparent"

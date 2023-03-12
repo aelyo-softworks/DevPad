@@ -97,6 +97,7 @@ namespace DevPad
                 var msg = e.Exception.GetAllMessages();
                 td.Content = msg;
                 td.Show(IntPtr.Zero);
+                Application.Current.Shutdown();
             }
         }
     }

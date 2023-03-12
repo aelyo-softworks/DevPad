@@ -1,10 +1,13 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Markup.Primitives;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
+using System.Windows.Threading;
 
 namespace DevPad.Utilities
 {
@@ -19,6 +22,77 @@ namespace DevPad.Utilities
         public static MessageBoxResult ShowQuestion(this Window owner, string text) => MessageBox.Show(owner, text, ApplicationTitle + " - " + Resources.Resources.Confirmation, MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No);
         public static void ShowError(this Window owner, string text) => MessageBox.Show(owner, text, ApplicationTitle, MessageBoxButton.OK, MessageBoxImage.Error);
         public static void ShowWarning(this Window owner, string text) => MessageBox.Show(owner, text, ApplicationTitle + " - " + Resources.Resources.Warning, MessageBoxButton.OK, MessageBoxImage.Warning);
+
+        public static void SafeInvoke(this Dispatcher dispatcher, Action action, DispatcherPriority priority = DispatcherPriority.Normal)
+        {
+            if (dispatcher == null)
+                throw new ArgumentNullException(nameof(dispatcher));
+
+            if (action == null)
+                throw new ArgumentNullException(nameof(action));
+
+            if (dispatcher.CheckAccess())
+            {
+                action();
+                return;
+            }
+
+            dispatcher.Invoke(action, priority);
+        }
+
+        public static Task SafeInvoke(this Dispatcher dispatcher, Func<Task> action, DispatcherPriority priority = DispatcherPriority.Normal)
+        {
+            if (dispatcher == null)
+                throw new ArgumentNullException(nameof(dispatcher));
+
+            if (action == null)
+                throw new ArgumentNullException(nameof(action));
+
+            if (dispatcher.CheckAccess())
+                return action();
+
+            var tcs = new TaskCompletionSource<object>();
+            dispatcher.Invoke(() =>
+            {
+                try
+                {
+                    action();
+                    tcs.SetResult(null);
+                }
+                catch (Exception ex)
+                {
+                    tcs.SetException(ex);
+                }
+            }, priority);
+            return tcs.Task;
+        }
+
+        public static Task<T> SafeInvoke<T>(this Dispatcher dispatcher, Func<Task<T>> action, DispatcherPriority priority = DispatcherPriority.Normal)
+        {
+            if (dispatcher == null)
+                throw new ArgumentNullException(nameof(dispatcher));
+
+            if (action == null)
+                throw new ArgumentNullException(nameof(action));
+
+            if (dispatcher.CheckAccess())
+                return action();
+
+            var tcs = new TaskCompletionSource<T>();
+            dispatcher.Invoke(async () =>
+            {
+                try
+                {
+                    var item = await action();
+                    tcs.SetResult(item);
+                }
+                catch (Exception ex)
+                {
+                    tcs.SetException(ex);
+                }
+            }, priority);
+            return tcs.Task;
+        }
 
         public static T GetSelectedDataContext<T>(this TreeView treeView)
         {

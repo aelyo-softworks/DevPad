@@ -5,7 +5,6 @@ using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
-using System.Threading;
 using System.Xml;
 using System.Xml.Serialization;
 
@@ -17,30 +16,7 @@ namespace DevPad.Utilities
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        private Timer _timer;
-
-        public void SerializeToConfigurationWhenIdle(int dueTime = 1000)
-        {
-            if (dueTime <= 0)
-            {
-                SerializeToConfiguration();
-                return;
-            }
-
-            var timer = _timer;
-            if (timer == null)
-            {
-                _timer = new Timer(state =>
-                {
-                    SerializeToConfiguration();
-                }, null, dueTime, Timeout.Infinite);
-            }
-            else
-            {
-                timer.Change(dueTime, Timeout.Infinite);
-            }
-        }
-
+        public void SerializeToConfigurationWhenIdle(int dueTime = 1000) => DevPadExtensions.DoWhenIdle(SerializeToConfiguration, dueTime);
         public void SerializeToConfiguration() => Serialize(ConfigurationFilePath);
         public void Serialize(XmlWriter writer)
         {
@@ -74,7 +50,8 @@ namespace DevPad.Utilities
             if (filePath == null)
                 throw new ArgumentNullException(nameof(filePath));
 
-            string dir = Path.GetDirectoryName(filePath);
+            Program.Trace("path:" + filePath);
+            var dir = Path.GetDirectoryName(filePath);
             if (dir != null && !Directory.Exists(dir))
             {
                 Directory.CreateDirectory(dir);
@@ -147,7 +124,7 @@ namespace DevPad.Utilities
             return clone;
         }
 
-        private static readonly Lazy<string> _configurationFilePath = new Lazy<string>(() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), typeof(T).Namespace, typeof(T).Name + ".config"), true);
+        private static readonly Lazy<string> _configurationFilePath = new Lazy<string>(() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), typeof(T).Namespace, typeof(T).Name + ".config"), true);
         public static string ConfigurationFilePath => _configurationFilePath.Value;
 
         public static void BackupFromConfiguration(TimeSpan? maxDuration = null) => Backup(ConfigurationFilePath, maxDuration);
