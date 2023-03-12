@@ -163,7 +163,7 @@ namespace DevPad.Setup
             var version = AssemblyUtilities.GetFileVersion();
             var product = AssemblyUtilities.GetProduct();
             var link = new Link();
-            link.Path = Path.Combine(targetDir, version, "DevPad.exe"); ;
+            link.Path = Path.Combine(targetDir, version, "DevPad.exe");
             link.Save(Path.Combine(targetDir, product + ".lnk"));
 
             var programs = Environment.GetFolderPath(Environment.SpecialFolder.Programs);

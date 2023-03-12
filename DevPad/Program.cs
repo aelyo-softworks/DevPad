@@ -41,12 +41,6 @@ namespace DevPad
             }
 
             WindowsApplication.PublisherName = AssemblyUtilities.GetCompany();
-
-            // for some reason, if I add these, they will not appear as recent items in TaskBar's JumpList...
-            //WindowsApplication.FileExtensions.Add(".txt");
-            //WindowsApplication.FileExtensions.Add(".json");
-            //WindowsApplication.FileExtensions.Add(".xml");
-            //WindowsApplication.FileExtensions.Add(".csv");
             WindowsApplication.RegisterProcess();
 
             var unregister = CommandLine.GetArgument("unregister", false);
@@ -56,7 +50,6 @@ namespace DevPad
                 return;
             }
 
-            WindowsApplication.Register();
             var app = new App();
             Application.Current.DispatcherUnhandledException += Current_DispatcherUnhandledException;
             app.InitializeComponent();

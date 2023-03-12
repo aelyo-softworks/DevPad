@@ -39,6 +39,15 @@ namespace DevPad.MonacoModel
                     }
                 }
             }
+
+            if (_languagesByExtension.Count > 0)
+            {
+                foreach (var kv in _languagesByExtension)
+                {
+                    Program.WindowsApplication.FileExtensions.Add(kv.Key);
+                }
+                Program.WindowsApplication.Register();
+            }
         }
 
         public static async ValueTask<string> GetLanguageName(this WebView2 webView, string id)

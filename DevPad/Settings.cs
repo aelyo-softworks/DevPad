@@ -124,6 +124,7 @@ namespace DevPad
             if (filePath == null)
                 throw new ArgumentNullException(nameof(filePath));
 
+            Program.Trace("file:" + filePath);
             var dic = GetRecentFiles();
             if (!dic.Remove(filePath))
                 return false;
@@ -146,6 +147,7 @@ namespace DevPad
         public void AddRecentUntitledFile(int openOrder, int untitledNumber) => AddRecentFile(GetUntitledName(untitledNumber), openOrder, untitledNumber);
         private void AddRecentFile(string filePath, int openOrder, int untitledNumber)
         {
+            Program.Trace("file:" + filePath + " order:" + openOrder + " num:" + untitledNumber);
             var dic = GetRecentFiles();
             dic[filePath] = new RecentFile { FilePath = filePath, OpenOrder = openOrder, UntitledNumber = untitledNumber };
             SaveRecentFiles(dic);

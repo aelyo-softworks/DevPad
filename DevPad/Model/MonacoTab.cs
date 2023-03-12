@@ -95,23 +95,13 @@ namespace DevPad.Model
 
             async Task autoSaveAsync()
             {
-                Program.Trace("id:" + id);
-                try
-                {
-                    var text = await Application.Current.Dispatcher.SafeInvoke(async () => await GetEditorTextAsync());
-                    Program.Trace("text:" + text);
-                    if (text == null)
-                        return;
+                var text = await Application.Current.Dispatcher.SafeInvoke(async () => await GetEditorTextAsync());
+                if (text == null)
+                    return;
 
-                    var path = Path.Combine(Settings.AutoSavesDirectoryPath, id);
-                    IOUtilities.FileEnsureDirectory(path);
-                    File.WriteAllText(path, text);
-                    Program.Trace("autosave done id:" + id);
-                }
-                catch (Exception e)
-                {
-                    Program.Trace("autosave e:" + e);
-                }
+                var path = Path.Combine(Settings.AutoSavesDirectoryPath, id);
+                IOUtilities.FileEnsureDirectory(path);
+                File.WriteAllText(path, text);
             }
         }
 

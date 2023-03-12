@@ -16,6 +16,7 @@ using DevPad.Model;
 using DevPad.MonacoModel;
 using DevPad.Utilities;
 using DevPad.Utilities.Grid;
+using Microsoft.Web.WebView2.Core;
 using Microsoft.Win32;
 
 namespace DevPad
@@ -27,7 +28,8 @@ namespace DevPad
         private readonly ObservableCollection<MonacoTab> _tabs = new ObservableCollection<MonacoTab>();
         private readonly WindowDataContext _dataContext;
         private readonly bool _loading;
-        //private bool _restarting;
+        private bool _webViewUnavailable;
+        private bool _closing;
         private bool _languagesLoaded;
 
         public MainWindow()
@@ -58,7 +60,7 @@ namespace DevPad
                     {
                         if (file.UntitledNumber > 0)
                         {
-                            _ = AddTabAsync(null);
+                            _ = AddTabAsync(null, file.UntitledNumber);
                         }
                         else
                         {
@@ -90,6 +92,21 @@ namespace DevPad
 
         public MonacoTab CurrentTab => TabMain.SelectedItem is MonacoTab tab && !tab.IsAdd ? tab : null;
         public IEnumerable<MonacoTab> Tabs => _tabs.Where(t => !t.IsAdd);
+
+        public static void ShowSystemInfo(Window window = null)
+        {
+            var si = new SystemInformation();
+            var dlg = new ObjectProperties(si, true);
+            dlg.Height = 800;
+            dlg.Width = 800;
+            dlg.Title = DevPad.Resources.Resources.SystemInfo;
+            dlg.Owner = window;
+            if (dlg.Owner == null)
+            {
+                dlg.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+            }
+            dlg.ShowDialog();
+        }
 
         private class WindowDataContext : INotifyPropertyChanged
         {
@@ -151,8 +168,14 @@ namespace DevPad
         protected override async void OnClosing(CancelEventArgs e)
         {
             base.OnClosing(e);
-            await CloseAllTabs();
-            Settings.Current.SerializeToConfigurationWhenIdle(0); // flush if any change in queue
+            if (!_closing)
+            {
+                _closing = true;
+                e.Cancel = true;
+                await CloseAllTabs(false, false, true);
+                Settings.Current.SerializeToConfigurationWhenIdle(0); // flush if any change in queue
+                Close();
+            }
         }
 
         protected override async void OnPreviewKeyDown(KeyEventArgs e)
@@ -202,7 +225,7 @@ namespace DevPad
                 }
                 else
                 {
-                    await CurrentTab?.MoveWidgetsToEndAsync(); ;
+                    await CurrentTab?.MoveWidgetsToEndAsync();
                 }
             }
             base.OnPreviewKeyDown(e);
@@ -219,7 +242,7 @@ namespace DevPad
 
             if (_tabs.Count == 2 && _tabs[0].FilePath == null && !_tabs[0].HasContentChanged)
             {
-                await RemoveTabAsync(_tabs[0], false, false);
+                await RemoveTabAsync(_tabs[0], false, false, false);
             }
 
             tab = await AddTabAsync(filePath);
@@ -230,7 +253,7 @@ namespace DevPad
             SetTitle();
         }
 
-        private async Task RemoveTabAsync(MonacoTab tab, bool deleteAutoSave, bool checkAtLeastOneTab)
+        private async Task RemoveTabAsync(MonacoTab tab, bool deleteAutoSave, bool checkAtLeastOneTab, bool removeFromRecent)
         {
             if (tab == null || tab.IsAdd)
                 return;
@@ -243,32 +266,37 @@ namespace DevPad
             _tabs.Remove(tab);
             tab.Dispose();
 
+            Program.Trace("tab:" + tab);
             // always ensure we have one (untitled) tab opened
-            if (checkAtLeastOneTab && _tabs.Count == 1)
+            if ((checkAtLeastOneTab || _closing) && _tabs.Count == 1)
             {
                 await AddTabAsync(null);
             }
 
-            if (tab.FilePath != null)
+            if (removeFromRecent)
             {
-                Settings.Current.AddRecentFile(tab.FilePath, 0);
-                Settings.Current.SerializeToConfigurationWhenIdle();
-            }
-            else if (tab.IsUntitled)
-            {
-                Settings.Current.RemoveRecentUntitledFile(tab.UntitledNumber);
-                Settings.Current.SerializeToConfigurationWhenIdle();
+                if (tab.FilePath != null)
+                {
+                    Settings.Current.AddRecentFile(tab.FilePath, 0);
+                    Settings.Current.SerializeToConfigurationWhenIdle();
+                }
+                else if (tab.IsUntitled)
+                {
+                    Settings.Current.RemoveRecentUntitledFile(tab.UntitledNumber);
+                    Settings.Current.SerializeToConfigurationWhenIdle();
+                }
             }
         }
 
-        private async Task<MonacoTab> AddTabAsync(string filePath)
+        private async Task<MonacoTab> AddTabAsync(string filePath, int untitledNumber = 0)
         {
             try
             {
+                Program.Trace("path:" + filePath);
                 var newTab = new MonacoTab();
                 if (filePath == null)
                 {
-                    newTab.UntitledNumber = _tabs.Count(t => t.IsUntitled) + 1;
+                    newTab.UntitledNumber = untitledNumber != 0 ? untitledNumber : _tabs.Count(t => t.IsUntitled) + 1;
                 }
 
                 var c = _tabs.Count - 1;
@@ -280,44 +308,48 @@ namespace DevPad
                 newTab.PropertyChanged += OnTabPropertyChanged;
                 return newTab;
             }
-            catch (Exception ex)
+            catch (WebView2RuntimeNotFoundException ex)
             {
-                // handle WebViewRuntime not properly installed
-                // point to evergreen for download
-                Program.Trace(ex);
-                using (var td = new TaskDialog())
+                if (!_webViewUnavailable)
                 {
-                    const int sysInfoId = 1;
-                    td.Event += (s, e) =>
+                    _webViewUnavailable = true;
+                    // handle WebViewRuntime not properly installed
+                    // point to evergreen for download
+                    Program.Trace(ex);
+                    using (var td = new TaskDialog())
                     {
-                        if (e.Message == TASKDIALOG_NOTIFICATIONS.TDN_HYPERLINK_CLICKED)
+                        const int sysInfoId = 1;
+                        td.Event += (s, e) =>
                         {
-                            WindowsUtilities.SendMessage(e.Hwnd, MessageDecoder.WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
-                        }
-                        else if (e.Message == TASKDIALOG_NOTIFICATIONS.TDN_BUTTON_CLICKED)
-                        {
-                            var id = (int)(long)e.WParam;
-                            if (id == sysInfoId)
+                            if (e.Message == TASKDIALOG_NOTIFICATIONS.TDN_HYPERLINK_CLICKED)
                             {
-                                ShowSystemInfo(null);
-                                e.HResult = 1; // S_FALSE => don't close
+                                WindowsUtilities.SendMessage(e.Hwnd, MessageDecoder.WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
                             }
-                        }
-                    };
+                            else if (e.Message == TASKDIALOG_NOTIFICATIONS.TDN_BUTTON_CLICKED)
+                            {
+                                var id = (int)(long)e.WParam;
+                                if (id == sysInfoId)
+                                {
+                                    ShowSystemInfo(null);
+                                    e.HResult = 1; // S_FALSE => don't close
+                                }
+                            }
+                        };
 
-                    td.Flags |= TASKDIALOG_FLAGS.TDF_SIZE_TO_CONTENT | TASKDIALOG_FLAGS.TDF_ENABLE_HYPERLINKS | TASKDIALOG_FLAGS.TDF_ALLOW_DIALOG_CANCELLATION;
-                    td.CommonButtonFlags |= TASKDIALOG_COMMON_BUTTON_FLAGS.TDCBF_CLOSE_BUTTON;
-                    td.MainIcon = TaskDialog.TD_ERROR_ICON;
-                    td.Title = WinformsUtilities.ApplicationTitle;
-                    td.MainInstruction = DevPad.Resources.Resources.WebViewError;
-                    td.CustomButtons.Add(sysInfoId, DevPad.Resources.Resources.SystemInfo);
-                    var msg = ex.GetAllMessages();
-                    msg += Environment.NewLine + Environment.NewLine;
-                    msg += DevPad.Resources.Resources.WebViewDownload;
-                    td.Content = msg;
-                    td.Show(this);
+                        td.Flags |= TASKDIALOG_FLAGS.TDF_SIZE_TO_CONTENT | TASKDIALOG_FLAGS.TDF_ENABLE_HYPERLINKS | TASKDIALOG_FLAGS.TDF_ALLOW_DIALOG_CANCELLATION;
+                        td.CommonButtonFlags |= TASKDIALOG_COMMON_BUTTON_FLAGS.TDCBF_CLOSE_BUTTON;
+                        td.MainIcon = TaskDialog.TD_ERROR_ICON;
+                        td.Title = WinformsUtilities.ApplicationTitle;
+                        td.MainInstruction = DevPad.Resources.Resources.WebViewError;
+                        td.CustomButtons.Add(sysInfoId, DevPad.Resources.Resources.SystemInfo);
+                        var msg = ex.GetAllMessages();
+                        msg += Environment.NewLine + Environment.NewLine;
+                        msg += DevPad.Resources.Resources.WebViewDownload;
+                        td.Content = msg;
+                        td.Show(this);
+                    }
                 }
-                Close();
+                Application.Current.Shutdown();
                 return null;
             }
         }
@@ -334,7 +366,7 @@ namespace DevPad
             return this.ShowConfirm(string.Format(DevPad.Resources.Resources.ConfirmDiscardDocument, tab.Name)) == MessageBoxResult.Yes;
         }
 
-        private async Task CloseTab(MonacoTab tab, bool deleteAutoSave)
+        private async Task CloseTab(MonacoTab tab, bool deleteAutoSave, bool removeFromRecent)
         {
             if (tab == null || tab.IsAdd)
                 return;
@@ -342,14 +374,19 @@ namespace DevPad
             if (!DiscardChanges(tab))
                 return;
 
-            await RemoveTabAsync(tab, deleteAutoSave, true);
+            await RemoveTabAsync(tab, deleteAutoSave, true, removeFromRecent);
         }
 
-        private async Task CloseAllTabs()
+        private async Task CloseAllTabs(bool checkAtLeastOneTab, bool removeFromRecent, bool removeAllTabs)
         {
             foreach (var tab in Tabs.ToArray())
             {
-                await RemoveTabAsync(tab, false, true);
+                await RemoveTabAsync(tab, false, checkAtLeastOneTab, removeFromRecent);
+            }
+
+            if (removeAllTabs)
+            {
+                _tabs.Clear();
             }
         }
 
@@ -452,42 +489,25 @@ namespace DevPad
             }
         }
 
-        public static void ShowSystemInfo(Window window = null)
+        private async Task<(string, int)> BuildFilterAsync()
         {
-            var si = new SystemInformation();
-            var dlg = new ObjectProperties(si, true);
-            dlg.Height = 800;
-            dlg.Width = 800;
-            dlg.Title = DevPad.Resources.Resources.SystemInfo;
-            dlg.Owner = window;
-            if (dlg.Owner == null)
+            var languages = await CurrentTab.WebView.GetLanguages();
+            var sb = new StringBuilder();
+            var index = 0;
+            foreach (var kv in languages.OrderBy(k => k.Value.Name))
             {
-                dlg.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+                if (kv.Value.Extensions == null || kv.Value.Extensions.Length == 0)
+                    continue;
+
+                if (sb.Length > 0)
+                {
+                    sb.Append('|');
+                }
+                sb.Append(string.Format(DevPad.Resources.Resources.OneFileFilter, kv.Value.Name, "*" + string.Join(";*", kv.Value.Extensions)));
+                index++;
             }
-            dlg.ShowDialog();
-        }
-
-        private void OnCloseCommand(object sender, ExecutedRoutedEventArgs e) => _ = CloseTab(CurrentTab, true);
-        private async void OnSaveAsCommand(object sender, ExecutedRoutedEventArgs e) => await SaveTabAsAsync(CurrentTab);
-        private async void OnSaveCommand(object sender, ExecutedRoutedEventArgs e) => await SaveTabAsync(CurrentTab);
-        private async void OnSaveAllCommand(object sender, ExecutedRoutedEventArgs e) => await SaveAllTabsAsync();
-        private async void OnNewCommand(object sender, ExecutedRoutedEventArgs e) => await AddTabAsync(null);
-        private async void OnOpenCommand(object sender, ExecutedRoutedEventArgs e) => await OpenAsync(null);
-        private async void OnCloseAll(object sender, RoutedEventArgs e) => await CloseAllTabs();
-        private void OnCloseTab(object sender, RoutedEventArgs e) => _ = CloseTab(e.GetDataContext<MonacoTab>(), true);
-        private void OnExitClick(object sender, RoutedEventArgs e) => Close();
-        private void OnRestartAsAdmin(object sender, RoutedEventArgs e) => RestartAsAdmin(true);
-        private void OnClearRecentList(object sender, RoutedEventArgs e) => Settings.Current.ClearRecentFiles();
-        private void OnFind(object sender, RoutedEventArgs e) => _ = CurrentTab?.ShowFindUIAsync();
-        private void OnFormat(object sender, RoutedEventArgs e) => _ = CurrentTab?.FormatDocumentAsync();
-        private void OnOpenConfig(object sender, RoutedEventArgs e) => _ = OpenFileAsync(Settings.ConfigurationFilePath);
-        private async void OnAddTab(object sender, RoutedEventArgs e) => await AddTabAsync(null);
-
-        private void OnAboutClick(object sender, RoutedEventArgs e)
-        {
-            var dlg = new About();
-            dlg.Owner = this;
-            dlg.ShowDialog();
+            sb.Append(DevPad.Resources.Resources.AllFilesFilter);
+            return (sb.ToString(), index);
         }
 
         private void SetTitle()
@@ -515,13 +535,53 @@ namespace DevPad
             }
         }
 
+        private bool RestartAsAdmin(bool force)
+        {
+            if (!force && WindowsUtilities.IsAdministrator)
+                return false;
+
+            var info = new ProcessStartInfo();
+            info.FileName = Environment.GetCommandLineArgs()[0];
+            info.UseShellExecute = true;
+            info.Verb = "runas"; // Provides Run as Administrator
+            if (Process.Start(info) != null)
+            {
+                Close();
+                return true;
+            }
+            return false;
+        }
+
+        private void OnCloseCommand(object sender, ExecutedRoutedEventArgs e) => _ = CloseTab(CurrentTab, true, true);
+        private async void OnSaveAsCommand(object sender, ExecutedRoutedEventArgs e) => await SaveTabAsAsync(CurrentTab);
+        private async void OnSaveCommand(object sender, ExecutedRoutedEventArgs e) => await SaveTabAsync(CurrentTab);
+        private async void OnSaveAllCommand(object sender, ExecutedRoutedEventArgs e) => await SaveAllTabsAsync();
+        private async void OnNewCommand(object sender, ExecutedRoutedEventArgs e) => await AddTabAsync(null);
+        private async void OnOpenCommand(object sender, ExecutedRoutedEventArgs e) => await OpenAsync(null);
+        private async void OnCloseAll(object sender, RoutedEventArgs e) => await CloseAllTabs(true, true, false);
+        private void OnCloseTab(object sender, RoutedEventArgs e) => _ = CloseTab(e.GetDataContext<MonacoTab>(), true, true);
+        private void OnExitClick(object sender, RoutedEventArgs e) => Close();
+        private void OnRestartAsAdmin(object sender, RoutedEventArgs e) => RestartAsAdmin(true);
+        private void OnClearRecentList(object sender, RoutedEventArgs e) => Settings.Current.ClearRecentFiles();
+        private void OnFind(object sender, RoutedEventArgs e) => _ = CurrentTab?.ShowFindUIAsync();
+        private void OnFormat(object sender, RoutedEventArgs e) => _ = CurrentTab?.FormatDocumentAsync();
+        private void OnOpenConfig(object sender, RoutedEventArgs e) => _ = OpenFileAsync(Settings.ConfigurationFilePath);
+        private async void OnAddTab(object sender, RoutedEventArgs e) => await AddTabAsync(null);
+
+        private void OnAboutClick(object sender, RoutedEventArgs e)
+        {
+            var dlg = new About();
+            dlg.Owner = this;
+            dlg.ShowDialog();
+        }
+
         private void OnTabSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             var tab = CurrentTab;
-            if (tab != null)
-            {
-                _dataContext.RaisePropertyChanged(null);
-            }
+            if (tab == null)
+                return;
+
+            _dataContext.RaisePropertyChanged(null);
 
             // never end up with + tab selected
             if (TabMain.SelectedItem is MonacoAddTab && TabMain.Items.Count > 1)
@@ -531,10 +591,10 @@ namespace DevPad
 
             SetTitle();
 
-            if (!_loading && CurrentTab != null && !CurrentTab.IsAdd)
+            if (!_loading && !_closing && !tab.IsAdd)
             {
                 var active = Settings.Current.ActiveFilePath;
-                var name = CurrentTab.IsUntitled ? CurrentTab.Name : CurrentTab.FilePath;
+                var name = tab.IsUntitled ? tab.Name : tab.FilePath;
                 if (active != name)
                 {
                     Settings.Current.ActiveFilePath = name;
@@ -545,6 +605,7 @@ namespace DevPad
 
         private void OnTabPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
+            //Program.Trace("changed:" + e.PropertyName);
             switch (e.PropertyName)
             {
                 case nameof(MonacoTab.IsEditorCreated):
@@ -604,24 +665,6 @@ namespace DevPad
                     }
                     break;
             }
-        }
-
-        private bool RestartAsAdmin(bool force)
-        {
-            if (!force && WindowsUtilities.IsAdministrator)
-                return false;
-
-            //_restarting = true;
-            var info = new ProcessStartInfo();
-            info.FileName = Environment.GetCommandLineArgs()[0];
-            info.UseShellExecute = true;
-            info.Verb = "runas"; // Provides Run as Administrator
-            if (Process.Start(info) != null)
-            {
-                Close();
-                return true;
-            }
-            return false;
         }
 
         private async void OnLanguagesOpened(object sender, RoutedEventArgs e)
@@ -687,14 +730,14 @@ namespace DevPad
                 RestartAsAdminMenuItem.Visibility = Visibility.Visible;
             }
 
-            var files = Settings.Current.RecentFilesPaths.Where(f => f.UntitledNumber == 0).ToArray();
+            var files = Settings.Current.RecentFilesPaths?.Where(f => f.UntitledNumber == 0).ToArray();
             RecentFilesMenuItem.IsEnabled = files != null && files.Length > 0;
             if (RecentFilesMenuItem.IsEnabled)
             {
                 RecentFilesMenuItem.Items.Clear();
                 foreach (var file in files)
                 {
-                    var item = new MenuItem { Header = file };
+                    var item = new MenuItem { Header = file.DisplayName };
                     RecentFilesMenuItem.Items.Add(item);
                     item.Click += (s, e2) =>
                     {
@@ -726,33 +769,6 @@ namespace DevPad
                     };
                 }
             }
-        }
-
-        private static string GetExtFilter(string ext, string name = null)
-        {
-            name = name ?? ext;
-            return string.Format(DevPad.Resources.Resources.OneFileFilter, name, "*" + ext);
-        }
-
-        private async Task<(string, int)> BuildFilterAsync()
-        {
-            var languages = await CurrentTab.WebView.GetLanguages();
-            var sb = new StringBuilder();
-            var index = 0;
-            foreach (var kv in languages.OrderBy(k => k.Value.Name))
-            {
-                if (kv.Value.Extensions == null || kv.Value.Extensions.Length == 0)
-                    continue;
-
-                if (sb.Length > 0)
-                {
-                    sb.Append('|');
-                }
-                sb.Append(string.Format(DevPad.Resources.Resources.OneFileFilter, kv.Value.Name, "*" + string.Join(";*", kv.Value.Extensions)));
-                index++;
-            }
-            sb.Append(DevPad.Resources.Resources.AllFilesFilter);
-            return (sb.ToString(), index);
         }
     }
 }

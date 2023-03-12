@@ -9,12 +9,8 @@ namespace DevPad
         public int OpenOrder { get; set; }
         public int UntitledNumber { get; set; }
 
-        public override string ToString()
-        {
-            if (FilePath != null)
-                return LastAccessTime + " " + FilePath;
+        public string DisplayName => LastAccessTime + " " + FilePath;
 
-            return LastAccessTime + " " + Settings.GetUntitledName(UntitledNumber);
-        }
+        public override string ToString() => LastAccessTime + (OpenOrder != 0 ? " {#" + OpenOrder + "}" : null) + " " + (FilePath != null ? FilePath : Settings.GetUntitledName(UntitledNumber));
     }
 }
