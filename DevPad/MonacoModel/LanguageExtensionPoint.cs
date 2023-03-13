@@ -1,4 +1,7 @@
-﻿namespace DevPad.MonacoModel
+﻿using System.Windows.Controls;
+using DevPad.Utilities;
+
+namespace DevPad.MonacoModel
 {
     // https://microsoft.github.io/monaco-editor/docs.html#interfaces/languages.ILanguageExtensionPoint.html
     public class LanguageExtensionPoint
@@ -25,6 +28,23 @@
                     return Id;
 
                 return Aliases[0];
+            }
+        }
+
+
+        public void SetImage(MenuItem item, SHIL shil = SHIL.SHIL_SMALL)
+        {
+            if (Extensions == null || item == null)
+                return;
+
+            foreach (var ext in Extensions)
+            {
+                var image = IconUtilities.GetExtensionIconAsImageSource(ext, shil);
+                if (image != null)
+                {
+                    item.Icon = new Image { Source = image };
+                    break;
+                }
             }
         }
     }
