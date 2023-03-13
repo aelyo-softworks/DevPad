@@ -24,6 +24,7 @@ namespace DevPad.Utilities
             AppUserModelId = appUserModelId;
             ProgId = progId ?? appUserModelId;
             FriendlyName = friendlyName;
+            FileExtensions.Add(ApplicationIconProgId);
         }
 
         public string FriendlyName { get; }
@@ -31,6 +32,7 @@ namespace DevPad.Utilities
         public string ProgId { get; }
         public string AppUserModelId { get; }
         public IList<string> FileExtensions => _fileExtensions;
+        internal string ApplicationIconProgId => ".iconAelyo"; // this is only used to be able to identify the app's icon in the imagelist...
 
         public void RegisterProcess()
         {
@@ -47,6 +49,7 @@ namespace DevPad.Utilities
             {
                 key.SetValue("FriendlyTypeName", FriendlyName);
                 key.SetValue("AppUserModelID", AppUserModelId);
+                key.SetValue("FileExtensions", string.Join(",", FileExtensions));
             }
 
             using (var key = WindowsUtilities.EnsureSubKey(hkcu, Path.Combine(basePath, ProgId, "CurVer")))
@@ -81,8 +84,22 @@ namespace DevPad.Utilities
             var appName = Path.GetFileName(Process.GetCurrentProcess().MainModule.FileName);
             var hkcu = Registry.CurrentUser;
             var basePath = @"Software\Classes";
+
+            // get saved file extensions
+            using (var key = hkcu.OpenSubKey(Path.Combine(basePath, ProgId), false))
+            {
+                if (key != null)
+                {
+                    foreach (var ext in Conversions.SplitToList<string>(key.GetValue("FileExtensions") as string, ','))
+                    {
+                        FileExtensions.Add(ext);
+                    }
+                }
+            }
+
             hkcu.DeleteSubKeyTree(Path.Combine(basePath, ProgId), false);
             hkcu.DeleteSubKeyTree(Path.Combine(basePath, "Applications", appName), false);
+
             foreach (var ext in FileExtensions)
             {
                 using (var key = hkcu.OpenSubKey(Path.Combine(basePath, ext, "OpenWithProgids"), true))
@@ -90,6 +107,7 @@ namespace DevPad.Utilities
                     key.DeleteValue(ProgId, false);
                 }
             }
+            hkcu.DeleteSubKeyTree(Path.Combine(basePath, ApplicationIconProgId), false);
         }
 
         public void PublishRecentList()

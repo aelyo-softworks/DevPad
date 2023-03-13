@@ -24,10 +24,12 @@ namespace DevPad
     public partial class MainWindow : Window
     {
         public static RoutedCommand SaveAll = new RoutedCommand();
+        public static MainWindow Current => (MainWindow)Application.Current.MainWindow;
 
         private readonly ObservableCollection<MonacoTab> _tabs = new ObservableCollection<MonacoTab>();
         private readonly WindowDataContext _dataContext;
         private readonly bool _loading;
+        private bool _onChangedShown;
         private bool _webViewUnavailable;
         private bool _closing;
         private bool _languagesLoaded;
@@ -37,11 +39,11 @@ namespace DevPad
             InitializeComponent();
             NewMenuItem.Icon = NewMenuItem.Icon ?? new Image { Source = IconUtilities.GetStockIconImageSource(StockIconId.DOCASSOC) };
             AboutMenuItem.Icon = AboutMenuItem.Icon ?? new Image { Source = IconUtilities.GetStockIconImageSource(StockIconId.HELP) };
+            FindMenuItem.Icon = FindMenuItem.Icon ?? new Image { Source = IconUtilities.GetStockIconImageSource(StockIconId.FIND) };
 
             _dataContext = new WindowDataContext(this);
             DataContext = _dataContext;
             TabMain.ItemsSource = _tabs;
-            Settings.Current.CleanRecentFiles();
 
             _tabs.Add(new MonacoAddTab());
 
@@ -260,6 +262,7 @@ namespace DevPad
 
             tab.PropertyChanged -= OnTabPropertyChanged;
             tab.MonacoEvent -= OnTabMonacoEvent;
+            tab.FileChanged -= OnTabFileChanged;
 
             // close must happen before we remove the control
             await tab.CloseAsync(deleteAutoSave);
@@ -305,6 +308,7 @@ namespace DevPad
                 newTab.Index = TabMain.SelectedIndex;
                 await newTab.InitializeAsync(filePath);
                 newTab.MonacoEvent += OnTabMonacoEvent;
+                newTab.FileChanged += OnTabFileChanged;
                 newTab.PropertyChanged += OnTabPropertyChanged;
                 return newTab;
             }
@@ -366,7 +370,7 @@ namespace DevPad
             return this.ShowConfirm(string.Format(DevPad.Resources.Resources.ConfirmDiscardDocument, tab.Name)) == MessageBoxResult.Yes;
         }
 
-        private async Task CloseTab(MonacoTab tab, bool deleteAutoSave, bool removeFromRecent)
+        public async Task CloseTabAsync(MonacoTab tab, bool deleteAutoSave, bool removeFromRecent)
         {
             if (tab == null || tab.IsAdd)
                 return;
@@ -562,14 +566,14 @@ namespace DevPad
             return false;
         }
 
-        private void OnCloseCommand(object sender, ExecutedRoutedEventArgs e) => _ = CloseTab(CurrentTab, true, true);
+        private void OnCloseCommand(object sender, ExecutedRoutedEventArgs e) => _ = CloseTabAsync(CurrentTab, true, true);
         private async void OnSaveAsCommand(object sender, ExecutedRoutedEventArgs e) => await SaveTabAsAsync(CurrentTab);
         private async void OnSaveCommand(object sender, ExecutedRoutedEventArgs e) => await SaveTabAsync(CurrentTab);
         private async void OnSaveAllCommand(object sender, ExecutedRoutedEventArgs e) => await SaveAllTabsAsync();
         private async void OnNewCommand(object sender, ExecutedRoutedEventArgs e) => await AddTabAsync(null);
         private async void OnOpenCommand(object sender, ExecutedRoutedEventArgs e) => await OpenAsync(null);
         private async void OnCloseAll(object sender, RoutedEventArgs e) => await CloseAllTabs(true, true, false);
-        private void OnCloseTab(object sender, RoutedEventArgs e) => _ = CloseTab(e.GetDataContext<MonacoTab>(), true, true);
+        private void OnCloseTab(object sender, RoutedEventArgs e) => _ = CloseTabAsync(e.GetDataContext<MonacoTab>(), true, true);
         private void OnExitClick(object sender, RoutedEventArgs e) => Close();
         private void OnRestartAsAdmin(object sender, RoutedEventArgs e) => RestartAsAdmin(true);
         private void OnClearRecentList(object sender, RoutedEventArgs e) => Settings.Current.ClearRecentFiles();
@@ -628,6 +632,43 @@ namespace DevPad
 
                 default:
                     _dataContext.RaisePropertyChanged(e.PropertyName);
+                    break;
+            }
+        }
+
+        private async void OnTabFileChanged(object sender, FileSystemEventArgs e)
+        {
+            var tab = (MonacoTab)sender;
+            string txt;
+            MessageBoxResult res;
+            switch (e.ChangeType)
+            {
+                case WatcherChangeTypes.Deleted:
+                    if (!_onChangedShown)
+                    {
+                        txt = string.Format(tab.HasContentChanged ? DevPad.Resources.Resources.ConfirmModifiedDeleted : DevPad.Resources.Resources.ConfirmDeleted, tab.FilePath);
+                        _onChangedShown = true;
+                        res = this.ShowConfirm(txt);
+                        _onChangedShown = false;
+                        if (res != MessageBoxResult.Yes)
+                            return;
+
+                        await CloseTabAsync(tab, true, false);
+                    }
+                    break;
+
+                case WatcherChangeTypes.Changed:
+                    if (!_onChangedShown)
+                    {
+                        txt = string.Format(tab.HasContentChanged ? DevPad.Resources.Resources.ConfirmModifiedChanged : DevPad.Resources.Resources.ConfirmChanged, tab.FilePath);
+                        _onChangedShown = true;
+                        res = this.ShowConfirm(txt);
+                        _onChangedShown = false;
+                        if (res != MessageBoxResult.Yes)
+                            return;
+
+                        await tab.ReloadAsync();
+                    }
                     break;
             }
         }
@@ -694,6 +735,8 @@ namespace DevPad
                     foreach (var lang in group.OrderBy(l => l.Value.Name))
                     {
                         var subItem = new MenuItem { Header = lang.Value.Name };
+                        lang.Value.SetImage(subItem);
+
                         item.Items.Add(subItem);
                         subItem.Click += async (s, e2) =>
                         {
@@ -704,6 +747,7 @@ namespace DevPad
                 else
                 {
                     var item = new MenuItem { Header = subLangs[0].Value.Name };
+                    subLangs[0].Value.SetImage(item);
                     LanguagesMenuItem.Items.Add(item);
                     item.Click += async (s, e2) =>
                     {
@@ -761,6 +805,13 @@ namespace DevPad
                 clear.Click += (s, e2) =>
                 {
                     Settings.Current.ClearRecentFiles();
+                };
+
+                var clean = new MenuItem { Header = DevPad.Resources.Resources.CleanRecentList };
+                RecentFilesMenuItem.Items.Add(clean);
+                clean.Click += (s, e2) =>
+                {
+                    Settings.Current.CleanRecentFiles();
                 };
             }
 

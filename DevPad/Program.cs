@@ -56,10 +56,11 @@ namespace DevPad
             app.Run();
         }
 
-        private static void Current_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+        public static void ShowError(Window window, Exception error)
         {
-            Trace(e.Exception);
-            e.Handled = true;
+            if (error == null)
+                return;
+
             using (var td = new TaskDialog())
             {
                 const int sysInfoId = 1;
@@ -82,16 +83,22 @@ namespace DevPad
                 td.CommonButtonFlags |= TASKDIALOG_COMMON_BUTTON_FLAGS.TDCBF_CLOSE_BUTTON;
                 td.CollapsedControlText = Resources.Resources.ShowDetails;
                 td.ExpandedControlText = Resources.Resources.HideDetails;
-                td.ExpandedInformation = e.Exception.ToString();
+                td.ExpandedInformation = error.ToString();
                 td.MainIcon = TaskDialog.TD_ERROR_ICON;
                 td.Title = WinformsUtilities.ApplicationTitle;
                 td.MainInstruction = Resources.Resources.UnhandledException;
                 td.CustomButtons.Add(sysInfoId, Resources.Resources.SystemInfo);
-                var msg = e.Exception.GetAllMessages();
+                var msg = error.GetAllMessages();
                 td.Content = msg;
-                td.Show(IntPtr.Zero);
-                Application.Current.Shutdown();
+                td.Show(window);
             }
+        }
+
+        private static void Current_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+        {
+            Trace(e.Exception);
+            e.Handled = true;
+            ShowError(null, e.Exception);
         }
     }
 }

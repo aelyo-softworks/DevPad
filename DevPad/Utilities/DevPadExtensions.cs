@@ -5,6 +5,8 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Controls;
+using DevPad.MonacoModel;
 
 namespace DevPad.Utilities
 {
@@ -204,6 +206,22 @@ namespace DevPad.Utilities
                 });
             }
             timer.Change(dueTime, Timeout.Infinite);
+        }
+
+        public static void SetImage(this LanguageExtensionPoint lang, MenuItem item, SHIL shil = SHIL.SHIL_SMALL)
+        {
+            if (lang?.Extensions == null)
+                return;
+
+            foreach (var ext in lang.Extensions)
+            {
+                var image = IconUtilities.GetExtensionIconAsImageSource(ext, shil);
+                if (image != null)
+                {
+                    item.Icon = new Image { Source = image };
+                    break;
+                }
+            }
         }
     }
 }

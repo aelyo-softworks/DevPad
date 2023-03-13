@@ -83,6 +83,7 @@
             </MenuItem>
             <MenuItem Header="_Edit">
                 <MenuItem
+                    x:Name="FindMenuItem"
                     Click="OnFind"
                     Header="_Find"
                     InputGestureText="Ctrl+F" />
@@ -113,6 +114,11 @@
             x:Name="TabMain"
             Grid.Row="1"
             SelectionChanged="OnTabSelectionChanged">
+            <TabControl.ContextMenu>
+                <ContextMenu Padding="2" BorderThickness="1">
+                    <MenuItem Header="hello" />
+                </ContextMenu>
+            </TabControl.ContextMenu>
             <TabControl.ItemTemplate>
                 <DataTemplate>
                     <DockPanel ToolTip="{Binding FilePath}">

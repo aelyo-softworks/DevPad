@@ -7,11 +7,36 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using DevPad.Utilities.Grid;
+using Microsoft.Win32;
 
 namespace DevPad.Utilities
 {
     public static class IconUtilities
     {
+        private static readonly Lazy<int?> _applicationIconIndex = new Lazy<int?>(GetApplicationIconIndex);
+
+        private static int? GetApplicationIconIndex()
+        {
+            var progid = Program.WindowsApplication.ApplicationIconProgId;
+            var ctx = CreateBindCtx(progid, STGM.STGM_CREATE);
+            if (ctx == null)
+                return null;
+
+            var item = GetItemFromParsingName(progid, ctx);
+            if (item == null)
+                return null;
+
+            if (!(item is IParentAndItem pai))
+                return null;
+
+            if (pai.GetParentAndItem(IntPtr.Zero, out var psf, out var child) != 0)
+                return null;
+
+            var index = SHMapPIDLToSystemImageListIndex(psf, child, out _);
+            Marshal.FreeCoTaskMem(child);
+            return index;
+        }
+
         public static ImageSource GetStockIconImageSource(StockIconId id, SHGSI flags = SHGSI.SHGSI_ICON | SHGSI.SHGSI_SMALLICON)
         {
             var hicon = GetStockIconHandle(id, flags);
@@ -31,10 +56,21 @@ namespace DevPad.Utilities
             return info.hIcon;
         }
 
+        private static bool ExtensionIsRegistered(string ext)
+        {
+            using (var key = Registry.ClassesRoot.OpenSubKey(ext, false))
+            {
+                return key != null;
+            }
+        }
+
         public static ImageSource GetExtensionIconAsImageSource(string ext, SHIL shil)
         {
             if (ext == null)
                 throw new ArgumentNullException(nameof(ext));
+
+            if (!ExtensionIsRegistered(ext))
+                return null;
 
             var ctx = CreateBindCtx(ext, STGM.STGM_CREATE);
             if (ctx == null)
@@ -51,6 +87,9 @@ namespace DevPad.Utilities
         {
             if (ext == null)
                 throw new ArgumentNullException(nameof(ext));
+
+            if (!ExtensionIsRegistered(ext))
+                return IntPtr.Zero;
 
             var ctx = CreateBindCtx(ext, STGM.STGM_CREATE);
             if (ctx == null)
@@ -128,6 +167,10 @@ namespace DevPad.Utilities
 
             var index = SHMapPIDLToSystemImageListIndex(psf, child, out _);
             Marshal.FreeCoTaskMem(child);
+
+            var appIndex = _applicationIconIndex.Value;
+            if (index == appIndex)
+                return IntPtr.Zero;
 
             var list = GetImageList(shil);
             if (list == null)

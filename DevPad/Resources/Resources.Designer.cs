@@ -115,6 +115,15 @@ namespace DevPad.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Remove deleted files from this list.
+        /// </summary>
+        internal static string CleanRecentList {
+            get {
+                return ResourceManager.GetString("CleanRecentList", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Clear this list.
         /// </summary>
         internal static string ClearRecentList {
@@ -133,6 +142,24 @@ namespace DevPad.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to File &apos;{0}&apos; has been changed by another program, do you want to reload it?.
+        /// </summary>
+        internal static string ConfirmChanged {
+            get {
+                return ResourceManager.GetString("ConfirmChanged", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to File &apos;{0}&apos; has been deleted by another program, do you want to close it?.
+        /// </summary>
+        internal static string ConfirmDeleted {
+            get {
+                return ResourceManager.GetString("ConfirmDeleted", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to There are unsaved changes to the {0} document, are you sure you want to discard them?.
         /// </summary>
         internal static string ConfirmDiscardDocument {
@@ -147,6 +174,24 @@ namespace DevPad.Resources {
         internal static string ConfirmDiscardDocuments {
             get {
                 return ResourceManager.GetString("ConfirmDiscardDocuments", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to File &apos;{0}&apos; has been changed by another program and has been modified here, do you want to reload it?.
+        /// </summary>
+        internal static string ConfirmModifiedChanged {
+            get {
+                return ResourceManager.GetString("ConfirmModifiedChanged", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to File &apos;{0}&apos; has been deleted by another program and has been modified here, do you want to close it?.
+        /// </summary>
+        internal static string ConfirmModifiedDeleted {
+            get {
+                return ResourceManager.GetString("ConfirmModifiedDeleted", resourceCulture);
             }
         }
         

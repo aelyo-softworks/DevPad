@@ -21,6 +21,7 @@ namespace DevPad.Model
         private bool _disposedValue;
 
         public event EventHandler<DevPadEventArgs> MonacoEvent;
+        public event EventHandler<FileSystemEventArgs> FileChanged;
 
         public MonacoTab()
         {
@@ -154,10 +155,20 @@ namespace DevPad.Model
             if (text == null)
                 return;
 
+            if (FilePath != null)
+            {
+                FilesWatcher.UnwatchFile(FilePath);
+                FilesWatcher.FileChanged -= OnFileChanged;
+            }
+
             File.WriteAllText(filePath, text);
-            DeleteAutoSave();
-            FilePath = filePath;
             HasContentChanged = false;
+            DeleteAutoSave();
+
+            FilePath = filePath;
+            FilesWatcher.WatchFile(FilePath);
+            FilesWatcher.FileChanged += OnFileChanged;
+
             await SetEditorLanguageFromFilePathAsync(FilePath);
         }
 
@@ -170,7 +181,31 @@ namespace DevPad.Model
             return UnescapeEditorText(text);
         }
 
-        private async Task<bool?> LoadFileIfAnyAsync()
+        public async Task ReloadAsync()
+        {
+            if (FilePath == null)
+                throw new InvalidOperationException();
+
+            if (FilePath != null)
+            {
+                FilesWatcher.UnwatchFile(FilePath);
+                FilesWatcher.FileChanged -= OnFileChanged;
+            }
+
+            DeleteAutoSave();
+            await LoadFileIfAnyAsync();
+            HasContentChanged = false;
+        }
+
+        private enum LoadStatus
+        {
+            Ok,
+            OkFromAutoSave,
+            NoFile,
+            Error,
+        }
+
+        private async Task<LoadStatus> LoadFileIfAnyAsync()
         {
             var fromAutoSave = false;
             var filePath = FilePath;
@@ -181,7 +216,7 @@ namespace DevPad.Model
                 fromAutoSave = true;
             }
             if (filePath == null)
-                return null;
+                return LoadStatus.NoFile;
 
             var lang = LanguageExtensionPoint.DefaultLanguageId;
             if (FilePath != null)
@@ -194,14 +229,31 @@ namespace DevPad.Model
                 }
 
                 Image = IconUtilities.GetExtensionIconAsImageSource(ext, SHIL.SHIL_SMALL);
+                FilesWatcher.WatchFile(FilePath);
+                FilesWatcher.FileChanged += OnFileChanged;
             }
 
             // not this the most performant load system... we should make chunks
-            _documentText = File.ReadAllText(filePath);
+            try
+            {
+                _documentText = File.ReadAllText(filePath);
+            }
+            catch (Exception ex)
+            {
+                Program.ShowError(MainWindow.Current, ex);
+                await MainWindow.Current.CloseTabAsync(this, true, true);
+                return LoadStatus.Error;
+            }
 
             await WebView.ExecuteScriptAsync($"loadFromHost('{lang}')");
             await SetEditorPositionAsync();
-            return fromAutoSave;
+            return fromAutoSave ? LoadStatus.OkFromAutoSave : LoadStatus.Ok;
+        }
+
+        private void OnFileChanged(object sender, FileSystemEventArgs e)
+        {
+            Program.Trace("e:" + e.ChangeType + " " + e.FullPath);
+            Task.Run(() => Application.Current.Dispatcher.Invoke(() => FileChanged?.Invoke(this, e)));
         }
 
         public async Task FocusEditorAsync()
@@ -302,13 +354,19 @@ namespace DevPad.Model
                     await SetEditorThemeAsync(Settings.Current.Theme);
                     await FocusEditorAsync();
 
-                    if (await LoadFileIfAnyAsync() == true)
+                    var status = await LoadFileIfAnyAsync();
+                    switch (status)
                     {
-                        HasContentChanged = true;
-                    }
-                    else
-                    {
-                        HasContentChanged = false;
+                        case LoadStatus.Ok:
+                            HasContentChanged = false;
+                            break;
+
+                        case LoadStatus.OkFromAutoSave:
+                            HasContentChanged = true;
+                            break;
+
+                        case LoadStatus.Error:
+                            return;
                     }
 
                     IsEditorCreated = true;
@@ -389,6 +447,12 @@ namespace DevPad.Model
 
         public async Task CloseAsync(bool deleteAutoSave)
         {
+            if (FilePath != null)
+            {
+                FilesWatcher.UnwatchFile(FilePath);
+                FilesWatcher.FileChanged -= OnFileChanged;
+            }
+
             if (deleteAutoSave)
             {
                 DeleteAutoSave();

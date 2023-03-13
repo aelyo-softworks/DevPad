@@ -98,7 +98,7 @@ namespace DevPad
             return dic;
         }
 
-        private void SaveRecentFiles(Dictionary<string, RecentFile> dic)
+        private void SetRecentFiles(Dictionary<string, RecentFile> dic)
         {
             var list = dic.Select(kv => kv.Value).OrderByDescending(r => r.LastAccessTime).ToList();
             if (list.Count == 0)
@@ -111,7 +111,12 @@ namespace DevPad
             }
         }
 
-        public void CleanRecentFiles() => SaveRecentFiles(GetRecentFiles());
+        public void CleanRecentFiles()
+        {
+            SetRecentFiles(GetRecentFiles());
+            SerializeToConfiguration();
+        }
+
         public void ClearRecentFiles()
         {
             RecentFilesPaths = null;
@@ -129,7 +134,7 @@ namespace DevPad
             if (!dic.Remove(filePath))
                 return false;
 
-            SaveRecentFiles(dic);
+            SetRecentFiles(dic);
             return true;
         }
 
@@ -150,7 +155,7 @@ namespace DevPad
             Program.Trace("file:" + filePath + " order:" + openOrder + " num:" + untitledNumber);
             var dic = GetRecentFiles();
             dic[filePath] = new RecentFile { FilePath = filePath, OpenOrder = openOrder, UntitledNumber = untitledNumber };
-            SaveRecentFiles(dic);
+            SetRecentFiles(dic);
         }
     }
 }

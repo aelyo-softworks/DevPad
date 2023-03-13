@@ -43,7 +43,6 @@
     <ApplicationIcon>Resources\DevPad.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="PresentationFramework.Aero" />
     <Reference Include="System" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
@@ -97,6 +96,7 @@
     <Compile Include="Settings.cs" />
     <Compile Include="Utilities\AssemblyUtilities.cs" />
     <Compile Include="Utilities\CommandLine.cs" />
+    <Compile Include="Utilities\ConcurrentHashSet.cs" />
     <Compile Include="Utilities\Conversions.cs" />
     <Compile Include="Utilities\DataBindingEvaluator.cs" />
     <Compile Include="Utilities\DecamelizeOptions.cs" />
@@ -113,6 +113,7 @@
     <Compile Include="Utilities\DynamicObject.cs" />
     <Compile Include="Utilities\DynamicObjectProperty.cs" />
     <Compile Include="Utilities\DevPadExtensions.cs" />
+    <Compile Include="Utilities\FilesWatcher.cs" />
     <Compile Include="Utilities\Grid\StockIconId.cs" />
     <Compile Include="Utilities\IconUtilities.cs" />
     <Compile Include="Utilities\IDictionaryObject.cs" />

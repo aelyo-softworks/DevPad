@@ -135,17 +135,32 @@
   <data name="Behavior" xml:space="preserve">
     <value>Behavior</value>
   </data>
+  <data name="CleanRecentList" xml:space="preserve">
+    <value>Remove deleted files from this list</value>
+  </data>
   <data name="ClearRecentList" xml:space="preserve">
     <value>Clear this list</value>
   </data>
   <data name="Confirmation" xml:space="preserve">
     <value>Confirmation</value>
   </data>
+  <data name="ConfirmChanged" xml:space="preserve">
+    <value>File '{0}' has been changed by another program, do you want to reload it?</value>
+  </data>
+  <data name="ConfirmDeleted" xml:space="preserve">
+    <value>File '{0}' has been deleted by another program, do you want to close it?</value>
+  </data>
   <data name="ConfirmDiscardDocument" xml:space="preserve">
     <value>There are unsaved changes to the {0} document, are you sure you want to discard them?</value>
   </data>
   <data name="ConfirmDiscardDocuments" xml:space="preserve">
     <value>There are unsaved changes to the {0} documents, are you sure you want to discard them?</value>
+  </data>
+  <data name="ConfirmModifiedChanged" xml:space="preserve">
+    <value>File '{0}' has been changed by another program and has been modified here, do you want to reload it?</value>
+  </data>
+  <data name="ConfirmModifiedDeleted" xml:space="preserve">
+    <value>File '{0}' has been deleted by another program and has been modified here, do you want to close it?</value>
   </data>
   <data name="ConfirmRestartAsAdmin" xml:space="preserve">
     <value>The file wasn't saved because of an unauthorized access error. Do you want to restart DevPad as Administrator?</value>
