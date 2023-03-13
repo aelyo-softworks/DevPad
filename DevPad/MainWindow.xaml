@@ -116,11 +116,20 @@
             <TabControl.ItemTemplate>
                 <DataTemplate>
                     <DockPanel ToolTip="{Binding FilePath}">
+                        <Image
+                            Width="16"
+                            Height="16"
+                            Margin="0,0,4,0"
+                            Source="{Binding Image}"
+                            Visibility="{Binding Image, Converter={StaticResource NullToVisibilityConverter}}" />
                         <TextBlock
                             HorizontalAlignment="Stretch"
                             FontFamily="{Binding FontFamily}"
                             Text="{Binding Name}" />
-                        <TextBlock FontWeight="Bold" Text=" *" Visibility="{Binding HasContentChanged, Converter={StaticResource ResourceKey=BooleanToVisibilityConverter}}" />
+                        <TextBlock
+                            FontWeight="Bold"
+                            Text=" *"
+                            Visibility="{Binding HasContentChanged, Converter={StaticResource BooleanToVisibilityConverter}}" />
                         <Button
                             Margin="10,0,0,0"
                             Background="Transparent"
@@ -128,7 +137,7 @@
                             Click="OnCloseTab"
                             Content="✕"
                             FontFamily="Segoe UI Symbol"
-                            Visibility="{Binding IsAdd, Converter={StaticResource ResourceKey=ReverseBooleanToVisibilityConverter}}" />
+                            Visibility="{Binding IsAdd, Converter={StaticResource ReverseBooleanToVisibilityConverter}}" />
                         <Button
                             Margin="-3,-2,-4,-3"
                             Background="Transparent"
@@ -136,7 +145,7 @@
                             Click="OnAddTab"
                             Content=" 🞣 "
                             FontFamily="Segoe UI Symbol"
-                            Visibility="{Binding IsAdd, Converter={StaticResource ResourceKey=BooleanToVisibilityConverter}}" />
+                            Visibility="{Binding IsAdd, Converter={StaticResource BooleanToVisibilityConverter}}" />
                     </DockPanel>
                 </DataTemplate>
             </TabControl.ItemTemplate>

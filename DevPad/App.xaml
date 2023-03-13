@@ -17,6 +17,12 @@
                 <utils:UniversalConverterCase ConvertedValue="Collapsed" Value="false" />
             </utils:UniversalConverter.Switch>
         </utils:UniversalConverter>
+        <utils:UniversalConverter x:Key="NullToVisibilityConverter">
+            <utils:UniversalConverter.Switch>
+                <utils:UniversalConverterCase ConvertedValue="Visible" Operator="NotEqual" />
+                <utils:UniversalConverterCase ConvertedValue="Collapsed" Operator="Equal" />
+            </utils:UniversalConverter.Switch>
+        </utils:UniversalConverter>
         <utils:UniversalConverter x:Key="ReverseBooleanToVisibilityConverter">
             <utils:UniversalConverter.Switch>
                 <utils:UniversalConverterCase ConvertedValue="Visible" Value="false" />

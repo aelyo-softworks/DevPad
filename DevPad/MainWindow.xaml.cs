@@ -414,6 +414,9 @@ namespace DevPad
                 return;
 
             var filter = await BuildFilterAsync();
+            if (filter.Item1 == null)
+                return;
+
             var fd = new SaveFileDialog
             {
                 RestoreDirectory = true,
@@ -452,6 +455,9 @@ namespace DevPad
         private async Task OpenAsync(string directoryPath)
         {
             var filter = await BuildFilterAsync();
+            if (filter.Item1 == null)
+                return;
+
             var fd = new OpenFileDialog
             {
                 RestoreDirectory = true,
@@ -491,7 +497,11 @@ namespace DevPad
 
         private async Task<(string, int)> BuildFilterAsync()
         {
-            var languages = await CurrentTab.WebView.GetLanguages();
+            var view = Tabs.FirstOrDefault()?.WebView;
+            if (view == null)
+                return (null, 0);
+
+            var languages = await view.GetLanguages();
             var sb = new StringBuilder();
             var index = 0;
             foreach (var kv in languages.OrderBy(k => k.Value.Name))

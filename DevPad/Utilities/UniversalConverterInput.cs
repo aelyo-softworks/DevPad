@@ -108,16 +108,8 @@ namespace DevPad.Utilities
                 case UniversalConverterOperator.Equal:
                     if (Value == null)
                     {
-                        if (ValueToCompare == null)
-                        {
-                            ret = true;
-                            break;
-                        }
-
-                        // use string comparison (to compare "" to null or similar)
-                        v = ValueToCompareToString(provider, false);
-                        ret = v == null;
-                        break; // false
+                        ret = ValueToCompare == null;
+                        break;
                     }
 
                     if (Value.Equals(ValueToCompare))
@@ -173,7 +165,7 @@ namespace DevPad.Utilities
                 case UniversalConverterOperator.NotEqual:
                     clone = Clone();
                     clone.Operator = UniversalConverterOperator.Equal;
-                    ret = clone.Matches(provider);
+                    ret = !clone.Matches(provider);
                     break;
 
                 case UniversalConverterOperator.Contains:

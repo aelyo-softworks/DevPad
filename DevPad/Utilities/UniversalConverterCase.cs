@@ -6,8 +6,8 @@ namespace DevPad.Utilities
     public class UniversalConverterCase
     {
         private object _convertedValue;
+        private object _value;
 
-        public virtual object Value { get; set; }
         public virtual object MinimumValue { get; set; }
         public virtual object MaximumValue { get; set; }
         public virtual UniversalConverterOptions Options { get; set; }
@@ -15,6 +15,17 @@ namespace DevPad.Utilities
         public virtual StringComparison StringComparison { get; set; } = StringComparison.CurrentCultureIgnoreCase;
         public virtual bool Reverse { get; set; }
         public bool HasConvertedValue { get; private set; }
+        public bool HasValue { get; private set; }
+
+        public virtual object Value
+        {
+            get => _value;
+            set
+            {
+                _value = value;
+                HasValue = true;
+            }
+        }
 
         public virtual object ConvertedValue
         {

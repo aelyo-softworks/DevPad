@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media;
 using DevPad.MonacoModel;
 using DevPad.Utilities;
 using Microsoft.Web.WebView2.Core;
@@ -39,6 +40,7 @@ namespace DevPad.Model
         public string ModelLanguageName { get => DictionaryObjectGetNullifiedPropertyValue(); private set => DictionaryObjectSetPropertyValue(value); }
         public string CursorPosition { get => DictionaryObjectGetNullifiedPropertyValue(); private set => DictionaryObjectSetPropertyValue(value); }
         public string CursorSelection { get => DictionaryObjectGetNullifiedPropertyValue(); private set => DictionaryObjectSetPropertyValue(value); }
+        public ImageSource Image { get => DictionaryObjectGetPropertyValue<ImageSource>(); private set => DictionaryObjectSetPropertyValue(value); }
         public int UntitledNumber { get; set; }
         public virtual string Name => IsUntitled ? Settings.GetUntitledName(UntitledNumber) : Path.GetFileName(FilePath);
         public string FilePath
@@ -153,6 +155,7 @@ namespace DevPad.Model
                 return;
 
             File.WriteAllText(filePath, text);
+            DeleteAutoSave();
             FilePath = filePath;
             HasContentChanged = false;
             await SetEditorLanguageFromFilePathAsync(FilePath);
@@ -189,6 +192,8 @@ namespace DevPad.Model
                 {
                     lang = langObject[0].Id;
                 }
+
+                Image = IconUtilities.GetExtensionIconAsImageSource(ext, SHIL.SHIL_SMALL);
             }
 
             // not this the most performant load system... we should make chunks
