@@ -28,6 +28,7 @@ namespace DevPad
         public static MainWindow Current => (MainWindow)Application.Current.MainWindow;
 
         private readonly ObservableCollection<MonacoTab> _tabs = new ObservableCollection<MonacoTab>();
+        private readonly ObservableCollection<TabGroup> _groups = new ObservableCollection<TabGroup>();
         private readonly WindowDataContext _dataContext;
         private readonly bool _loading;
         private bool _onChangedShown;
@@ -45,20 +46,24 @@ namespace DevPad
 
             _dataContext = new WindowDataContext(this);
             DataContext = _dataContext;
-            TabMain.ItemsSource = _tabs;
 
+            TabMain.ItemsSource = _tabs;
             _tabs.Add(new MonacoAddTab());
+
+            TabGroups.ItemsSource = _groups;
+            _groups.Add(new TabGroup { Name = "Default", IsDefault = true });
+            _groups.Add(new AddTabGroup());
 
             var open = CommandLine.Current.GetNullifiedArgument(0);
             if (open != null)
             {
                 _ = AddTabAsync(open);
             }
-            else if (!Program.IsNewInstance)
+            else
             {
                 _loading = true;
                 var any = false;
-                if (Settings.Current.RecentFilesPaths != null)
+                if (!Program.IsNewInstance && Settings.Current.RecentFilesPaths != null)
                 {
                     foreach (var file in Settings.Current.RecentFilesPaths.Where(f => f.OpenOrder > 0).OrderBy(f => f.OpenOrder))
                     {
@@ -220,7 +225,15 @@ namespace DevPad
                 e.Cancel = true;
                 await CloseAllTabs(false, false, true);
                 Settings.Current.SerializeToConfigurationWhenIdle(0); // flush if any change in queue
-                Close();
+                try
+                {
+                    Close();
+                }
+                catch (Exception ex)
+                {
+                    Program.ShowError(null, ex);
+                    Application.Current.Shutdown();
+                }
             }
         }
 
@@ -875,6 +888,21 @@ namespace DevPad
                     };
                 }
             }
+        }
+
+        private void OnPinTab(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void OnCloseGroup(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void OnAddGroup(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

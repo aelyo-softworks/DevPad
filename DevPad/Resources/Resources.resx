@@ -117,6 +117,12 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="AddButtonTooltip" xml:space="preserve">
+    <value>Add new tab</value>
+  </data>
+  <data name="AddGroupButtonTooltip" xml:space="preserve">
+    <value>Add new tab group</value>
+  </data>
   <data name="Administrator" xml:space="preserve">
     <value>Administrator</value>
   </data>
@@ -140,6 +146,12 @@
   </data>
   <data name="ClearRecentList" xml:space="preserve">
     <value>Clear this list</value>
+  </data>
+  <data name="CloseTabGroupTooltip" xml:space="preserve">
+    <value>Close tab group</value>
+  </data>
+  <data name="CloseTabTooltip" xml:space="preserve">
+    <value>Close tab</value>
   </data>
   <data name="Confirmation" xml:space="preserve">
     <value>Confirmation</value>
@@ -187,6 +199,9 @@
   <data name="Only64BitWindows" xml:space="preserve">
     <value>DevPad only supports 64-bit versions of Windows.</value>
   </data>
+  <data name="PinTabTooltip" xml:space="preserve">
+    <value>Pin tab</value>
+  </data>
   <data name="Preferences" xml:space="preserve">
     <value>Preferences</value>
   </data>
@@ -219,6 +234,9 @@
   </data>
   <data name="UnhandledException" xml:space="preserve">
     <value>An unexpected error has occurred.</value>
+  </data>
+  <data name="UnpinTabTooltip" xml:space="preserve">
+    <value>Unpin tab</value>
   </data>
   <data name="Untitled" xml:space="preserve">
     <value>(Untitled {0})</value>

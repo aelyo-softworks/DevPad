@@ -61,6 +61,24 @@ namespace DevPad.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Add new tab.
+        /// </summary>
+        internal static string AddButtonTooltip {
+            get {
+                return ResourceManager.GetString("AddButtonTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Add new tab group.
+        /// </summary>
+        internal static string AddGroupButtonTooltip {
+            get {
+                return ResourceManager.GetString("AddGroupButtonTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Administrator.
         /// </summary>
         internal static string Administrator {
@@ -129,6 +147,24 @@ namespace DevPad.Resources {
         internal static string ClearRecentList {
             get {
                 return ResourceManager.GetString("ClearRecentList", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Close tab group.
+        /// </summary>
+        internal static string CloseTabGroupTooltip {
+            get {
+                return ResourceManager.GetString("CloseTabGroupTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Close tab.
+        /// </summary>
+        internal static string CloseTabTooltip {
+            get {
+                return ResourceManager.GetString("CloseTabTooltip", resourceCulture);
             }
         }
         
@@ -269,6 +305,15 @@ namespace DevPad.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Pin tab.
+        /// </summary>
+        internal static string PinTabTooltip {
+            get {
+                return ResourceManager.GetString("PinTabTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Preferences.
         /// </summary>
         internal static string Preferences {
@@ -364,6 +409,15 @@ namespace DevPad.Resources {
         internal static string UnhandledException {
             get {
                 return ResourceManager.GetString("UnhandledException", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Unpin tab.
+        /// </summary>
+        internal static string UnpinTabTooltip {
+            get {
+                return ResourceManager.GetString("UnpinTabTooltip", resourceCulture);
             }
         }
         

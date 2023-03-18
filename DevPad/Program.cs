@@ -104,6 +104,7 @@ namespace DevPad
             if (error == null)
                 return;
 
+            Trace(error);
             using (var td = new TaskDialog())
             {
                 const int sysInfoId = 1;
@@ -139,7 +140,6 @@ namespace DevPad
 
         private static void Current_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
         {
-            Trace(e.Exception);
             e.Handled = true;
             ShowError(null, e.Exception);
         }

@@ -80,6 +80,8 @@
     <Compile Include="Ipc\SingleInstanceCommandEventArgs.cs" />
     <Compile Include="Ipc\SingleInstanceCommandType.cs" />
     <Compile Include="Model\MonacoAddTab.cs" />
+    <Compile Include="Model\AddTabGroup.cs" />
+    <Compile Include="Model\TabGroup.cs" />
     <Compile Include="MonacoModel\DevPadConfigurationChangedEventArgs.cs" />
     <Compile Include="MonacoModel\DevPadEventArgs.cs" />
     <Compile Include="MonacoModel\DevPadEventType.cs" />
@@ -94,6 +96,7 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyVersionInfo.cs" />
     <Compile Include="RecentFile.cs" />
+    <Compile Include="RecentFileOptions.cs" />
     <Compile Include="Resources\LocalizedCategoryAttribute.cs" />
     <Compile Include="Resources\LocalizedDisplayNameAttribute.cs" />
     <Compile Include="Resources\Resources.Designer.cs">

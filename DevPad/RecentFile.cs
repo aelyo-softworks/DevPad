@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Windows.Media;
 
 namespace DevPad
 {
@@ -8,6 +9,8 @@ namespace DevPad
         public DateTime LastAccessTime { get; set; } = DateTime.Now;
         public int OpenOrder { get; set; }
         public int UntitledNumber { get; set; }
+        public RecentFileOptions Options { get; set; }
+        public Color Color { get; set; }
 
         public string DisplayName => LastAccessTime + " " + FilePath;
 

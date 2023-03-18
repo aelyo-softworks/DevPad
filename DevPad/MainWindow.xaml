@@ -8,6 +8,8 @@
     Title="MainWindow"
     Width="1200"
     Height="1000"
+    MinWidth="400"
+    MinHeight="400"
     WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">
     <Window.CommandBindings>
@@ -42,6 +44,11 @@
             x:Name="MenuMain"
             Grid.Row="0"
             IsMainMenu="True">
+            <Menu.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <DockPanel HorizontalAlignment="Stretch" />
+                </ItemsPanelTemplate>
+            </Menu.ItemsPanel>
             <MenuItem
                 Height="24"
                 Header="_File"
@@ -109,6 +116,40 @@
                     Click="OnAboutClick"
                     Header="_About DevPad..." />
             </MenuItem>
+            <MenuItem HorizontalAlignment="Right">
+                <MenuItem.Header>
+                    <TabControl x:Name="TabGroups">
+                        <TabControl.ItemTemplate>
+                            <DataTemplate>
+                                <DockPanel HorizontalAlignment="Stretch">
+                                    <TextBlock
+                                        FontFamily="{Binding FontFamily}"
+                                        Text="{Binding Name}"
+                                        ToolTip="{Binding Name}" />
+                                    <Button
+                                        Margin="3,0,0,0"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        Click="OnCloseGroup"
+                                        Content="✕"
+                                        FontFamily="Segoe UI Symbol"
+                                        ToolTip="{Binding CloseButtonTooltip}"
+                                        Visibility="{Binding IsClosable, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                    <Button
+                                        Margin="-3,-2,-4,-3"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        Click="OnAddGroup"
+                                        Content=" 🞣 "
+                                        FontFamily="Segoe UI Symbol"
+                                        ToolTip="{Binding AddButtonTooltip}"
+                                        Visibility="{Binding IsAdd, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                </DockPanel>
+                            </DataTemplate>
+                        </TabControl.ItemTemplate>
+                    </TabControl>
+                </MenuItem.Header>
+            </MenuItem>
         </Menu>
         <TabControl
             x:Name="TabMain"
@@ -116,7 +157,7 @@
             SelectionChanged="OnTabSelectionChanged">
             <TabControl.ContextMenu>
                 <ContextMenu Padding="2" BorderThickness="1">
-                    <MenuItem Header="hello" />
+                    <MenuItem Header="To Be Defined..." />
                 </ContextMenu>
             </TabControl.ContextMenu>
             <TabControl.ItemTemplate>
@@ -140,9 +181,19 @@
                             Margin="10,0,0,0"
                             Background="Transparent"
                             BorderThickness="0"
+                            Click="OnPinTab"
+                            Content=""
+                            FontFamily="Segoe UI Symbol"
+                            ToolTip="{Binding PinButtonTooltip}"
+                            Visibility="{Binding IsAdd, Converter={StaticResource ReverseBooleanToVisibilityConverter}}" />
+                        <Button
+                            Margin="3,0,0,0"
+                            Background="Transparent"
+                            BorderThickness="0"
                             Click="OnCloseTab"
                             Content="✕"
                             FontFamily="Segoe UI Symbol"
+                            ToolTip="{Binding CloseButtonTooltip}"
                             Visibility="{Binding IsAdd, Converter={StaticResource ReverseBooleanToVisibilityConverter}}" />
                         <Button
                             Margin="-3,-2,-4,-3"
@@ -151,6 +202,7 @@
                             Click="OnAddTab"
                             Content=" 🞣 "
                             FontFamily="Segoe UI Symbol"
+                            ToolTip="{Binding AddButtonTooltip}"
                             Visibility="{Binding IsAdd, Converter={StaticResource BooleanToVisibilityConverter}}" />
                     </DockPanel>
                 </DataTemplate>
