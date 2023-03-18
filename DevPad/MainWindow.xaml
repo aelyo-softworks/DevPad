@@ -119,6 +119,11 @@
             <MenuItem HorizontalAlignment="Right">
                 <MenuItem.Header>
                     <TabControl x:Name="TabGroups">
+                        <TabControl.ContextMenu>
+                            <ContextMenu Padding="2" BorderThickness="1">
+                                <MenuItem Header="Colors..." />
+                            </ContextMenu>
+                        </TabControl.ContextMenu>
                         <TabControl.ItemTemplate>
                             <DataTemplate>
                                 <DockPanel HorizontalAlignment="Stretch">

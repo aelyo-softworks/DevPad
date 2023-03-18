@@ -45,8 +45,8 @@ namespace DevPad.Setup
             WindowsApplication.PublisherName = AssemblyUtilities.GetCompany();
 
             // building mode
-            var buildPath = CommandLine.GetNullifiedArgument("buildpath");
-            var outPath = CommandLine.GetNullifiedArgument("outpath");
+            var buildPath = CommandLine.Current.GetNullifiedArgument("buildpath");
+            var outPath = CommandLine.Current.GetNullifiedArgument("outpath");
             if (buildPath != null && outPath != null)
             {
                 try
@@ -60,7 +60,7 @@ namespace DevPad.Setup
                 return;
             }
 
-            var uninstall = CommandLine.GetArgument<bool>("uninstall");
+            var uninstall = CommandLine.Current.GetArgument<bool>("uninstall");
             if (uninstall)
             {
                 Setup.Main.Uninstall();
