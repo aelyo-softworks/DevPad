@@ -165,6 +165,9 @@ namespace DevPad.Utilities
         [DllImport("user32")]
         private static extern int MapWindowPoints(IntPtr hWndFrom, IntPtr hWndTo, ref RECT rect, int cPoints);
 
+        [DllImport("kernel32")]
+        public static extern bool AllocConsole();
+
         [StructLayout(LayoutKind.Sequential)]
         private struct PROCESS_BASIC_INFORMATION
         {

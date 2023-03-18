@@ -3,68 +3,73 @@ using System.Collections.Generic;
 
 namespace DevPad.Utilities
 {
-    public static class CommandLine
+    public class CommandLine
     {
-        private static readonly Dictionary<string, string> _namedArguments;
-        private static readonly Dictionary<int, string> _positionArguments;
-
-        static CommandLine()
+        public static CommandLine Current { get; } = From(Environment.GetCommandLineArgs());
+        public static CommandLine From(IReadOnlyList<string> args)
         {
-            _namedArguments = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            _positionArguments = new Dictionary<int, string>();
-
-            var args = Environment.GetCommandLineArgs();
-            for (var i = 0; i < args.Length; i++)
+            var cmdLine = new CommandLine();
+            if (args != null)
             {
-                if (i == 0)
-                    continue;
-
-                var arg = args[i].Nullify();
-                if (arg == null)
-                    continue;
-
-                if (string.Equals(arg, "/?", StringComparison.Ordinal) ||
-                    string.Equals(arg, "-?", StringComparison.Ordinal) ||
-                    string.Equals(arg, "/HELP", StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(arg, "-HELP", StringComparison.OrdinalIgnoreCase))
+                for (var i = 0; i < args.Count; i++)
                 {
-                    HelpRequested = true;
-                }
+                    if (i == 0)
+                        continue;
 
-                var named = false;
-                if (arg[0] == '-' || arg[0] == '/')
-                {
-                    arg = arg.Substring(1);
-                    named = true;
-                }
+                    var arg = args[i].Nullify();
+                    if (arg == null)
+                        continue;
 
-                string name;
-                string value;
-                int pos = arg.IndexOf(':');
-                if (pos < 0)
-                {
-                    name = arg;
-                    value = null;
-                }
-                else
-                {
-                    name = arg.Substring(0, pos).Trim();
-                    value = arg.Substring(pos + 1).Trim();
-                }
+                    if (string.Equals(arg, "/?", StringComparison.Ordinal) ||
+                        string.Equals(arg, "-?", StringComparison.Ordinal) ||
+                        string.Equals(arg, "/HELP", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(arg, "-HELP", StringComparison.OrdinalIgnoreCase))
+                    {
+                        cmdLine.HelpRequested = true;
+                    }
 
-                _positionArguments[i - 1] = arg;
-                if (named)
-                {
-                    _namedArguments[name] = value;
+                    var named = false;
+                    if (arg[0] == '-' || arg[0] == '/')
+                    {
+                        arg = arg.Substring(1);
+                        named = true;
+                    }
+
+                    string name;
+                    string value;
+                    int pos = arg.IndexOf(':');
+                    if (pos < 0)
+                    {
+                        name = arg;
+                        value = null;
+                    }
+                    else
+                    {
+                        name = arg.Substring(0, pos).Trim();
+                        value = arg.Substring(pos + 1).Trim();
+                    }
+
+                    if (named)
+                    {
+                        cmdLine._namedArguments[name] = value;
+                    }
+                    else
+                    {
+                        cmdLine._positionArguments[i - 1] = arg;
+                    }
                 }
             }
+            return cmdLine;
         }
 
-        public static IReadOnlyDictionary<string, string> NamedArguments => _namedArguments;
-        public static IReadOnlyDictionary<int, string> PositionArguments => _positionArguments;
-        public static bool HelpRequested { get; }
+        private readonly Dictionary<string, string> _namedArguments = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<int, string> _positionArguments = new Dictionary<int, string>();
 
-        public static string CommandLineWithoutExe
+        public IReadOnlyDictionary<string, string> NamedArguments => _namedArguments;
+        public IReadOnlyDictionary<int, string> PositionArguments => _positionArguments;
+        public bool HelpRequested { get; private set; }
+
+        public string CommandLineWithoutExe
         {
             get
             {
@@ -84,7 +89,7 @@ namespace DevPad.Utilities
             }
         }
 
-        public static T GetArgument<T>(IEnumerable<string> arguments, string name, T defaultValue = default)
+        public T GetArgument<T>(IEnumerable<string> arguments, string name, T defaultValue = default)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -115,7 +120,7 @@ namespace DevPad.Utilities
             return defaultValue;
         }
 
-        public static string GetNullifiedArgument(string name, string defaultValue = null)
+        public string GetNullifiedArgument(string name, string defaultValue = null)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -126,7 +131,7 @@ namespace DevPad.Utilities
             return s.Nullify();
         }
 
-        public static string GetNullifiedArgument(int index, string defaultValue = null)
+        public string GetNullifiedArgument(int index, string defaultValue = null)
         {
             if (!_positionArguments.TryGetValue(index, out var s))
                 return defaultValue.Nullify();
@@ -134,7 +139,7 @@ namespace DevPad.Utilities
             return s.Nullify();
         }
 
-        public static T GetArgument<T>(int index, T defaultValue = default, IFormatProvider provider = null)
+        public T GetArgument<T>(int index, T defaultValue = default, IFormatProvider provider = null)
         {
             if (!_positionArguments.TryGetValue(index, out var s))
                 return defaultValue;
@@ -142,7 +147,7 @@ namespace DevPad.Utilities
             return Conversions.ChangeType(s, defaultValue, provider);
         }
 
-        public static object GetArgument(int index, object defaultValue, Type conversionType, IFormatProvider provider = null)
+        public object GetArgument(int index, object defaultValue, Type conversionType, IFormatProvider provider = null)
         {
             if (!_positionArguments.TryGetValue(index, out var s))
                 return defaultValue;
@@ -150,7 +155,7 @@ namespace DevPad.Utilities
             return Conversions.ChangeType(s, conversionType, defaultValue, provider);
         }
 
-        public static T GetArgument<T>(string name, T defaultValue = default, IFormatProvider provider = null)
+        public T GetArgument<T>(string name, T defaultValue = default, IFormatProvider provider = null)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -164,7 +169,7 @@ namespace DevPad.Utilities
             return Conversions.ChangeType(s, defaultValue, provider);
         }
 
-        public static bool HasArgument(string name)
+        public bool HasArgument(string name)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -172,7 +177,7 @@ namespace DevPad.Utilities
             return _namedArguments.TryGetValue(name, out _);
         }
 
-        public static object GetArgument(string name, object defaultValue, Type conversionType, IFormatProvider provider = null)
+        public object GetArgument(string name, object defaultValue, Type conversionType, IFormatProvider provider = null)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));

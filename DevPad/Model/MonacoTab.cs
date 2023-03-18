@@ -76,6 +76,9 @@ namespace DevPad.Model
 
         public async Task InitializeAsync(string filePath)
         {
+            if (filePath != null && !IOUtilities.IsPathRooted(filePath))
+                throw new ArgumentException(null, nameof(filePath));
+
             FilePath = filePath;
             var udf = Settings.Current.UserDataFolder;
             var env = await CoreWebView2Environment.CreateAsync(null, udf);
@@ -150,6 +153,9 @@ namespace DevPad.Model
         {
             if (filePath == null)
                 throw new ArgumentNullException(nameof(filePath));
+
+            if (!IOUtilities.IsPathRooted(filePath))
+                throw new ArgumentException(null, nameof(filePath));
 
             var text = await GetEditorTextAsync();
             if (text == null)

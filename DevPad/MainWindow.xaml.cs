@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using DevPad.Ipc;
 using DevPad.Model;
 using DevPad.MonacoModel;
 using DevPad.Utilities;
@@ -36,6 +37,7 @@ namespace DevPad
 
         public MainWindow()
         {
+            SingleInstance.Command += (s, e) => OnRemoteCommand(e);
             InitializeComponent();
             NewMenuItem.Icon = NewMenuItem.Icon ?? new Image { Source = IconUtilities.GetStockIconImageSource(StockIconId.DOCASSOC) };
             AboutMenuItem.Icon = AboutMenuItem.Icon ?? new Image { Source = IconUtilities.GetStockIconImageSource(StockIconId.HELP) };
@@ -47,12 +49,12 @@ namespace DevPad
 
             _tabs.Add(new MonacoAddTab());
 
-            var open = CommandLine.GetNullifiedArgument(0);
+            var open = CommandLine.Current.GetNullifiedArgument(0);
             if (open != null)
             {
                 _ = AddTabAsync(open);
             }
-            else
+            else if (!Program.IsNewInstance)
             {
                 _loading = true;
                 var any = false;
@@ -108,6 +110,48 @@ namespace DevPad
                 dlg.WindowStartupLocation = WindowStartupLocation.CenterScreen;
             }
             dlg.ShowDialog();
+        }
+
+        private void OnRemoteCommand(SingleInstanceCommandEventArgs e)
+        {
+            switch (e.Type)
+            {
+                case SingleInstanceCommandType.SendCommandLine:
+                    e.Handled = true;
+                    Program.Trace(e.Type + " process:" + e.CallingProcessId + " user:" + e.UserDomainName + "\\" + e.UserName);
+                    Dispatcher.Invoke(() => ExecCommandFromCommandLine(e.Arguments?.Select(a => string.Format("{0}", a))));
+                    break;
+
+                case SingleInstanceCommandType.Ping:
+                    e.Handled = true;
+                    Program.Trace(e.Type + " process:" + e.CallingProcessId + " user:" + e.UserDomainName + "\\" + e.UserName);
+                    e.Output = WindowsUtilities.CurrentProcess.Id;
+                    break;
+
+                case SingleInstanceCommandType.Quit:
+                    e.Handled = true;
+                    Program.Trace(e.Type + " process:" + e.CallingProcessId + " user:" + e.UserDomainName + "\\" + e.UserName);
+                    Dispatcher.Invoke(async () =>
+                    {
+                        await CloseAllTabs(false, false, true);
+                        Settings.Current.SerializeToConfigurationWhenIdle(0); // flush if any change in queue
+                        _closing = true;
+                        Close();
+                    });
+                    break;
+            }
+        }
+
+        private object ExecCommandFromCommandLine(IEnumerable<string> arguments)
+        {
+            var cmdLine = CommandLine.From(arguments?.ToArray());
+            var open = cmdLine.GetNullifiedArgument(0);
+            if (open != null)
+            {
+                _ = AddTabAsync(open);
+            }
+
+            return null;
         }
 
         private class WindowDataContext : INotifyPropertyChanged
@@ -762,6 +806,7 @@ namespace DevPad
         {
             var info = new ProcessStartInfo();
             info.FileName = Environment.GetCommandLineArgs()[0];
+            info.Arguments = "/newinstance";
             info.UseShellExecute = true;
             Process.Start(info);
         }

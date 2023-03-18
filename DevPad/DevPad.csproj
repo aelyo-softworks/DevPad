@@ -71,6 +71,14 @@
       <DependentUpon>About.xaml</DependentUpon>
     </Compile>
     <Compile Include="GlobalSuppressions.cs" />
+    <Compile Include="Ipc\CommandResult.cs" />
+    <Compile Include="Ipc\CommandTarget.cs" />
+    <Compile Include="Ipc\CommandTargetEventArgs.cs" />
+    <Compile Include="Ipc\ROTFLAGS.cs" />
+    <Compile Include="Ipc\RunningObjectTable.cs" />
+    <Compile Include="Ipc\SingleInstance.cs" />
+    <Compile Include="Ipc\SingleInstanceCommandEventArgs.cs" />
+    <Compile Include="Ipc\SingleInstanceCommandType.cs" />
     <Compile Include="Model\MonacoAddTab.cs" />
     <Compile Include="MonacoModel\DevPadConfigurationChangedEventArgs.cs" />
     <Compile Include="MonacoModel\DevPadEventArgs.cs" />
@@ -157,6 +165,7 @@
     <Compile Include="Utilities\UniversalConverterOperator.cs" />
     <Compile Include="Utilities\UniversalConverterOptions.cs" />
     <Compile Include="Utilities\ValueChangedEventArgs.cs" />
+    <Compile Include="Utilities\WindowPlacement.cs" />
     <Compile Include="Utilities\WindowsApp.cs" />
     <Compile Include="Utilities\WindowsUtilities.cs" />
     <Compile Include="Utilities\WinformsUtilities.cs" />

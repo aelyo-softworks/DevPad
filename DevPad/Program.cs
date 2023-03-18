@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Diagnostics.Eventing;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Windows;
 using System.Windows.Threading;
+using DevPad.Ipc;
 using DevPad.Utilities;
 
 namespace DevPad
@@ -23,7 +25,8 @@ namespace DevPad
         }
 
         public static WindowsApp WindowsApplication { get; } = new WindowsApp("Aelyo.DevPad", AssemblyUtilities.GetTitle());
-        public static bool InDebugMode { get; } = CommandLine.GetArgument("debug",
+        public static bool IsNewInstance { get; } = CommandLine.Current.GetArgument<bool>("newinstance");
+        public static bool InDebugMode { get; } = CommandLine.Current.GetArgument("debug",
 #if DEBUG
             true
 #else
@@ -40,20 +43,60 @@ namespace DevPad
                 return;
             }
 
+            if (CommandLine.Current.GetArgument<bool>("quit"))
+            {
+                var count = SingleInstance.Quit().Count();
+                Environment.ExitCode = 1;
+                return;
+            }
+
+            if (CommandLine.Current.GetArgument<bool>("ping"))
+            {
+                WindowsUtilities.AllocConsole();
+                foreach (var result in SingleInstance.Ping())
+                {
+                    var txt = "Ping result: " + result.HResult + " Process id:" + result.Output;
+                    Trace(txt);
+                    Console.WriteLine(txt);
+                }
+
+                Console.WriteLine("Press ESC to terminate.");
+                do
+                {
+                    if (Console.ReadKey(true).Key == ConsoleKey.Escape)
+                        break;
+
+                }
+                while (true);
+                return;
+            }
+
+            // try to call already running process
+            if (!IsNewInstance && SingleInstance.SendCommandLine(0, Environment.GetCommandLineArgs()).Any(r => r.HResult == 0))
+                return;
+
             WindowsApplication.PublisherName = AssemblyUtilities.GetCompany();
             WindowsApplication.RegisterProcess();
 
-            var unregister = CommandLine.GetArgument("unregister", false);
+            var unregister = CommandLine.Current.GetArgument("unregister", false);
             if (unregister)
             {
                 WindowsApplication.Unregister();
                 return;
             }
 
-            var app = new App();
-            Application.Current.DispatcherUnhandledException += Current_DispatcherUnhandledException;
-            app.InitializeComponent();
-            app.Run();
+            SingleInstance.RegisterCommandTarget();
+            try
+            {
+                var app = new App();
+                Application.Current.DispatcherUnhandledException += Current_DispatcherUnhandledException;
+                app.InitializeComponent();
+                app.Run();
+            }
+            finally
+            {
+                SingleInstance.UnregisterCommandTarget();
+            }
         }
 
         public static void ShowError(Window window, Exception error)

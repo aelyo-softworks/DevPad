@@ -299,7 +299,7 @@ namespace DevPad.Utilities
         private static bool GetIsRemoteSession()
         {
             // emulate remote session
-            if (CommandLine.GetArgument("remoteSession", false))
+            if (CommandLine.Current.GetArgument("remoteSession", false))
                 return true;
 
             // https://docs.microsoft.com/en-us/windows/win32/termserv/detecting-the-terminal-services-environment
