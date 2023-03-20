@@ -153,6 +153,9 @@
   <data name="CloseTabTooltip" xml:space="preserve">
     <value>Close tab</value>
   </data>
+  <data name="ColorError" xml:space="preserve">
+    <value>Invalid color</value>
+  </data>
   <data name="Confirmation" xml:space="preserve">
     <value>Confirmation</value>
   </data>
@@ -177,6 +180,9 @@
   <data name="ConfirmRestartAsAdmin" xml:space="preserve">
     <value>The file wasn't saved because of an unauthorized access error. Do you want to restart DevPad as Administrator?</value>
   </data>
+  <data name="DefaultGroupName" xml:space="preserve">
+    <value>Default</value>
+  </data>
   <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
   <data name="DevPadIcon" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>DevPad.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
@@ -193,6 +199,9 @@
   <data name="HideDetails" xml:space="preserve">
     <value>Hide Details</value>
   </data>
+  <data name="NameError" xml:space="preserve">
+    <value>Name cannot be empty or whitespace</value>
+  </data>
   <data name="OneFileFilter" xml:space="preserve">
     <value>{0} Files ({1})|{1}</value>
   </data>
@@ -207,6 +216,9 @@
   </data>
   <data name="Process" xml:space="preserve">
     <value>Process</value>
+  </data>
+  <data name="ReservedNameError" xml:space="preserve">
+    <value>This name is reserved</value>
   </data>
   <data name="Security" xml:space="preserve">
     <value>Security</value>

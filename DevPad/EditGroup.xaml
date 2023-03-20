@@ -1,0 +1,93 @@
+﻿<Window
+    x:Class="DevPad.EditGroup"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="New Group"
+    FocusManager.FocusedElement="{Binding ElementName=NewName}"
+    ResizeMode="NoResize"
+    SizeToContent="WidthAndHeight"
+    WindowStartupLocation="CenterOwner">
+    <Grid MinWidth="300" MinHeight="133">
+        <Label
+            Margin="10,10,0,0"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Top"
+            Content="Name:" />
+        <TextBox
+            x:Name="NewName"
+            Width="210"
+            Height="23"
+            Margin="0,10,10,0"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Top"
+            VerticalContentAlignment="Center"
+            IsEnabled="{Binding IsNotDefault}"
+            Style="{StaticResource ResourceKey=ValidationTextBox}"
+            Text="{Binding Name, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True}" />
+        <Label
+            Margin="10,40,0,0"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Top"
+            Content="Text Color:" />
+        <TextBox
+            x:Name="ForeColor"
+            Width="130"
+            Height="23"
+            Margin="0,40,90,0"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Top"
+            VerticalContentAlignment="Center"
+            Style="{StaticResource ResourceKey=ValidationTextBox}"
+            Text="{Binding ForeColor, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True}" />
+        <Button
+            Width="75"
+            Height="23"
+            Margin="0,40,10,10"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Top"
+            Click="OnForeColorClick"
+            Content="Choose..." />
+        <Label
+            Margin="10,70,0,0"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Top"
+            Content="Back Color:" />
+        <TextBox
+            x:Name="BackColor"
+            Width="130"
+            Height="23"
+            Margin="0,70,90,0"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Top"
+            VerticalContentAlignment="Center"
+            Style="{StaticResource ResourceKey=ValidationTextBox}"
+            Text="{Binding BackColor, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True}" />
+        <Button
+            Width="75"
+            Height="23"
+            Margin="0,70,10,10"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Top"
+            Click="OnBackColorClick"
+            Content="Choose..." />
+        <Button
+            Width="75"
+            Height="23"
+            Margin="0,40,10,10"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Bottom"
+            Click="OnCancelClick"
+            Content="Cancel"
+            IsCancel="True" />
+        <Button
+            Width="75"
+            Height="23"
+            Margin="0,0,90,10"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Bottom"
+            Click="OnOKClick"
+            Content="OK"
+            IsDefault="True"
+            IsEnabled="{Binding IsValid}" />
+    </Grid>
+</Window>

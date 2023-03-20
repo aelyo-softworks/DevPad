@@ -46,7 +46,7 @@
             IsMainMenu="True">
             <Menu.ItemsPanel>
                 <ItemsPanelTemplate>
-                    <DockPanel HorizontalAlignment="Stretch" />
+                    <DockPanel HorizontalAlignment="Stretch" LastChildFill="False" />
                 </ItemsPanelTemplate>
             </Menu.ItemsPanel>
             <MenuItem
@@ -95,6 +95,7 @@
                     Header="_Find"
                     InputGestureText="Ctrl+F" />
                 <MenuItem Click="OnFormat" Header="F_ormat Document" />
+                <MenuItem Click="OnEditCurrentGroup" Header="Current _Group..." />
             </MenuItem>
             <MenuItem Header="_View">
                 <MenuItem
@@ -107,6 +108,44 @@
                     SubmenuOpened="OnLanguagesOpened">
                     <MenuItem Header="(Lazy)" />
                 </MenuItem>
+                <MenuItem Header="Tab Groups Placement">
+                    <MenuItem
+                        x:Name="TopTabPos"
+                        Click="OnTabsGroupPlacementChange"
+                        Header="Top"
+                        IsCheckable="True"
+                        IsChecked="True"
+                        StaysOpenOnClick="True"
+                        Tag="{x:Static Dock.Top}" />
+                    <MenuItem
+                        x:Name="BottomTabPos"
+                        Click="OnTabsGroupPlacementChange"
+                        Header="Bottom"
+                        IsCheckable="True"
+                        StaysOpenOnClick="True"
+                        Tag="{x:Static Dock.Bottom}" />
+                    <MenuItem
+                        x:Name="LeftTabPos"
+                        Click="OnTabsGroupPlacementChange"
+                        Header="Left"
+                        IsCheckable="True"
+                        StaysOpenOnClick="True"
+                        Tag="{x:Static Dock.Left}" />
+                    <MenuItem
+                        x:Name="RightTabPos"
+                        Click="OnTabsGroupPlacementChange"
+                        Header="Right"
+                        IsCheckable="True"
+                        StaysOpenOnClick="True"
+                        Tag="{x:Static Dock.Right}" />
+                    <Separator />
+                    <MenuItem
+                        x:Name="HiddenTabPos"
+                        Click="OnTabsGroupPlacementChange"
+                        Header="Hidden"
+                        IsCheckable="True"
+                        StaysOpenOnClick="True" />
+                </MenuItem>
             </MenuItem>
             <MenuItem Header="_Help">
                 <MenuItem Click="OnOpenConfig" Header="_Open Configuration File" />
@@ -116,9 +155,9 @@
                     Click="OnAboutClick"
                     Header="_About DevPad..." />
             </MenuItem>
-            <MenuItem HorizontalAlignment="Right">
+            <!--<MenuItem HorizontalAlignment="Right">
                 <MenuItem.Header>
-                    <TabControl x:Name="TabGroups">
+                    <TabControl x:Name="CornerTabGroups">
                         <TabControl.ContextMenu>
                             <ContextMenu Padding="2" BorderThickness="1">
                                 <MenuItem Header="Colors..." />
@@ -154,57 +193,46 @@
                         </TabControl.ItemTemplate>
                     </TabControl>
                 </MenuItem.Header>
-            </MenuItem>
+            </MenuItem>-->
         </Menu>
         <TabControl
-            x:Name="TabMain"
+            x:Name="GroupsTab"
             Grid.Row="1"
-            SelectionChanged="OnTabSelectionChanged">
+            ContextMenuOpening="OnGroupMenuOpening"
+            SelectionChanged="OnGroupSelectionChanged"
+            TabStripPlacement="{Binding GroupsTabPlacement}">
             <TabControl.ContextMenu>
                 <ContextMenu Padding="2" BorderThickness="1">
-                    <MenuItem Header="To Be Defined..." />
+                    <MenuItem Click="OnEditGroup" Header="Edit Group..." />
                 </ContextMenu>
             </TabControl.ContextMenu>
             <TabControl.ItemTemplate>
                 <DataTemplate>
-                    <DockPanel ToolTip="{Binding FilePath}">
-                        <Image
-                            Width="16"
-                            Height="16"
-                            Margin="0,0,4,0"
-                            Source="{Binding Image}"
-                            Visibility="{Binding Image, Converter={StaticResource NullToVisibilityConverter}}" />
+                    <DockPanel
+                        Margin="-6,-1,-6,-3"
+                        Background="{Binding BackColor, Converter={StaticResource GenericConverter}, ConverterParameter=Transparent}"
+                        TextBlock.Foreground="{Binding ForeColor, Converter={StaticResource GenericConverter}, ConverterParameter=Black}">
                         <TextBlock
-                            HorizontalAlignment="Stretch"
+                            Margin="2,0,0,0"
+                            Padding="4,0,4,0"
                             FontFamily="{Binding FontFamily}"
-                            Text="{Binding Name}" />
-                        <TextBlock
-                            FontWeight="Bold"
-                            Text=" *"
-                            Visibility="{Binding HasContentChanged, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                            Text="{Binding Name}"
+                            ToolTip="{Binding Name}" />
                         <Button
-                            Margin="10,0,0,0"
+                            Margin="3,0,3,0"
                             Background="Transparent"
                             BorderThickness="0"
-                            Click="OnPinTab"
-                            Content=""
-                            FontFamily="Segoe UI Symbol"
-                            ToolTip="{Binding PinButtonTooltip}"
-                            Visibility="{Binding IsAdd, Converter={StaticResource ReverseBooleanToVisibilityConverter}}" />
-                        <Button
-                            Margin="3,0,0,0"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            Click="OnCloseTab"
+                            Click="OnCloseGroup"
                             Content="✕"
                             FontFamily="Segoe UI Symbol"
+                            Foreground="{Binding ForeColor, Converter={StaticResource GenericConverter}, ConverterParameter=Black}"
                             ToolTip="{Binding CloseButtonTooltip}"
-                            Visibility="{Binding IsAdd, Converter={StaticResource ReverseBooleanToVisibilityConverter}}" />
+                            Visibility="{Binding IsClosable, Converter={StaticResource BooleanToVisibilityConverter}}" />
                         <Button
-                            Margin="-3,-2,-4,-3"
+                            Margin="-10,-2,2,1"
                             Background="Transparent"
                             BorderThickness="0"
-                            Click="OnAddTab"
+                            Click="OnAddGroup"
                             Content=" 🞣 "
                             FontFamily="Segoe UI Symbol"
                             ToolTip="{Binding AddButtonTooltip}"
@@ -214,7 +242,65 @@
             </TabControl.ItemTemplate>
             <TabControl.ContentTemplate>
                 <DataTemplate>
-                    <ContentControl Content="{Binding WebView}" />
+                    <TabControl SelectionChanged="OnTabSelectionChanged">
+                        <TabControl.ContextMenu>
+                            <ContextMenu Padding="2" BorderThickness="1">
+                                <MenuItem Header="To Be Defined..." />
+                            </ContextMenu>
+                        </TabControl.ContextMenu>
+                        <TabControl.ItemTemplate>
+                            <DataTemplate>
+                                <DockPanel ToolTip="{Binding FilePath}">
+                                    <Image
+                                        Width="16"
+                                        Height="16"
+                                        Margin="0,0,4,0"
+                                        Source="{Binding Image}"
+                                        Visibility="{Binding Image, Converter={StaticResource NullToVisibilityConverter}}" />
+                                    <TextBlock
+                                        HorizontalAlignment="Stretch"
+                                        FontFamily="{Binding FontFamily}"
+                                        Text="{Binding Name}" />
+                                    <TextBlock
+                                        FontWeight="Bold"
+                                        Text=" *"
+                                        Visibility="{Binding HasContentChanged, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                    <Button
+                                        Margin="10,0,0,0"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        Click="OnPinTab"
+                                        Content=""
+                                        FontFamily="Segoe UI Symbol"
+                                        ToolTip="{Binding PinButtonTooltip}"
+                                        Visibility="{Binding IsAdd, Converter={StaticResource ReverseBooleanToVisibilityConverter}}" />
+                                    <Button
+                                        Margin="3,0,0,0"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        Click="OnCloseTab"
+                                        Content="✕"
+                                        FontFamily="Segoe UI Symbol"
+                                        ToolTip="{Binding CloseButtonTooltip}"
+                                        Visibility="{Binding IsAdd, Converter={StaticResource ReverseBooleanToVisibilityConverter}}" />
+                                    <Button
+                                        Margin="-3,-2,-4,-3"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        Click="OnAddTab"
+                                        Content=" 🞣 "
+                                        FontFamily="Segoe UI Symbol"
+                                        ToolTip="{Binding AddButtonTooltip}"
+                                        Visibility="{Binding IsAdd, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                </DockPanel>
+                            </DataTemplate>
+                        </TabControl.ItemTemplate>
+                        <TabControl.ContentTemplate>
+                            <DataTemplate>
+                                <ContentControl Content="{Binding WebView}" />
+                            </DataTemplate>
+                        </TabControl.ContentTemplate>
+                    </TabControl>
                 </DataTemplate>
             </TabControl.ContentTemplate>
         </TabControl>

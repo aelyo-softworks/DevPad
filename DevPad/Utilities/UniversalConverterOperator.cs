@@ -14,6 +14,7 @@
         Contains,
         IsType,
         IsOfType,
-        Negate
+        Negate,
+        Convert,
     }
 }

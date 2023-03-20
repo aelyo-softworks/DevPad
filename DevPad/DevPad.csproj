@@ -93,6 +93,9 @@
     <Compile Include="MonacoModel\LanguageExtensionPoint.cs" />
     <Compile Include="MonacoModel\MonacoExtensions.cs" />
     <Compile Include="Model\MonacoTab.cs" />
+    <Compile Include="EditGroup.xaml.cs">
+      <DependentUpon>EditGroup.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyVersionInfo.cs" />
     <Compile Include="RecentFile.cs" />
@@ -185,6 +188,10 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="EditGroup.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="Utilities\Grid\PropertyGrid.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

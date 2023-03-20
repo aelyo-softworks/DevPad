@@ -90,7 +90,6 @@ namespace DevPad.Utilities.Grid
         }
 
         public PropertyGridDataProvider DataProvider { get; private set; }
-        public bool IsValid => !DictionaryObjectHasErrors;
         public virtual int SortOrder { get; set; }
         public virtual DynamicObject Attributes { get; private set; }
         public virtual DynamicObject TypeAttributes { get; private set; }

@@ -246,7 +246,7 @@ namespace DevPad.Utilities
 
         public static T GetDataContext<T>(this RoutedEventArgs source) where T : class
         {
-            if (source.Source is FrameworkElement element)
+            if (source.OriginalSource is FrameworkElement element)
                 return element.DataContext as T;
 
             return default;

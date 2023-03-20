@@ -8,7 +8,6 @@ using System.Runtime.CompilerServices;
 
 namespace DevPad.Utilities
 {
-    // all properties and methods start with DictionaryObject and are protected so they won't interfere with super type
     public abstract class DictionaryObject : IDictionaryObject, INotifyPropertyChanged, INotifyPropertyChanging, IDataErrorInfo, INotifyDataErrorInfo
     {
         private readonly ConcurrentDictionary<string, DictionaryObjectProperty> _properties = new ConcurrentDictionary<string, DictionaryObjectProperty>(StringComparer.Ordinal);
@@ -22,7 +21,6 @@ namespace DevPad.Utilities
 
         protected virtual ConcurrentDictionary<string, DictionaryObjectProperty> DictionaryObjectProperties => _properties;
 
-        // these PropertyChangxxx are public and don't start with BaseObject because used by everyone
         public event PropertyChangingEventHandler PropertyChanging;
         public event PropertyChangedEventHandler PropertyChanged;
         public event EventHandler<DataErrorsChangedEventArgs> ErrorsChanged;
@@ -33,7 +31,7 @@ namespace DevPad.Utilities
         protected virtual bool DictionaryObjectRaiseOnErrorsChanged { get; set; }
 
         protected string DictionaryObjectError => DictionaryObjectGetError(null);
-        protected bool DictionaryObjectHasErrors => (DictionaryObjectGetErrors(null)?.Cast<object>().Any()).GetValueOrDefault();
+        public bool IsValid => !(DictionaryObjectGetErrors(null)?.OfType<object>().Any()).GetValueOrDefault();
 
         protected virtual string DictionaryObjectGetError(string propertyName)
         {
@@ -53,14 +51,35 @@ namespace DevPad.Utilities
                 throw new ArgumentNullException(nameof(name));
 
             OnErrorsChanged(this, new DataErrorsChangedEventArgs(name));
+            OnPropertyChanged(nameof(IsValid));
         }
 
-        protected void OnPropertyChanged(string name) => OnPropertyChanged(this, new PropertyChangedEventArgs(name));
+        protected void OnPropertyChanged([CallerMemberName] string name = null) => OnPropertyChanged(this, new PropertyChangedEventArgs(name));
 
         protected virtual void OnErrorsChanged(object sender, DataErrorsChangedEventArgs e) => ErrorsChanged?.Invoke(sender, e);
         protected virtual void OnPropertyRollback(object sender, DictionaryObjectPropertyRollbackEventArgs e) => PropertyRollback?.Invoke(sender, e);
         protected virtual void OnPropertyChanging(object sender, PropertyChangingEventArgs e) => PropertyChanging?.Invoke(sender, e);
         protected virtual void OnPropertyChanged(object sender, PropertyChangedEventArgs e) => PropertyChanged?.Invoke(sender, e);
+
+        protected virtual DictionaryObject DictionaryObjectCreateInstance() => (DictionaryObject)Activator.CreateInstance(GetType());
+
+        public virtual object Clone()
+        {
+            var clone = DictionaryObjectCreateInstance();
+            clone.CopyFrom(this);
+            return clone;
+        }
+
+        public virtual void CopyFrom(DictionaryObject from)
+        {
+            if (from == null)
+                throw new ArgumentNullException(nameof(from));
+
+            foreach (var kv in from.DictionaryObjectProperties)
+            {
+                DictionaryObjectSetPropertyValue(kv.Value.Value, kv.Key);
+            }
+        }
 
         protected string DictionaryObjectGetNullifiedPropertyValue(string defaultValue = null, [CallerMemberName] string name = null) => DictionaryObjectGetPropertyValue<string>(defaultValue, name)?.Nullify();
         protected T DictionaryObjectGetPropertyValue<T>([CallerMemberName] string name = null) => DictionaryObjectGetPropertyValue(default(T), name);
@@ -137,7 +156,6 @@ namespace DevPad.Utilities
             return dic.Values.All(c => c == 0);
         }
 
-        // note: these are not defined in IDictionaryObject because they're kinda really internal to the object
         protected virtual DictionaryObjectProperty DictionaryObjectUpdatingProperty(DictionaryObjectPropertySetOptions options, string name, DictionaryObjectProperty oldProperty, DictionaryObjectProperty newProperty) => null;
         protected virtual DictionaryObjectProperty DictionaryObjectUpdatedProperty(DictionaryObjectPropertySetOptions options, string name, DictionaryObjectProperty oldProperty, DictionaryObjectProperty newProperty) => null;
         protected virtual DictionaryObjectProperty DictionaryObjectRollbackProperty(DictionaryObjectPropertySetOptions options, string name, DictionaryObjectProperty oldProperty, DictionaryObjectProperty newProperty) => null;
@@ -149,7 +167,7 @@ namespace DevPad.Utilities
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
 
-            IEnumerable oldErrors = null;
+            object[] oldErrors = null;
             var rollbackOnError = (options & DictionaryObjectPropertySetOptions.RollbackChangeOnError) == DictionaryObjectPropertySetOptions.RollbackChangeOnError;
             var onErrorsChanged = (options & DictionaryObjectPropertySetOptions.DontRaiseOnErrorsChanged) != DictionaryObjectPropertySetOptions.DontRaiseOnErrorsChanged;
             if (!DictionaryObjectRaiseOnErrorsChanged)
@@ -159,7 +177,7 @@ namespace DevPad.Utilities
 
             if (onErrorsChanged || rollbackOnError)
             {
-                oldErrors = DictionaryObjectGetErrors(name);
+                oldErrors = DictionaryObjectGetErrors(name)?.OfType<object>()?.ToArray();
             }
 
             var forceChanged = (options & DictionaryObjectPropertySetOptions.ForceRaiseOnPropertyChanged) == DictionaryObjectPropertySetOptions.ForceRaiseOnPropertyChanged;
@@ -250,7 +268,7 @@ namespace DevPad.Utilities
 
         string IDataErrorInfo.Error => DictionaryObjectError;
         string IDataErrorInfo.this[string columnName] => DictionaryObjectGetError(columnName);
-        bool INotifyDataErrorInfo.HasErrors => DictionaryObjectHasErrors;
+        bool INotifyDataErrorInfo.HasErrors => !IsValid;
         IEnumerable INotifyDataErrorInfo.GetErrors(string propertyName) => DictionaryObjectGetErrors(propertyName);
         ConcurrentDictionary<string, DictionaryObjectProperty> IDictionaryObject.Properties => DictionaryObjectProperties;
         T IDictionaryObject.GetPropertyValue<T>(T defaultValue, string name) => DictionaryObjectGetPropertyValue(defaultValue, name);

@@ -169,6 +169,15 @@ namespace DevPad.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Invalid color.
+        /// </summary>
+        internal static string ColorError {
+            get {
+                return ResourceManager.GetString("ColorError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Confirmation.
         /// </summary>
         internal static string Confirmation {
@@ -241,6 +250,15 @@ namespace DevPad.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Default.
+        /// </summary>
+        internal static string DefaultGroupName {
+            get {
+                return ResourceManager.GetString("DefaultGroupName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
         /// </summary>
         internal static System.Drawing.Icon DevPadIcon {
@@ -287,6 +305,15 @@ namespace DevPad.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Name cannot be empty or whitespace.
+        /// </summary>
+        internal static string NameError {
+            get {
+                return ResourceManager.GetString("NameError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to {0} Files ({1})|{1}.
         /// </summary>
         internal static string OneFileFilter {
@@ -328,6 +355,15 @@ namespace DevPad.Resources {
         internal static string Process {
             get {
                 return ResourceManager.GetString("Process", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to This name is reserved.
+        /// </summary>
+        internal static string ReservedNameError {
+            get {
+                return ResourceManager.GetString("ReservedNameError", resourceCulture);
             }
         }
         

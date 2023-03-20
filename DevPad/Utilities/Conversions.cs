@@ -1533,55 +1533,31 @@ namespace DevPad.Utilities
                 }
             }
 
-            if (value != null)
+            var typeConverter = TypeDescriptor.GetConverter(conversionType);
+            if (typeConverter != null)
             {
-                var converter = TypeDescriptor.GetConverter(value);
-                if (converter != null)
+                if (typeConverter.CanConvertFrom(inputType))
                 {
-                    if (converter.CanConvertTo(conversionType))
+                    try
                     {
-                        try
-                        {
-                            value = converter.ConvertTo(null, provider as CultureInfo, input, conversionType);
-                            return true;
-                        }
-                        catch
-                        {
-                            // continue;
-                        }
+                        value = typeConverter.ConvertFrom(null, provider as CultureInfo, input);
+                        return true;
                     }
-
-                    if (converter.CanConvertFrom(inputType))
+                    catch
                     {
-                        try
-                        {
-                            value = converter.ConvertFrom(null, provider as CultureInfo, input);
-                            return true;
-                        }
-                        catch
-                        {
-                            // continue;
-                        }
+                        // continue;
                     }
                 }
-            }
-
-            if (input != null)
-            {
-                var converter = TypeDescriptor.GetConverter(input);
-                if (converter != null)
+                else if (typeConverter.CanConvertTo(conversionType))
                 {
-                    if (converter.CanConvertTo(conversionType))
+                    try
                     {
-                        try
-                        {
-                            value = converter.ConvertTo(null, provider as CultureInfo, input, conversionType);
-                            return true;
-                        }
-                        catch
-                        {
-                            // continue;
-                        }
+                        value = typeConverter.ConvertTo(null, provider as CultureInfo, input, conversionType);
+                        return true;
+                    }
+                    catch
+                    {
+                        // continue;
                     }
                 }
             }

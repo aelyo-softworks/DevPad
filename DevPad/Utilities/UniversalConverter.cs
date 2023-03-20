@@ -20,9 +20,20 @@ namespace DevPad.Utilities
 
             foreach (var sw in Switch)
             {
-                if (sw.Matches(value, parameter, culture))
+                if (sw.Matches(value, parameter, culture, targetType))
                 {
                     object converted;
+                    if (sw.Operator == UniversalConverterOperator.Convert)
+                    {
+                        if (Conversions.TryChangeType(value, targetType, culture, out converted))
+                        {
+                            if (converted != null || parameter == null)
+                                return converted;
+                        }
+
+                        return Conversions.ChangeType(parameter, targetType, null, culture);
+                    }
+
                     if (sw.Options.HasFlag(UniversalConverterOptions.ConvertedValueIsConverterParameter))
                     {
                         converted = Conversions.ChangeType(parameter, targetType, culture);

@@ -5,6 +5,11 @@
     xmlns:utils="clr-namespace:DevPad.Utilities"
     StartupUri="MainWindow.xaml">
     <Application.Resources>
+        <utils:UniversalConverter x:Key="GenericConverter">
+            <utils:UniversalConverter.Switch>
+                <utils:UniversalConverterCase Operator="Convert" />
+            </utils:UniversalConverter.Switch>
+        </utils:UniversalConverter>
         <utils:UniversalConverter x:Key="NegateConverter">
             <utils:UniversalConverter.Switch>
                 <utils:UniversalConverterCase Operator="Negate" />
@@ -28,5 +33,24 @@
                 <utils:UniversalConverterCase ConvertedValue="Collapsed" Value="true" />
             </utils:UniversalConverter.Switch>
         </utils:UniversalConverter>
+
+        <Style x:Key="ValidationTextBox" TargetType="{x:Type TextBox}">
+            <Setter Property="Validation.ErrorTemplate">
+                <Setter.Value>
+                    <ControlTemplate>
+                        <Border
+                            Width="1"
+                            Height="23"
+                            BorderBrush="Red"
+                            BorderThickness="1" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="Validation.HasError" Value="true">
+                    <Setter Property="ToolTip" Value="{Binding RelativeSource={RelativeSource Self}, Path=(Validation.Errors).CurrentItem.ErrorContent}" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
     </Application.Resources>
 </Application>

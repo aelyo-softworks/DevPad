@@ -37,7 +37,7 @@ namespace DevPad.Utilities
             }
         }
 
-        public virtual bool Matches(object value, object parameter, CultureInfo culture)
+        public virtual bool Matches(object value, object parameter, CultureInfo culture, Type targetType)
         {
             var input = new UniversalConverterInput();
             input.MaximumValue = MaximumValue;

@@ -38,6 +38,8 @@ namespace DevPad.Model
         public virtual string PinButtonTooltip => Resources.Resources.PinTabTooltip;
         public virtual string CloseButtonTooltip => Resources.Resources.CloseTabTooltip;
         public virtual string AddButtonTooltip => string.Empty;
+        public string GroupKey { get => DictionaryObjectGetNullifiedPropertyValue(); set => DictionaryObjectSetPropertyValue(value); }
+        public bool IsSelected { get => DictionaryObjectGetPropertyValue(false); internal set => DictionaryObjectSetPropertyValue(value); }
         public bool IsMonacoReady { get => DictionaryObjectGetPropertyValue(false); private set => DictionaryObjectSetPropertyValue(value); }
         public bool HasContentChanged { get => DictionaryObjectGetPropertyValue(false); private set => DictionaryObjectSetPropertyValue(value); }
         public bool IsEditorCreated { get => DictionaryObjectGetPropertyValue(false); private set => DictionaryObjectSetPropertyValue(value); }
