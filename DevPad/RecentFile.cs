@@ -11,9 +11,10 @@ namespace DevPad
         public int UntitledNumber { get; set; }
         public RecentFileOptions Options { get; set; }
         public Color Color { get; set; }
+        public string GroupKey { get; set; }
 
         public string DisplayName => LastAccessTime + " " + FilePath;
 
-        public override string ToString() => LastAccessTime + (OpenOrder != 0 ? " {#" + OpenOrder + "}" : null) + " " + (FilePath != null ? FilePath : Settings.GetUntitledName(UntitledNumber));
+        public override string ToString() => LastAccessTime + (OpenOrder != 0 ? " {#" + OpenOrder + "}" : null) + " [" + GroupKey.Replace("\0", "!") + "]" + (FilePath != null ? FilePath : Settings.GetUntitledName(UntitledNumber));
     }
 }

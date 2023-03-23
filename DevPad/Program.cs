@@ -99,15 +99,20 @@ namespace DevPad
             }
         }
 
-        public static void ShowError(Window window, Exception error)
+        private static bool _errorShown;
+
+        public static void ShowError(Window window, Exception error, bool shutdownOnClose)
         {
-            if (error == null)
+            if (error == null || _errorShown)
                 return;
 
+            _errorShown = true;
             Trace(error);
+            var shutdown = false;
             using (var td = new TaskDialog())
             {
                 const int sysInfoId = 1;
+                const int quitId = 2;
                 td.Event += (s, e2) =>
                 {
                     if (e2.Message == TASKDIALOG_NOTIFICATIONS.TDN_BUTTON_CLICKED)
@@ -119,12 +124,20 @@ namespace DevPad
                                 MainWindow.ShowSystemInfo(null);
                                 e2.HResult = 1; // S_FALSE => don't close
                                 break;
+
+                            case quitId:
+                                shutdown = true;
+                                break;
                         }
                     };
                 };
 
                 td.Flags |= TASKDIALOG_FLAGS.TDF_SIZE_TO_CONTENT | TASKDIALOG_FLAGS.TDF_ALLOW_DIALOG_CANCELLATION;
-                td.CommonButtonFlags |= TASKDIALOG_COMMON_BUTTON_FLAGS.TDCBF_CLOSE_BUTTON;
+                if (!shutdownOnClose)
+                {
+                    td.CommonButtonFlags |= TASKDIALOG_COMMON_BUTTON_FLAGS.TDCBF_CLOSE_BUTTON;
+                }
+
                 td.CollapsedControlText = Resources.Resources.ShowDetails;
                 td.ExpandedControlText = Resources.Resources.HideDetails;
                 td.ExpandedInformation = error.ToString();
@@ -132,16 +145,23 @@ namespace DevPad
                 td.Title = WinformsUtilities.ApplicationTitle;
                 td.MainInstruction = Resources.Resources.UnhandledException;
                 td.CustomButtons.Add(sysInfoId, Resources.Resources.SystemInfo);
+                td.CustomButtons.Add(quitId, Resources.Resources.Quit);
                 var msg = error.GetAllMessages();
                 td.Content = msg;
                 td.Show(window);
+                if (shutdownOnClose || shutdown)
+                {
+                    Application.Current.Shutdown();
+                }
             }
+
+            _errorShown = false;
         }
 
         private static void Current_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
         {
             e.Handled = true;
-            ShowError(null, e.Exception);
+            ShowError(null, e.Exception, false);
         }
     }
 }

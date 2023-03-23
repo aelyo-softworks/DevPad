@@ -4,9 +4,8 @@ using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Xml;
-using System.Xml.Serialization;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace DevPad.Utilities
 {
@@ -18,33 +17,6 @@ namespace DevPad.Utilities
 
         public void SerializeToConfigurationWhenIdle(int dueTime = 1000) => DevPadExtensions.DoWhenIdle(SerializeToConfiguration, dueTime);
         public void SerializeToConfiguration() => Serialize(ConfigurationFilePath);
-        public void Serialize(XmlWriter writer)
-        {
-            if (writer == null)
-                throw new ArgumentNullException(nameof(writer));
-
-            var serializer = new XmlSerializer(GetType());
-            serializer.Serialize(writer, this);
-        }
-
-        public void Serialize(TextWriter writer)
-        {
-            if (writer == null)
-                throw new ArgumentNullException(nameof(writer));
-
-            var serializer = new XmlSerializer(GetType());
-            serializer.Serialize(writer, this);
-        }
-
-        public void Serialize(Stream stream)
-        {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
-
-            var serializer = new XmlSerializer(GetType());
-            serializer.Serialize(stream, this);
-        }
-
         public void Serialize(string filePath)
         {
             if (filePath == null)
@@ -57,10 +29,13 @@ namespace DevPad.Utilities
                 Directory.CreateDirectory(dir);
             }
 
-            using (var writer = new XmlTextWriter(filePath, Encoding.UTF8))
+            var options = new JsonSerializerOptions
             {
-                Serialize(writer);
-            }
+                WriteIndented = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
+            };
+            var json = JsonSerializer.Serialize((T)(object)this, options);
+            File.WriteAllText(filePath, json);
         }
 
         protected void OnPropertyChanged(string name) => OnPropertyChanged(this, new PropertyChangedEventArgs(name));
@@ -124,7 +99,7 @@ namespace DevPad.Utilities
             return clone;
         }
 
-        private static readonly Lazy<string> _configurationFilePath = new Lazy<string>(() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), typeof(T).Namespace, typeof(T).Name + ".config"), true);
+        private static readonly Lazy<string> _configurationFilePath = new Lazy<string>(() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), typeof(T).Namespace, typeof(T).Name + ".json"), true);
         public static string ConfigurationFilePath => _configurationFilePath.Value;
 
         public static void BackupFromConfiguration(TimeSpan? maxDuration = null) => Backup(ConfigurationFilePath, maxDuration);
@@ -197,61 +172,8 @@ namespace DevPad.Utilities
 
             try
             {
-                using (var reader = new XmlTextReader(filePath))
-                {
-                    return Deserialize(reader, defaultValue);
-                }
-            }
-            catch
-            {
-                return defaultValue;
-            }
-        }
-
-        public static T Deserialize(Stream stream) => Deserialize(stream, new T());
-        public static T Deserialize(Stream stream, T defaultValue)
-        {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
-
-            try
-            {
-                var deserializer = new XmlSerializer(typeof(T));
-                return (T)deserializer.Deserialize(stream);
-            }
-            catch
-            {
-                return defaultValue;
-            }
-        }
-
-        public static T Deserialize(TextReader reader) => Deserialize(reader, new T());
-        public static T Deserialize(TextReader reader, T defaultValue)
-        {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-
-            try
-            {
-                var deserializer = new XmlSerializer(typeof(T));
-                return (T)deserializer.Deserialize(reader);
-            }
-            catch
-            {
-                return defaultValue;
-            }
-        }
-
-        public static T Deserialize(XmlReader reader) => Deserialize(reader, new T());
-        public static T Deserialize(XmlReader reader, T defaultValue)
-        {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-
-            try
-            {
-                var deserializer = new XmlSerializer(typeof(T));
-                return (T)deserializer.Deserialize(reader);
+                var bytes = File.ReadAllBytes(filePath);
+                return JsonSerializer.Deserialize<T>(bytes);
             }
             catch
             {

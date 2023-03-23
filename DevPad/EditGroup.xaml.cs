@@ -11,7 +11,7 @@ namespace DevPad
 {
     public partial class EditGroup : Window
     {
-        private TabGroup _group;
+        private readonly TabGroup _group;
 
         public EditGroup(TabGroup group)
         {
@@ -23,6 +23,7 @@ namespace DevPad
             DataContext = group.Clone();
         }
 
+        private TabGroup DataContextGroup => (TabGroup)DataContext;
         public TabGroup Group => _group;
 
         protected override void OnKeyDown(System.Windows.Input.KeyEventArgs e)
@@ -70,7 +71,7 @@ namespace DevPad
             var color = ChooseColor(this, Group.ForeColor);
             if (color != null)
             {
-                Group.ForeColor = color;
+                DataContextGroup.ForeColor = color;
             }
         }
 
@@ -79,7 +80,7 @@ namespace DevPad
             var color = ChooseColor(this, Group.BackColor);
             if (color != null)
             {
-                Group.BackColor = color;
+                DataContextGroup.BackColor = color;
             }
         }
     }

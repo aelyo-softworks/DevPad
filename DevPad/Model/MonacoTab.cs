@@ -28,18 +28,23 @@ namespace DevPad.Model
             _dpo.Load += DevPadOnLoad;
             _dpo.Event += DevPadEvent;
             HasContentChanged = false;
+            if (!IsAdd)
+            {
+                WebView = new WebView2();
+            }
         }
 
         public int Index { get; set; }
-        public WebView2 WebView { get; } = new WebView2();
+        public WebView2 WebView { get; }
         public bool IsAdd => this is MonacoAddTab;
+        public bool IsFileView => WebView != null;
         public bool IsUntitled => FilePath == null && !IsAdd;
         public virtual string FontFamily => string.Empty;
         public virtual string PinButtonTooltip => Resources.Resources.PinTabTooltip;
         public virtual string CloseButtonTooltip => Resources.Resources.CloseTabTooltip;
         public virtual string AddButtonTooltip => string.Empty;
+        public string BackColor => "Transparent";
         public string GroupKey { get => DictionaryObjectGetNullifiedPropertyValue(); set => DictionaryObjectSetPropertyValue(value); }
-        public bool IsSelected { get => DictionaryObjectGetPropertyValue(false); internal set => DictionaryObjectSetPropertyValue(value); }
         public bool IsMonacoReady { get => DictionaryObjectGetPropertyValue(false); private set => DictionaryObjectSetPropertyValue(value); }
         public bool HasContentChanged { get => DictionaryObjectGetPropertyValue(false); private set => DictionaryObjectSetPropertyValue(value); }
         public bool IsEditorCreated { get => DictionaryObjectGetPropertyValue(false); private set => DictionaryObjectSetPropertyValue(value); }
@@ -48,6 +53,7 @@ namespace DevPad.Model
         public string CursorSelection { get => DictionaryObjectGetNullifiedPropertyValue(); private set => DictionaryObjectSetPropertyValue(value); }
         public ImageSource Image { get => DictionaryObjectGetPropertyValue<ImageSource>(); private set => DictionaryObjectSetPropertyValue(value); }
         public int UntitledNumber { get; set; }
+        public string Key => FilePath != null ? FilePath : UntitledNumber.ToString();
         public virtual string Name => IsUntitled ? Settings.GetUntitledName(UntitledNumber) : Path.GetFileName(FilePath);
         public string FilePath
         {
@@ -62,12 +68,15 @@ namespace DevPad.Model
             }
         }
 
-        public string AutoSaveFilePath => Path.Combine(Settings.AutoSavesDirectoryPath, AutoSaveId);
+        public string AutoSaveFilePath => IsFileView ? Path.Combine(Settings.AutoSavesDirectoryPath, AutoSaveId) : null;
         public string AutoSaveId
         {
             get
             {
-                var id = Conversions.ComputeGuidHash(FilePath != null ? FilePath : UntitledNumber.ToString()).ToString("N");
+                if (!IsFileView)
+                    return null;
+
+                var id = Conversions.ComputeGuidHash(FilePath != null ? FilePath : GroupKey + "\0" + UntitledNumber.ToString()).ToString("N");
                 var name = "." + Name;
                 if ((id.Length + name.Length) < 255)
                 {
@@ -106,7 +115,7 @@ namespace DevPad.Model
 
             async Task autoSaveAsync()
             {
-                var text = await Application.Current.Dispatcher.SafeInvoke(async () => await GetEditorTextAsync());
+                var text = await Application.Current.Dispatcher.SafeInvoke(async () => await GetEditorTextAsync(false));
                 if (text == null)
                     return;
 
@@ -121,7 +130,7 @@ namespace DevPad.Model
             e.Handled = true;
         }
 
-        public Task SetEditorLanguageAsync(string lang) => WebView.ExecuteScriptAsync($"monaco.editor.setModelLanguage(editor.getModel(), '{lang}');");
+        public Task SetEditorLanguageAsync(string lang) => ExecuteScriptAsync($"monaco.editor.setModelLanguage(editor.getModel(), '{lang}');");
         private async Task SetEditorLanguageFromFilePathAsync(string filePath)
         {
             var ext = Path.GetExtension(filePath);
@@ -141,17 +150,17 @@ namespace DevPad.Model
         public async Task SetEditorThemeAsync(string theme = null)
         {
             theme = theme.Nullify() ?? "vs";
-            await WebView.ExecuteScriptAsync($"monaco.editor.setTheme('{theme}')");
+            await ExecuteScriptAsync($"monaco.editor.setTheme('{theme}')");
         }
 
         public async Task SetEditorPositionAsync(int lineNumber = 0, int column = 0)
         {
-            await WebView.ExecuteScriptAsync("editor.setPosition({lineNumber:" + lineNumber + ",column:" + column + "})");
+            await ExecuteScriptAsync("editor.setPosition({lineNumber:" + lineNumber + ",column:" + column + "})");
         }
 
         public async Task ShowFindUIAsync()
         {
-            await WebView.ExecuteScriptAsync("editor.trigger('','actions.find')");
+            await ExecuteScriptAsync("editor.trigger('','actions.find')");
         }
 
         public async Task SaveAsync(string filePath)
@@ -162,10 +171,7 @@ namespace DevPad.Model
             if (!IOUtilities.IsPathRooted(filePath))
                 throw new ArgumentException(null, nameof(filePath));
 
-            var text = await GetEditorTextAsync();
-            if (text == null)
-                return;
-
+            var text = await GetEditorTextAsync(true);
             if (FilePath != null)
             {
                 FilesWatcher.UnwatchFile(FilePath);
@@ -183,11 +189,29 @@ namespace DevPad.Model
             await SetEditorLanguageFromFilePathAsync(FilePath);
         }
 
-        private async Task<string> GetEditorTextAsync()
+        private async Task<string> ExecuteScriptAsync(string script)
         {
-            var text = await WebView.ExecuteScriptAsync("editor.getValue()");
+            try
+            {
+                return await WebView.ExecuteScriptAsync(script);
+            }
+            catch (ObjectDisposedException ex)
+            {
+                Program.Trace(ex);
+                return null;
+            }
+        }
+
+        private async Task<string> GetEditorTextAsync(bool throwOnNull)
+        {
+            var text = await ExecuteScriptAsync("editor.getValue()");
             if (text == null)
-                throw new InvalidOperationException();
+            {
+                if (throwOnNull)
+                    throw new InvalidOperationException();
+
+                return null;
+            }
 
             return UnescapeEditorText(text);
         }
@@ -251,12 +275,12 @@ namespace DevPad.Model
             }
             catch (Exception ex)
             {
-                Program.ShowError(MainWindow.Current, ex);
+                Program.ShowError(MainWindow.Current, ex, false);
                 await MainWindow.Current.CloseTabAsync(this, true, true);
                 return LoadStatus.Error;
             }
 
-            await WebView.ExecuteScriptAsync($"loadFromHost('{lang}')");
+            await ExecuteScriptAsync($"loadFromHost('{lang}')");
             await SetEditorPositionAsync();
             return fromAutoSave ? LoadStatus.OkFromAutoSave : LoadStatus.Ok;
         }
@@ -269,7 +293,7 @@ namespace DevPad.Model
 
         public async Task FocusEditorAsync()
         {
-            await WebView.ExecuteScriptAsync("editor.focus()");
+            await ExecuteScriptAsync("editor.focus()");
             WebView.Focus();
         }
 
@@ -280,22 +304,22 @@ namespace DevPad.Model
 
         public async Task BlurEditorAsync()
         {
-            await WebView.ExecuteScriptAsync("editor.blur()");
+            await ExecuteScriptAsync("editor.blur()");
         }
 
         public async Task MoveWidgetsToStartAsync()
         {
-            await WebView.ExecuteScriptAsync("moveFindWidgetToStart()");
+            await ExecuteScriptAsync("moveFindWidgetToStart()");
         }
 
         public async Task MoveWidgetsToEndAsync()
         {
-            await WebView.ExecuteScriptAsync("moveFindWidgetToEnd()");
+            await ExecuteScriptAsync("moveFindWidgetToEnd()");
         }
 
         public async Task MoveEditorToAsync(int? line = null, int? column = null)
         {
-            await WebView.ExecuteScriptAsync($"moveEditorTo({column}, {line})");
+            await ExecuteScriptAsync($"moveEditorTo({column}, {line})");
         }
 
         public async Task<T> GetEditorOptionsAsync<T>(EditorOption option, T defaultValue = default)
@@ -305,17 +329,17 @@ namespace DevPad.Model
 
         public async Task EnableMinimapAsync(bool enabled)
         {
-            await WebView.ExecuteScriptAsync("editor.updateOptions({minimap:{enabled:" + enabled.ToString().ToLowerInvariant() + "}})");
+            await ExecuteScriptAsync("editor.updateOptions({minimap:{enabled:" + enabled.ToString().ToLowerInvariant() + "}})");
         }
 
         public async Task SetFontSizeAsync(double size)
         {
-            await WebView.ExecuteScriptAsync("editor.updateOptions({fontSize:'" + size.ToString(CultureInfo.InvariantCulture) + "px'})");
+            await ExecuteScriptAsync("editor.updateOptions({fontSize:'" + size.ToString(CultureInfo.InvariantCulture) + "px'})");
         }
 
         public async Task FormatDocumentAsync()
         {
-            await WebView.ExecuteScriptAsync("editor.getAction('editor.action.formatDocument').run()");
+            await ExecuteScriptAsync("editor.getAction('editor.action.formatDocument').run()");
         }
 
         private void DevPadOnLoad(object sender, DevPadLoadEventArgs e)
@@ -388,7 +412,7 @@ namespace DevPad.Model
                     column = pos.GetValue("column", -1);
                     setPosition();
 
-                    langId = await WebView.ExecuteScriptAsync("editor.getModel().getLanguageId()");
+                    langId = await ExecuteScriptAsync("editor.getModel().getLanguageId()");
                     langId = UnescapeEditorText(langId);
                     await setLang();
                     break;
@@ -405,7 +429,7 @@ namespace DevPad.Model
                     break;
 
                 case DevPadEventType.CursorSelectionChanged:
-                    text = await WebView.ExecuteScriptAsync("editor.getModel().getValueInRange(editor.getSelection())");
+                    text = await ExecuteScriptAsync("editor.getModel().getValueInRange(editor.getSelection())");
                     text = UnescapeEditorText(text) ?? string.Empty;
                     if (text.Length == 0)
                     {

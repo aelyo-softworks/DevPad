@@ -116,7 +116,6 @@ namespace DevPad.Utilities
             {
                 timer = new Timer(state =>
                 {
-                    action();
                     if (_doWhenIdleTimers.TryRemove(actionUniqueKey, out var t))
                     {
                         try
@@ -128,6 +127,7 @@ namespace DevPad.Utilities
                             // continue
                         }
                     }
+                    action();
                 }, null, Timeout.Infinite, Timeout.Infinite);
                 timer = _doWhenIdleTimers.AddOrUpdate(actionUniqueKey, timer, (k, o) =>
                 {

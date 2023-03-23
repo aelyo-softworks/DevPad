@@ -13,6 +13,8 @@ namespace DevPad.Utilities
 {
     public static class WpfUtilities
     {
+        public static ColorConverter ColorConverter { get; } = new ColorConverter();
+
         public static string ApplicationName => AssemblyUtilities.GetTitle();
         public static string ApplicationVersion => AssemblyUtilities.GetFileVersion();
         public static string ApplicationTitle => ApplicationName + " V" + ApplicationVersion;

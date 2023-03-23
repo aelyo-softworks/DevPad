@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using System.Xml.Serialization;
+using System.Text.Json.Serialization;
+using DevPad.Model;
 using DevPad.Resources;
 using DevPad.Utilities;
 using DevPad.Utilities.Grid;
@@ -24,21 +25,27 @@ namespace DevPad
         });
         public static Settings Current => _current.Value;
 
-
         public static string GetUntitledName(int number) => string.Format(Resources.Resources.Untitled, number);
 
         [DefaultValue(null)]
         [Browsable(false)]
         public virtual List<RecentFile> RecentFilesPaths { get => GetPropertyValue((List<RecentFile>)null); set { SetPropertyValue(value); } }
 
-        [XmlIgnore]
+        [DefaultValue(null)]
+        [Browsable(false)]
+        public virtual List<RecentGroup> RecentGroups { get => GetPropertyValue((List<RecentGroup>)null); set { SetPropertyValue(value); } }
+
+        [JsonIgnore]
         [Browsable(false)]
         public string UserDataFolder { get; set; } = DefaultUserDataFolder;
 
         [Browsable(false)]
         public string ActiveFilePath { get; set; }
 
-        [XmlIgnore]
+        [Browsable(false)]
+        public string ActiveGroupKey { get; set; }
+
+        [JsonIgnore]
         [Browsable(false)]
         public IReadOnlyList<string> RecentFolderPaths
         {
@@ -111,6 +118,33 @@ namespace DevPad
             }
         }
 
+        private Dictionary<string, RecentGroup> GetRecentGroups()
+        {
+            var dic = new Dictionary<string, RecentGroup>(StringComparer.Ordinal);
+            var recents = RecentGroups;
+            if (recents != null)
+            {
+                foreach (var recent in recents)
+                {
+                    dic[recent.Key] = recent;
+                }
+            }
+            return dic;
+        }
+
+        private void SetRecentGroups(Dictionary<string, RecentGroup> dic)
+        {
+            var list = dic.Select(kv => kv.Value).ToList();
+            if (list.Count == 0)
+            {
+                RecentGroups = null;
+            }
+            else
+            {
+                RecentGroups = list;
+            }
+        }
+
         public void CleanRecentFiles()
         {
             SetRecentFiles(GetRecentFiles());
@@ -138,24 +172,58 @@ namespace DevPad
             return true;
         }
 
-        public void AddRecentFile(string filePath, int openOrder)
+        public void AddRecentFile(string filePath, string groupKey, int openOrder)
         {
             if (filePath == null)
                 throw new ArgumentNullException(nameof(filePath));
 
+            if (groupKey == null)
+                throw new ArgumentNullException(nameof(groupKey));
+
             if (!IOUtilities.PathIsFile(filePath))
                 return;
 
-            AddRecentFile(filePath, openOrder, 0);
+            AddRecentFile(filePath, groupKey, openOrder, 0);
         }
 
-        public void AddRecentUntitledFile(int openOrder, int untitledNumber) => AddRecentFile(GetUntitledName(untitledNumber), openOrder, untitledNumber);
-        private void AddRecentFile(string filePath, int openOrder, int untitledNumber)
+        public void AddRecentUntitledFile(string groupKey, int openOrder, int untitledNumber) => AddRecentFile(GetUntitledName(untitledNumber), groupKey, openOrder, untitledNumber);
+        private void AddRecentFile(string filePath, string groupKey, int openOrder, int untitledNumber)
         {
             Program.Trace("file:" + filePath + " order:" + openOrder + " num:" + untitledNumber);
             var dic = GetRecentFiles();
-            dic[filePath] = new RecentFile { FilePath = filePath, OpenOrder = openOrder, UntitledNumber = untitledNumber };
+            dic[filePath] = new RecentFile { FilePath = filePath, OpenOrder = openOrder, UntitledNumber = untitledNumber, GroupKey = groupKey };
             SetRecentFiles(dic);
+        }
+
+        public void ClearRecentGroups()
+        {
+            RecentGroups = null;
+            SerializeToConfiguration();
+        }
+
+        public bool RemoveRecentGroup(IKeyable group)
+        {
+            if (group == null)
+                throw new ArgumentNullException(nameof(group));
+
+            Program.Trace("group:" + group);
+            var dic = GetRecentGroups();
+            if (!dic.Remove(group.Key))
+                return false;
+
+            SetRecentGroups(dic);
+            return true;
+        }
+
+        public void AddRecentGroup(TabGroup group)
+        {
+            if (group == null)
+                throw new ArgumentNullException(nameof(group));
+
+            Program.Trace("group:" + group);
+            var dic = GetRecentGroups();
+            dic[group.Key] = RecentGroup.FromTabGroup(group);
+            SetRecentGroups(dic);
         }
     }
 }

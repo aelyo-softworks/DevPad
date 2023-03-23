@@ -3,24 +3,22 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Windows.Media;
 using DevPad.Utilities;
 
 namespace DevPad.Model
 {
-    public class TabGroup : DictionaryObject
+    public class TabGroup : DictionaryObject, IKeyable
     {
         private readonly ObservableCollection<MonacoTab> _tabs = new ObservableCollection<MonacoTab>();
-        private readonly static ColorConverter _colorConverter = new ColorConverter();
 
         public TabGroup()
         {
             _tabs.Add(new MonacoAddTab());
         }
 
-        public MonacoTab CurrentTab => Tabs.FirstOrDefault(t => t.IsSelected);
-        public IEnumerable<MonacoTab> Tabs => _tabs.Where(t => !t.IsAdd);
-
+        public ObservableCollection<MonacoTab> Tabs => _tabs;
+        public IEnumerable<MonacoTab> FileViewTabs => Tabs.Where(t => t.IsFileView);
+        public string ActiveTabKey { get; internal set; }
         public bool IsDefault { get; internal set; }
         public bool IsNotDefault => !IsDefault;
         public bool IsAdd => this is AddTabGroup;
@@ -54,11 +52,21 @@ namespace DevPad.Model
                     yield return Resources.Resources.ReservedNameError;
             }
 
-            if ((propertyName == null || propertyName == nameof(ForeColor)) && !string.IsNullOrWhiteSpace(ForeColor) && !_colorConverter.IsValid(ForeColor))
+            if ((propertyName == null || propertyName == nameof(ForeColor)) && !string.IsNullOrWhiteSpace(ForeColor) && !WpfUtilities.ColorConverter.IsValid(ForeColor))
                 yield return Resources.Resources.ColorError;
 
-            if ((propertyName == null || propertyName == nameof(BackColor)) && !string.IsNullOrWhiteSpace(BackColor) && !_colorConverter.IsValid(BackColor))
+            if ((propertyName == null || propertyName == nameof(BackColor)) && !string.IsNullOrWhiteSpace(BackColor) && !WpfUtilities.ColorConverter.IsValid(BackColor))
                 yield return Resources.Resources.ColorError;
+        }
+
+        public void AddTab(MonacoTab tab)
+        {
+            if (tab == null)
+                throw new ArgumentNullException(nameof(tab));
+
+            var c = _tabs.Count - 1;
+            tab.Index = c;
+            _tabs.Insert(c, tab);
         }
 
         public bool RemoveTab(MonacoTab tab)
@@ -67,17 +75,6 @@ namespace DevPad.Model
                 throw new ArgumentNullException(nameof(tab));
 
             return _tabs.Remove(tab);
-        }
-
-        public void SelectTab(MonacoTab tab)
-        {
-            if (tab == null)
-                throw new ArgumentNullException(nameof(tab));
-
-            foreach (var item in Tabs)
-            {
-                item.IsSelected = item == tab;
-            }
         }
 
         public void ClearTabs()

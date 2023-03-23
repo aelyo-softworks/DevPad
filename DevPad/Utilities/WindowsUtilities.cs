@@ -165,6 +165,9 @@ namespace DevPad.Utilities
         [DllImport("user32")]
         private static extern int MapWindowPoints(IntPtr hWndFrom, IntPtr hWndTo, ref RECT rect, int cPoints);
 
+        [DllImport("uxtheme", CharSet = CharSet.Auto)]
+        private static extern int GetCurrentThemeName(StringBuilder pszThemeFileName, int dwMaxNameChars, StringBuilder pszColorBuff, int dwMaxColorChars, StringBuilder pszSizeBuff, int cchMaxSizeChars);
+
         [DllImport("kernel32")]
         public static extern bool AllocConsole();
 
@@ -250,6 +253,13 @@ namespace DevPad.Utilities
         public static bool AttachThreadInput(int idAttach, int idAttachTo) => AttachThreadInput(idAttach, idAttachTo, true);
         public static bool DetachThreadInput(int idAttach, int idAttachTo) => AttachThreadInput(idAttach, idAttachTo, false);
         public static int GetWindowThreadId(IntPtr handle) => GetWindowThreadProcessId(handle, out _);
+
+        public static string GetCurrentThemeFilePath()
+        {
+            var sb = new StringBuilder(512);
+            GetCurrentThemeName(sb, sb.Capacity, null, 0, null, 0);
+            return sb.ToString();
+        }
 
         public static int GetWindowProcessId(IntPtr handle)
         {

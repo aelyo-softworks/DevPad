@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Web.WebView2.Wpf;
@@ -42,11 +43,37 @@ namespace DevPad.MonacoModel
 
             if (_languagesByExtension.Count > 0)
             {
+                // TODO: add some well-known languages that are not recognized by Monaco
+                addExtensionLike(".idl", ".c");
+
                 foreach (var kv in _languagesByExtension)
                 {
                     Program.WindowsApplication.FileExtensions.Add(kv.Key);
                 }
+
                 Program.WindowsApplication.Register();
+
+                void addExtensionLike(string ext, string likeExt)
+                {
+                    if (_languagesByExtension.ContainsKey(ext))
+                        return;
+
+                    if (!_languagesByExtension.TryGetValue(likeExt, out var list) || list.Count == 0)
+                        return;
+
+                    var first = list.FirstOrDefault(l => l.Extensions != null) ?? list[0];
+                    if (first.Extensions == null)
+                    {
+                        first.Extensions = new string[] { ext };
+                    }
+                    else
+                    {
+                        var exts = new List<string>(first.Extensions);
+                        exts.Add(ext);
+                        first.Extensions = exts.ToArray();
+                    }
+                    _languagesByExtension[ext] = list;
+                }
             }
         }
 

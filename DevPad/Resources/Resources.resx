@@ -217,6 +217,9 @@
   <data name="Process" xml:space="preserve">
     <value>Process</value>
   </data>
+  <data name="Quit" xml:space="preserve">
+    <value>Quit</value>
+  </data>
   <data name="ReservedNameError" xml:space="preserve">
     <value>This name is reserved</value>
   </data>

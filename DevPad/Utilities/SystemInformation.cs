@@ -53,6 +53,9 @@ namespace DevPad.Utilities
         [LocalizedCategory("Windows")]
         public string AvailableWebViewVersion => SystemUtilities.GetAvailableBrowserVersionString();
 
+        [LocalizedCategory("Windows")]
+        public string ThemeFilePath => WindowsUtilities.GetCurrentThemeFilePath();
+
         [LocalizedCategory("Process")]
         public string CommandLine => Environment.CommandLine;
 
