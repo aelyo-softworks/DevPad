@@ -445,16 +445,16 @@ namespace DevPad
 
             Program.Trace("tab:" + tab);
             // always ensure we have one (untitled) tab opened
-            //if ((checkAtLeastOneTab || _closing) && _tabs.Count == 1)
-            //{
-            //    await AddTabAsync(null);
-            //}
+            if (checkAtLeastOneTab && !group.FileViewTabs.Any())
+            {
+                await AddTabAsync(group.Key, null, true);
+            }
 
             if (removeFromRecent)
             {
                 if (tab.FilePath != null)
                 {
-                    Settings.Current.AddRecentFile(tab.FilePath, tab.GroupKey, 0);
+                    Settings.Current.RemoveRecentFile(tab.FilePath);
                     Settings.Current.SerializeToConfigurationWhenIdle();
                 }
                 else if (tab.IsUntitled)
