@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
@@ -14,6 +15,7 @@ namespace DevPad.Utilities
     public static class IconUtilities
     {
         private static readonly Lazy<int?> _applicationIconIndex = new Lazy<int?>(GetApplicationIconIndex);
+        private readonly static ConcurrentDictionary<string, ImageSource> _iconsAsImageSources = new ConcurrentDictionary<string, ImageSource>(StringComparer.OrdinalIgnoreCase);
 
         private static int? GetApplicationIconIndex()
         {
@@ -43,9 +45,14 @@ namespace DevPad.Utilities
             if (hicon == IntPtr.Zero)
                 return null;
 
-            var image = Imaging.CreateBitmapSourceFromHIcon(hicon, new Int32Rect(0, 0, 16, 16), BitmapSizeOptions.FromEmptyOptions());
-            DestroyIcon(hicon);
-            return image;
+            try
+            {
+                return Imaging.CreateBitmapSourceFromHIcon(hicon, new Int32Rect(0, 0, 16, 16), BitmapSizeOptions.FromEmptyOptions());
+            }
+            finally
+            {
+                DestroyIcon(hicon);
+            }
         }
 
         public static IntPtr GetStockIconHandle(StockIconId id, SHGSI flags = SHGSI.SHGSI_ICON | SHGSI.SHGSI_SMALLICON)
@@ -65,6 +72,20 @@ namespace DevPad.Utilities
         }
 
         public static ImageSource GetExtensionIconAsImageSource(string ext, SHIL shil)
+        {
+            if (ext == null)
+                throw new ArgumentNullException(nameof(ext));
+
+            var key = ext + "\0" + ((int)shil).ToString();
+            if (!_iconsAsImageSources.TryGetValue(key, out var source))
+            {
+                source = GetExtensionIconAsImageSourceNoCache(ext, shil);
+                source = _iconsAsImageSources.AddOrUpdate(key, source, (k, o) => o);
+            }
+            return source;
+        }
+
+        public static ImageSource GetExtensionIconAsImageSourceNoCache(string ext, SHIL shil)
         {
             if (ext == null)
                 throw new ArgumentNullException(nameof(ext));
@@ -103,6 +124,20 @@ namespace DevPad.Utilities
         }
 
         public static ImageSource GetItemIconAsImageSource(string path, SHIL shil)
+        {
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
+
+            var key = path + "\0" + ((int)shil).ToString();
+            if (!_iconsAsImageSources.TryGetValue(key, out var source))
+            {
+                source = GetItemIconAsImageSourceNoCache(path, shil);
+                source = _iconsAsImageSources.AddOrUpdate(key, source, (k, o) => o);
+            }
+            return source;
+        }
+
+        public static ImageSource GetItemIconAsImageSourceNoCache(string path, SHIL shil)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
@@ -152,9 +187,14 @@ namespace DevPad.Utilities
                     break;
             }
 
-            var image = Imaging.CreateBitmapSourceFromHIcon(hicon, new Int32Rect(0, 0, size, size), BitmapSizeOptions.FromEmptyOptions());
-            DestroyIcon(hicon);
-            return image;
+            try
+            {
+                return Imaging.CreateBitmapSourceFromHIcon(hicon, new Int32Rect(0, 0, size, size), BitmapSizeOptions.FromEmptyOptions());
+            }
+            finally
+            {
+                DestroyIcon(hicon);
+            }
         }
 
         private static IntPtr GetItemIconHandle(IShellItem item, SHIL shil)

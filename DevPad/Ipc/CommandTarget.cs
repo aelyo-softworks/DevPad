@@ -120,7 +120,7 @@ namespace DevPad.Ipc
         int IOleCommandTarget.QueryStatus(Guid commandGroup, int count, IntPtr commands, IntPtr text) => SingleInstance.E_NOTIMPL;
         int IOleCommandTarget.Exec(Guid commandGroup, int commandId, int options, ref object input, ref object output)
         {
-            Program.Trace("commandGroup: " + commandGroup + " commandId:" + commandId + "options:" + options + " input:" + input);
+            //Program.Trace("commandGroup: " + commandGroup + " commandId:" + commandId + "options:" + options + " input:" + input);
             var e = new CommandTargetEventArgs(commandGroup, commandId, input);
             Command?.Invoke(this, e);
 

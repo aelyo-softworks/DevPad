@@ -26,6 +26,7 @@ namespace DevPad
         public static Settings Current => _current.Value;
 
         public static string GetUntitledName(int number) => string.Format(Resources.Resources.Untitled, number);
+        private static string GetUntitledFilePath(int number, string groupKey) => GetUntitledName(number) + "\0" + groupKey;
 
         [DefaultValue(null)]
         [Browsable(false)]
@@ -157,19 +158,25 @@ namespace DevPad
             SerializeToConfiguration();
         }
 
-        public bool RemoveRecentUntitledFile(int untitledNumber) => RemoveRecentFile(GetUntitledName(untitledNumber));
-        public bool RemoveRecentFile(string filePath)
+        public void RemoveRecentUntitledFile(int untitledNumber, string groupKey) => RemoveRecentFile(GetUntitledFilePath(untitledNumber, groupKey));
+        public void RemoveRecentFile(string filePath)
         {
             if (filePath == null)
                 throw new ArgumentNullException(nameof(filePath));
 
-            Program.Trace("file:" + filePath);
             var dic = GetRecentFiles();
             if (!dic.Remove(filePath))
-                return false;
+                return;
 
             SetRecentFiles(dic);
-            return true;
+        }
+
+        public void RemoveOpened(string filePath)
+        {
+            if (filePath == null)
+                throw new ArgumentNullException(nameof(filePath));
+
+            AddRecentFile(filePath, 0, 0, null);
         }
 
         public void AddRecentFile(string filePath, string groupKey, int openOrder)
@@ -183,13 +190,12 @@ namespace DevPad
             if (!IOUtilities.PathIsFile(filePath))
                 return;
 
-            AddRecentFile(filePath, groupKey, openOrder, 0);
+            AddRecentFile(filePath, 0, openOrder, groupKey);
         }
 
-        public void AddRecentUntitledFile(string groupKey, int openOrder, int untitledNumber) => AddRecentFile(GetUntitledName(untitledNumber), groupKey, openOrder, untitledNumber);
-        private void AddRecentFile(string filePath, string groupKey, int openOrder, int untitledNumber)
+        public void AddRecentUntitledFile(int untitledNumber, int openOrder, string groupKey) => AddRecentFile(GetUntitledFilePath(untitledNumber, groupKey), untitledNumber, openOrder, groupKey);
+        private void AddRecentFile(string filePath, int untitledNumber, int openOrder, string groupKey)
         {
-            Program.Trace("file:" + filePath + " order:" + openOrder + " num:" + untitledNumber);
             var dic = GetRecentFiles();
             dic[filePath] = new RecentFile { FilePath = filePath, OpenOrder = openOrder, UntitledNumber = untitledNumber, GroupKey = groupKey };
             SetRecentFiles(dic);
@@ -206,7 +212,6 @@ namespace DevPad
             if (group == null)
                 throw new ArgumentNullException(nameof(group));
 
-            Program.Trace("group:" + group);
             var dic = GetRecentGroups();
             if (!dic.Remove(group.Key))
                 return false;
@@ -220,7 +225,6 @@ namespace DevPad
             if (group == null)
                 throw new ArgumentNullException(nameof(group));
 
-            Program.Trace("group:" + group);
             var dic = GetRecentGroups();
             dic[group.Key] = RecentGroup.FromTabGroup(group);
             SetRecentGroups(dic);

@@ -51,7 +51,6 @@ namespace DevPad.Model
         public string ModelLanguageName { get => DictionaryObjectGetNullifiedPropertyValue(); private set => DictionaryObjectSetPropertyValue(value); }
         public string CursorPosition { get => DictionaryObjectGetNullifiedPropertyValue(); private set => DictionaryObjectSetPropertyValue(value); }
         public string CursorSelection { get => DictionaryObjectGetNullifiedPropertyValue(); private set => DictionaryObjectSetPropertyValue(value); }
-        public ImageSource Image { get => DictionaryObjectGetPropertyValue<ImageSource>(); private set => DictionaryObjectSetPropertyValue(value); }
         public int UntitledNumber { get; set; }
         public string Key => FilePath != null ? FilePath : UntitledNumber.ToString();
         public virtual string Name => IsUntitled ? Settings.GetUntitledName(UntitledNumber) : Path.GetFileName(FilePath);
@@ -83,6 +82,17 @@ namespace DevPad.Model
                     id += name;
                 }
                 return id;
+            }
+        }
+
+        public ImageSource Image
+        {
+            get
+            {
+                if (FilePath == null)
+                    return null;
+
+                return IconUtilities.GetItemIconAsImageSource(FilePath, SHIL.SHIL_SMALL);
             }
         }
 
@@ -125,11 +135,6 @@ namespace DevPad.Model
             }
         }
 
-        private void OnContextMenuRequested(object sender, CoreWebView2ContextMenuRequestedEventArgs e)
-        {
-            e.Handled = true;
-        }
-
         public Task SetEditorLanguageAsync(string lang) => ExecuteScriptAsync($"monaco.editor.setModelLanguage(editor.getModel(), '{lang}');");
         private async Task SetEditorLanguageFromFilePathAsync(string filePath)
         {
@@ -147,20 +152,38 @@ namespace DevPad.Model
             await SetEditorLanguageAsync(lang);
         }
 
-        public async Task SetEditorThemeAsync(string theme = null)
+        public async Task ReloadAsync()
         {
-            theme = theme.Nullify() ?? "vs";
-            await ExecuteScriptAsync($"monaco.editor.setTheme('{theme}')");
+            if (FilePath == null)
+                throw new InvalidOperationException();
+
+            if (FilePath != null)
+            {
+                FilesWatcher.UnwatchFile(FilePath);
+                FilesWatcher.FileChanged -= OnFileChanged;
+            }
+
+            DeleteAutoSave();
+            await LoadFileIfAnyAsync();
+            HasContentChanged = false;
         }
 
-        public async Task SetEditorPositionAsync(int lineNumber = 0, int column = 0)
+        public async Task CloseAsync(bool deleteAutoSave)
         {
-            await ExecuteScriptAsync("editor.setPosition({lineNumber:" + lineNumber + ",column:" + column + "})");
-        }
+            if (FilePath != null)
+            {
+                FilesWatcher.UnwatchFile(FilePath);
+                FilesWatcher.FileChanged -= OnFileChanged;
+            }
 
-        public async Task ShowFindUIAsync()
-        {
-            await ExecuteScriptAsync("editor.trigger('','actions.find')");
+            if (deleteAutoSave)
+            {
+                DeleteAutoSave();
+            }
+            else if (HasContentChanged)
+            {
+                await AutoSaveWhenIdleAsync(-1);
+            }
         }
 
         public async Task SaveAsync(string filePath)
@@ -189,6 +212,38 @@ namespace DevPad.Model
             await SetEditorLanguageFromFilePathAsync(FilePath);
         }
 
+        public async Task SetEditorThemeAsync(string theme = null) { theme = theme.Nullify() ?? "vs"; await ExecuteScriptAsync($"monaco.editor.setTheme('{theme}')"); }
+        public async Task FocusEditorAsync() { await ExecuteScriptAsync("editor.focus()"); WebView.Focus(); }
+        public async Task SetEditorPositionAsync(int lineNumber = 0, int column = 0) => await ExecuteScriptAsync("editor.setPosition({lineNumber:" + lineNumber + ",column:" + column + "})");
+        public async Task ShowFindUIAsync() => await ExecuteScriptAsync("editor.trigger('','actions.find')");
+        public async Task<bool> EditorHasFocusAsync() => await WebView.ExecuteScriptAsync<bool>("editor.hasTextFocus()");
+        public async Task BlurEditorAsync() => await ExecuteScriptAsync("editor.blur()");
+        public async Task MoveWidgetsToStartAsync() => await ExecuteScriptAsync("moveFindWidgetToStart()");
+        public async Task MoveWidgetsToEndAsync() => await ExecuteScriptAsync("moveFindWidgetToEnd()");
+        public async Task MoveEditorToAsync(int? line = null, int? column = null) => await ExecuteScriptAsync($"moveEditorTo({column}, {line})");
+        public async Task<T> GetEditorOptionsAsync<T>(EditorOption option, T defaultValue = default) => await WebView.ExecuteScriptAsync($"editor.getOption({(int)option})", defaultValue);
+        public async Task EnableMinimapAsync(bool enabled) => await ExecuteScriptAsync("editor.updateOptions({minimap:{enabled:" + enabled.ToString().ToLowerInvariant() + "}})");
+        public async Task SetFontSizeAsync(double size) => await ExecuteScriptAsync("editor.updateOptions({fontSize:'" + size.ToString(CultureInfo.InvariantCulture) + "px'})");
+        public async Task FormatDocumentAsync() => await ExecuteScriptAsync("editor.getAction('editor.action.formatDocument').run()");
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposedValue)
+            {
+                if (disposing)
+                {
+                    // dispose managed state (managed objects)
+                    WebView?.Dispose();
+                }
+
+                // free unmanaged resources (unmanaged objects) and override finalizer
+                // set large fields to null
+                _disposedValue = true;
+            }
+        }
+
+        public void Dispose() { Dispose(disposing: true); GC.SuppressFinalize(this); }
+
         private async Task<string> ExecuteScriptAsync(string script)
         {
             try
@@ -214,22 +269,6 @@ namespace DevPad.Model
             }
 
             return UnescapeEditorText(text);
-        }
-
-        public async Task ReloadAsync()
-        {
-            if (FilePath == null)
-                throw new InvalidOperationException();
-
-            if (FilePath != null)
-            {
-                FilesWatcher.UnwatchFile(FilePath);
-                FilesWatcher.FileChanged -= OnFileChanged;
-            }
-
-            DeleteAutoSave();
-            await LoadFileIfAnyAsync();
-            HasContentChanged = false;
         }
 
         private enum LoadStatus
@@ -263,7 +302,6 @@ namespace DevPad.Model
                     lang = langObject[0].Id;
                 }
 
-                Image = IconUtilities.GetExtensionIconAsImageSource(ext, SHIL.SHIL_SMALL);
                 FilesWatcher.WatchFile(FilePath);
                 FilesWatcher.FileChanged += OnFileChanged;
             }
@@ -276,7 +314,7 @@ namespace DevPad.Model
             catch (Exception ex)
             {
                 Program.ShowError(MainWindow.Current, ex, false);
-                await MainWindow.Current.CloseTabAsync(this, true, true);
+                await MainWindow.Current.CloseTabAsync(this, true, true, true);
                 return LoadStatus.Error;
             }
 
@@ -285,68 +323,9 @@ namespace DevPad.Model
             return fromAutoSave ? LoadStatus.OkFromAutoSave : LoadStatus.Ok;
         }
 
-        private void OnFileChanged(object sender, FileSystemEventArgs e)
-        {
-            Program.Trace("e:" + e.ChangeType + " " + e.FullPath);
-            Task.Run(() => Application.Current.Dispatcher.Invoke(() => FileChanged?.Invoke(this, e)));
-        }
-
-        public async Task FocusEditorAsync()
-        {
-            await ExecuteScriptAsync("editor.focus()");
-            WebView.Focus();
-        }
-
-        public async Task<bool> EditorHasFocusAsync()
-        {
-            return await WebView.ExecuteScriptAsync<bool>("editor.hasTextFocus()");
-        }
-
-        public async Task BlurEditorAsync()
-        {
-            await ExecuteScriptAsync("editor.blur()");
-        }
-
-        public async Task MoveWidgetsToStartAsync()
-        {
-            await ExecuteScriptAsync("moveFindWidgetToStart()");
-        }
-
-        public async Task MoveWidgetsToEndAsync()
-        {
-            await ExecuteScriptAsync("moveFindWidgetToEnd()");
-        }
-
-        public async Task MoveEditorToAsync(int? line = null, int? column = null)
-        {
-            await ExecuteScriptAsync($"moveEditorTo({column}, {line})");
-        }
-
-        public async Task<T> GetEditorOptionsAsync<T>(EditorOption option, T defaultValue = default)
-        {
-            return await WebView.ExecuteScriptAsync($"editor.getOption({(int)option})", defaultValue);
-        }
-
-        public async Task EnableMinimapAsync(bool enabled)
-        {
-            await ExecuteScriptAsync("editor.updateOptions({minimap:{enabled:" + enabled.ToString().ToLowerInvariant() + "}})");
-        }
-
-        public async Task SetFontSizeAsync(double size)
-        {
-            await ExecuteScriptAsync("editor.updateOptions({fontSize:'" + size.ToString(CultureInfo.InvariantCulture) + "px'})");
-        }
-
-        public async Task FormatDocumentAsync()
-        {
-            await ExecuteScriptAsync("editor.getAction('editor.action.formatDocument').run()");
-        }
-
-        private void DevPadOnLoad(object sender, DevPadLoadEventArgs e)
-        {
-            e.DocumentText = _documentText;
-        }
-
+        private void OnContextMenuRequested(object sender, CoreWebView2ContextMenuRequestedEventArgs e) => e.Handled = true;
+        private void OnFileChanged(object sender, FileSystemEventArgs e) => Task.Run(() => Application.Current.Dispatcher.Invoke(() => FileChanged?.Invoke(this, e)));
+        private void DevPadOnLoad(object sender, DevPadLoadEventArgs e) => e.DocumentText = _documentText;
         private async void DevPadEvent(object sender, DevPadEventArgs e)
         {
             MonacoEvent?.Invoke(this, e);
@@ -479,43 +458,5 @@ namespace DevPad.Model
             }
             return Regex.Unescape(text);
         }
-
-        public async Task CloseAsync(bool deleteAutoSave)
-        {
-            if (FilePath != null)
-            {
-                FilesWatcher.UnwatchFile(FilePath);
-                FilesWatcher.FileChanged -= OnFileChanged;
-            }
-
-            if (deleteAutoSave)
-            {
-                DeleteAutoSave();
-            }
-            else if (HasContentChanged)
-            {
-                await AutoSaveWhenIdleAsync(-1);
-            }
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!_disposedValue)
-            {
-                if (disposing)
-                {
-                    Program.Trace("Name:" + Name);
-
-                    // dispose managed state (managed objects)
-                    WebView?.Dispose();
-                }
-
-                // free unmanaged resources (unmanaged objects) and override finalizer
-                // set large fields to null
-                _disposedValue = true;
-            }
-        }
-
-        public void Dispose() { Dispose(disposing: true); GC.SuppressFinalize(this); }
     }
 }

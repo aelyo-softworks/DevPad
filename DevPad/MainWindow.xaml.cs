@@ -48,6 +48,7 @@ namespace DevPad
             NewMenuItem.Icon = NewMenuItem.Icon ?? new Image { Source = IconUtilities.GetStockIconImageSource(StockIconId.DOCASSOC) };
             AboutMenuItem.Icon = AboutMenuItem.Icon ?? new Image { Source = IconUtilities.GetStockIconImageSource(StockIconId.HELP) };
             FindMenuItem.Icon = FindMenuItem.Icon ?? new Image { Source = IconUtilities.GetStockIconImageSource(StockIconId.FIND) };
+            RecentFoldersMenuItem.Icon = RecentFoldersMenuItem.Icon ?? new Image { Source = IconUtilities.GetStockIconImageSource(StockIconId.FOLDER) };
 
             _dataContext = new WindowDataContext(this);
             DataContext = _dataContext;
@@ -108,6 +109,12 @@ namespace DevPad
             foreach (var group in Groups)
             {
                 group.SelectTab(group.ActiveTabKey);
+
+                // make sure +  is not selected
+                if (group.SelectedTabIndex == group.Tabs.Count - 1)
+                {
+                    group.SelectedTabIndex = 0;
+                }
             }
 
             var activeGroup = GetGroupOrDefault(Settings.Current.ActiveGroupKey);
@@ -170,7 +177,7 @@ namespace DevPad
                     Program.Trace(e.Type + " process:" + e.CallingProcessId + " user:" + e.UserDomainName + "\\" + e.UserName);
                     Dispatcher.Invoke(async () =>
                     {
-                        await CloseAllGroups(false, false, true);
+                        await CloseAllGroups(false, true);
                         Settings.Current.SerializeToConfigurationWhenIdle(0); // flush if any change in queue
                         _state = State.Closing;
                         Close();
@@ -333,7 +340,6 @@ namespace DevPad
 
         protected override void OnClosing(CancelEventArgs e)
         {
-            Program.Trace("cancel:" + e.Cancel);
             base.OnClosing(e);
             if (_state != State.Closing)
             {
@@ -407,16 +413,18 @@ namespace DevPad
             var tab = AllViewTabs.FirstOrDefault(t => t.FilePath.EqualsIgnoreCase(filePath));
             if (tab != null)
             {
-                var group = GetGroup(tab) ?? GetGroupOrDefault(groupKey);
-                GroupsTab.SelectedItem = group;
-                group.SelectTab(tab);
+                var tabGroup = GetGroup(tab) ?? GetGroupOrDefault(groupKey);
+                GroupsTab.SelectedItem = tabGroup;
+                tabGroup.SelectTab(tab);
                 return;
             }
 
-            //if (_tabs.Count == 2 && _tabs[0].FilePath == null && !_tabs[0].HasContentChanged)
-            //{
-            //    await RemoveTabAsync(_tabs[0], false, false, false);
-            //}
+            // if only one uchanged & untitled open, remove it (so it's replacing it by this file)
+            var group = GetGroupOrDefault(groupKey);
+            if (group.Tabs.Count == 2 && group.Tabs[0].FilePath == null && !group.Tabs[0].HasContentChanged)
+            {
+                await RemoveTabAsync(group.Tabs[0], false, false, false, false);
+            }
 
             tab = await AddTabAsync(groupKey, filePath, selectTab);
             tab.GroupKey = groupKey;
@@ -427,7 +435,7 @@ namespace DevPad
             SetTitle();
         }
 
-        private async Task RemoveTabAsync(MonacoTab tab, bool deleteAutoSave, bool checkAtLeastOneTab, bool removeFromRecent)
+        private async Task RemoveTabAsync(MonacoTab tab, bool deleteAutoSave, bool checkAtLeastOneTab, bool removeFromRecent, bool removeFromOpened)
         {
             if (tab == null || tab.IsAdd)
                 return;
@@ -443,7 +451,6 @@ namespace DevPad
             group.RemoveTab(tab);
             tab.Dispose();
 
-            Program.Trace("tab:" + tab);
             // always ensure we have one (untitled) tab opened
             if (checkAtLeastOneTab && !group.FileViewTabs.Any())
             {
@@ -459,7 +466,20 @@ namespace DevPad
                 }
                 else if (tab.IsUntitled)
                 {
-                    Settings.Current.RemoveRecentUntitledFile(tab.UntitledNumber);
+                    Settings.Current.RemoveRecentUntitledFile(tab.UntitledNumber, group.Key);
+                    Settings.Current.SerializeToConfigurationWhenIdle();
+                }
+            }
+            else if (removeFromOpened)
+            {
+                if (tab.FilePath != null)
+                {
+                    Settings.Current.RemoveOpened(tab.FilePath);
+                    Settings.Current.SerializeToConfigurationWhenIdle();
+                }
+                else if (tab.IsUntitled)
+                {
+                    Settings.Current.RemoveRecentUntitledFile(tab.UntitledNumber, group.Key);
                     Settings.Current.SerializeToConfigurationWhenIdle();
                 }
             }
@@ -484,7 +504,7 @@ namespace DevPad
             try
             {
                 var group = GetGroupOrDefault(groupKey);
-                Program.Trace("path:" + filePath + " groupKey:" + groupKey?.Replace("\0", "!") + " group:" + group.Key + " select:" + select);
+                //Program.Trace("path:" + filePath + " groupKey:" + groupKey?.Replace("\0", "!") + " group:" + group.Key + " select:" + select);
                 var newTab = new MonacoTab();
                 newTab.GroupKey = groupKey;
                 if (filePath == null)
@@ -499,7 +519,6 @@ namespace DevPad
                 }
 
                 await newTab.InitializeAsync(filePath);
-                Program.Trace("initialized");
                 newTab.MonacoEvent += OnTabMonacoEvent;
                 newTab.FileChanged += OnTabFileChanged;
                 newTab.PropertyChanged += OnTabPropertyChanged;
@@ -563,7 +582,7 @@ namespace DevPad
             return this.ShowConfirm(string.Format(DevPad.Resources.Resources.ConfirmDiscardDocument, tab.Name)) == MessageBoxResult.Yes;
         }
 
-        public async Task CloseTabAsync(MonacoTab tab, bool deleteAutoSave, bool removeFromRecent)
+        public async Task CloseTabAsync(MonacoTab tab, bool deleteAutoSave, bool removeFromRecent, bool removeFromOpened)
         {
             if (tab == null || !tab.IsFileView)
                 return;
@@ -571,16 +590,16 @@ namespace DevPad
             if (!DiscardChanges(tab))
                 return;
 
-            await RemoveTabAsync(tab, deleteAutoSave, true, removeFromRecent);
+            await RemoveTabAsync(tab, deleteAutoSave, true, removeFromRecent, removeFromOpened);
         }
 
-        private async Task CloseAllGroups(bool checkAtLeastOneTab, bool removeFromRecent, bool quitting)
+        private async Task CloseAllGroups(bool checkAtLeastOneTab, bool quitting)
         {
             foreach (var group in Groups)
             {
                 foreach (var tab in group.FileViewTabs.ToArray())
                 {
-                    await RemoveTabAsync(tab, false, checkAtLeastOneTab, removeFromRecent);
+                    await RemoveTabAsync(tab, false, checkAtLeastOneTab, false, !quitting);
                 }
             }
 
@@ -773,15 +792,15 @@ namespace DevPad
         private void OnEditCurrentGroup(object sender, RoutedEventArgs e) => EditGroup(CurrentGroup);
         private void OnCloseGroup(object sender, RoutedEventArgs e) => CloseGroup(e.GetDataContext<TabGroup>());
         private void OnEditGroup(object sender, RoutedEventArgs e) => EditGroup(e.GetDataContext<TabGroup>());
-        private void OnCloseCommand(object sender, ExecutedRoutedEventArgs e) => _ = CloseTabAsync(CurrentTab, true, true);
+        private void OnCloseCommand(object sender, ExecutedRoutedEventArgs e) => _ = CloseTabAsync(CurrentTab, true, false, true);
         private async void OnAddGroup(object sender, RoutedEventArgs e) => await AddGroup();
         private async void OnSaveAsCommand(object sender, ExecutedRoutedEventArgs e) => await SaveTabAsAsync(CurrentTab);
         private async void OnSaveCommand(object sender, ExecutedRoutedEventArgs e) => await SaveTabAsync(CurrentTab);
         private async void OnSaveAllCommand(object sender, ExecutedRoutedEventArgs e) => await SaveAllTabsAsync();
         private async void OnNewTabCommand(object sender, ExecutedRoutedEventArgs e) => await AddTabAsync(CurrentGroup.Key, null, true);
         private async void OnOpenCommand(object sender, ExecutedRoutedEventArgs e) => await OpenAsync(CurrentGroup.Key, null);
-        private async void OnCloseAll(object sender, RoutedEventArgs e) => await CloseAllGroups(true, true, false);
-        private void OnCloseTab(object sender, RoutedEventArgs e) => _ = CloseTabAsync(e.GetDataContext<MonacoTab>(), true, true);
+        private async void OnCloseAll(object sender, RoutedEventArgs e) => await CloseAllGroups(true, false);
+        private void OnCloseTab(object sender, RoutedEventArgs e) => _ = CloseTabAsync(e.GetDataContext<MonacoTab>(), true, false, true);
         private void OnExitClick(object sender, RoutedEventArgs e) => Close();
         private void OnRestartAsAdmin(object sender, RoutedEventArgs e) => RestartAsAdmin(true);
         private void OnClearRecentList(object sender, RoutedEventArgs e) => Settings.Current.ClearRecentFiles();
@@ -869,7 +888,7 @@ namespace DevPad
                         if (res != MessageBoxResult.Yes)
                             return;
 
-                        await CloseTabAsync(tab, true, false);
+                        await CloseTabAsync(tab, true, false, true);
                     }
                     break;
 
@@ -927,7 +946,7 @@ namespace DevPad
                     // add untitled to recent files when it changes
                     if (tab.IsUntitled)
                     {
-                        Settings.Current.AddRecentUntitledFile(tab.GroupKey, tab.Index + 1, tab.UntitledNumber);
+                        Settings.Current.AddRecentUntitledFile(tab.UntitledNumber, tab.Index + 1, tab.GroupKey);
                         Settings.Current.SerializeToConfigurationWhenIdle();
                     }
                     break;
@@ -1012,6 +1031,7 @@ namespace DevPad
                 foreach (var file in files)
                 {
                     var item = new MenuItem { Header = file.DisplayName };
+                    item.Icon = new Image { Source = IconUtilities.GetItemIconAsImageSource(file.FilePath, SHIL.SHIL_SMALL) };
                     RecentFilesMenuItem.Items.Add(item);
                     item.Click += (s, e2) =>
                     {
