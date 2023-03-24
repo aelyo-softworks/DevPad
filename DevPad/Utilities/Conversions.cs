@@ -16,6 +16,25 @@ namespace DevPad.Utilities
     {
         private static readonly char[] _enumSeparators = new char[] { ',', ';', '+', '|', ' ' };
 
+        public static int IndexOf<T>(this IEnumerable<T> enumerable, Predicate<T> predicate)
+        {
+            if (predicate == null)
+                throw new ArgumentNullException(nameof(predicate));
+
+            if (enumerable == null)
+                return -1;
+
+            var i = 0;
+            foreach (var item in enumerable)
+            {
+                if (predicate(item))
+                    return i;
+
+                i++;
+            }
+            return -1;
+        }
+
         public static bool IsFlagsEnum(this Type enumType)
         {
             if (enumType == null)

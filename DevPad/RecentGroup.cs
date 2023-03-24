@@ -21,7 +21,7 @@ namespace DevPad
 
         public TabGroup ToTabGroup()
         {
-            if (Name.EqualsIgnoreCase(Name = DevPad.Resources.Resources.DefaultGroupName))
+            if (Name.EqualsIgnoreCase(Resources.Resources.DefaultGroupName))
                 throw new InvalidOperationException();
 
             return new TabGroup { Name = Name, ForeColor = ForeColor, BackColor = BackColor, ActiveTabKey = ActiveTabKey };

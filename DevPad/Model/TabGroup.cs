@@ -25,6 +25,7 @@ namespace DevPad.Model
         public bool IsClosable => !IsAdd && !IsDefault;
         public string Key => Name + "\0" + ForeColor?.ToString() + "\0" + BackColor?.ToString();
         public virtual string FontFamily => string.Empty;
+        public virtual int SelectedTabIndex { get => DictionaryObjectGetPropertyValue(0); set => DictionaryObjectSetPropertyValue(value); }
         public virtual string Name { get => DictionaryObjectGetPropertyValue<string>(); set => DictionaryObjectSetPropertyValue(value); }
         public virtual string ForeColor { get => DictionaryObjectGetNullifiedPropertyValue(); set => DictionaryObjectSetPropertyValue(value); }
         public virtual string BackColor { get => DictionaryObjectGetNullifiedPropertyValue(); set => DictionaryObjectSetPropertyValue(value); }
@@ -57,6 +58,33 @@ namespace DevPad.Model
 
             if ((propertyName == null || propertyName == nameof(BackColor)) && !string.IsNullOrWhiteSpace(BackColor) && !WpfUtilities.ColorConverter.IsValid(BackColor))
                 yield return Resources.Resources.ColorError;
+        }
+
+        public void SelectTab(string tabKey)
+        {
+            if (tabKey == null)
+                return;
+
+            var index = Tabs.IndexOf(t => t.Key == tabKey);
+            if (index < 0)
+                return;
+
+            SelectedTabIndex = index;
+        }
+
+        public void SelectTab(MonacoTab tab)
+        {
+            if (tab == null)
+                throw new ArgumentNullException(nameof(tab));
+
+            if (tab.IsAdd)
+                return;
+
+            var index = Tabs.IndexOf(tab);
+            if (index < 0)
+                return;
+
+            SelectedTabIndex = index;
         }
 
         public void AddTab(MonacoTab tab)

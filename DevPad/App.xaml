@@ -163,7 +163,7 @@
 
         <SolidColorBrush
             x:Key="TabItemSelected"
-            Opacity="0.2"
+            Opacity="0.4"
             Color="#FFC9C7BA" />
 
         <LinearGradientBrush x:Key="TabItemSelectedUp">

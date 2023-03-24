@@ -62,21 +62,22 @@ namespace DevPad
             {
                 foreach (var group in Settings.Current.RecentGroups)
                 {
-                    if (group.Name.EqualsIgnoreCase(DevPad.Resources.Resources.DefaultGroupName))
+                    var existing = _groups.FirstOrDefault(g => g.Key == group.Key);
+                    if (existing != null)
+                    {
+                        existing.ActiveTabKey = group.ActiveTabKey;
                         continue;
+                    }
 
-                    _ = AddGroup(group.ToTabGroup());
+                    _ = AddGroup(group.ToTabGroup(), false);
                 }
             }
-
-            var activeGroup = GetGroupOrDefault(Settings.Current.ActiveGroupKey);
-            GroupsTab.SelectedItem = activeGroup;
 
             var open = CommandLine.Current.GetNullifiedArgument(0);
             if (open != null)
             {
                 var groupName = CommandLine.Current.GetNullifiedArgument("group");
-                _ = AddTabEnsureGroupAsync(groupName, open);
+                _ = AddTabEnsureGroupAsync(groupName, open, true);
             }
             else
             {
@@ -86,11 +87,11 @@ namespace DevPad
                     {
                         if (file.UntitledNumber > 0)
                         {
-                            _ = AddTabAsync(file.GroupKey, null, file.UntitledNumber);
+                            _ = AddTabAsync(file.GroupKey, null, false, file.UntitledNumber);
                         }
                         else
                         {
-                            _ = AddTabAsync(file.GroupKey, file.FilePath);
+                            _ = AddTabAsync(file.GroupKey, file.FilePath, false);
                         }
                     }
                 }
@@ -101,15 +102,23 @@ namespace DevPad
 
             foreach (var group in Groups.Where(t => !t.FileViewTabs.Any()))
             {
-                _ = AddTabAsync(group.Key, null);
+                _ = AddTabAsync(group.Key, null, false);
             }
+
+            foreach (var group in Groups)
+            {
+                group.SelectTab(group.ActiveTabKey);
+            }
+
+            var activeGroup = GetGroupOrDefault(Settings.Current.ActiveGroupKey);
+            GroupsTab.SelectedItem = activeGroup;
 
             _state = State.Ready;
         }
 
         public TabGroup DefaultGroup => _defaultTabGroup;
         public TabGroup CurrentGroup => GroupsTab.SelectedItem is TabGroup group && !group.IsAdd ? group : _defaultTabGroup;
-        public MonacoTab CurrentTab { get; private set; }
+        public MonacoTab CurrentTab => CurrentGroup.Tabs.ElementAtOrDefault(CurrentGroup.SelectedTabIndex);
         public IEnumerable<TabGroup> Groups => _groups.Where(g => !g.IsAdd);
         public IEnumerable<MonacoTab> AllViewTabs
         {
@@ -177,7 +186,7 @@ namespace DevPad
             if (open != null)
             {
                 var groupName = CommandLine.Current.GetNullifiedArgument("group");
-                _ = AddTabEnsureGroupAsync(groupName, open);
+                _ = AddTabEnsureGroupAsync(groupName, open, false);
             }
 
             return null;
@@ -252,18 +261,18 @@ namespace DevPad
             if (dlg.ShowDialog() != true)
                 return null;
 
-            await AddGroup(group);
+            await AddGroup(group, true);
             Settings.Current.AddRecentGroup(group);
             Settings.Current.SerializeToConfigurationWhenIdle();
             return group;
         }
 
-        private async Task AddGroup(TabGroup group)
+        private async Task AddGroup(TabGroup group, bool selectTab)
         {
             var count = _groups.Count - 1;
             _groups.Insert(count, group);
             GroupsTab.SelectedIndex = count;
-            await AddTabAsync(group.Key, null);
+            await AddTabAsync(group.Key, null, selectTab);
         }
 
         private class WindowDataContext : DictionaryObject
@@ -322,22 +331,17 @@ namespace DevPad
             }
         }
 
-        protected override async void OnClosing(CancelEventArgs e)
+        protected override void OnClosing(CancelEventArgs e)
         {
+            Program.Trace("cancel:" + e.Cancel);
             base.OnClosing(e);
             if (_state != State.Closing)
             {
                 _state = State.Closing;
-                e.Cancel = true;
-                await CloseAllGroups(false, false, true);
                 Settings.Current.SerializeToConfigurationWhenIdle(0); // flush if any change in queue
-                try
+                foreach (var tab in AllViewTabs)
                 {
-                    Close();
-                }
-                catch (Exception ex)
-                {
-                    Program.ShowError(null, ex, true);
+                    tab?.Dispose();
                 }
             }
         }
@@ -398,15 +402,14 @@ namespace DevPad
         private TabGroup GetGroupOrDefault(string key) => Groups.FirstOrDefault(g => g.Key.EqualsIgnoreCase(key)) ?? _defaultTabGroup;
         private TabGroup GetGroup(MonacoTab tab) => Groups.FirstOrDefault(g => g.Key.EqualsIgnoreCase(tab.GroupKey)) ?? DefaultGroup;
 
-        private async Task OpenFileAsync(string groupKey, string filePath)
+        private async Task OpenFileAsync(string groupKey, string filePath, bool selectTab)
         {
             var tab = AllViewTabs.FirstOrDefault(t => t.FilePath.EqualsIgnoreCase(filePath));
             if (tab != null)
             {
-                var group = GetGroupOrDefault(groupKey);
-                tab.GroupKey = groupKey;
+                var group = GetGroup(tab) ?? GetGroupOrDefault(groupKey);
                 GroupsTab.SelectedItem = group;
-                //group.SelectTab(tab);
+                group.SelectTab(tab);
                 return;
             }
 
@@ -415,7 +418,7 @@ namespace DevPad
             //    await RemoveTabAsync(_tabs[0], false, false, false);
             //}
 
-            tab = await AddTabAsync(groupKey, filePath);
+            tab = await AddTabAsync(groupKey, filePath, selectTab);
             tab.GroupKey = groupKey;
             Settings.Current.AddRecentFile(filePath, groupKey, tab.Index + 1);
             Settings.Current.SerializeToConfigurationWhenIdle();
@@ -462,26 +465,26 @@ namespace DevPad
             }
         }
 
-        private async Task<MonacoTab> AddTabEnsureGroupAsync(string groupName, string filePath, int untitledNumber = 0)
+        private async Task<MonacoTab> AddTabEnsureGroupAsync(string groupName, string filePath, bool select, int untitledNumber = 0)
         {
             if (groupName == null)
-                return await AddTabAsync(null, filePath, untitledNumber);
+                return await AddTabAsync(null, filePath, select, untitledNumber);
 
             var group = Groups.FirstOrDefault(g => g.Name.EqualsIgnoreCase(groupName));
             if (group == null)
             {
                 group = new TabGroup { Name = groupName };
-                await AddGroup(group);
+                await AddGroup(group, select);
             }
-            return await AddTabAsync(group.Key, filePath, untitledNumber);
+            return await AddTabAsync(group.Key, filePath, select, untitledNumber);
         }
 
-        private async Task<MonacoTab> AddTabAsync(string groupKey, string filePath, int untitledNumber = 0)
+        private async Task<MonacoTab> AddTabAsync(string groupKey, string filePath, bool select, int untitledNumber = 0)
         {
             try
             {
-                Program.Trace("path:" + filePath + " group:" + groupKey);
                 var group = GetGroupOrDefault(groupKey);
+                Program.Trace("path:" + filePath + " groupKey:" + groupKey?.Replace("\0", "!") + " group:" + group.Key + " select:" + select);
                 var newTab = new MonacoTab();
                 newTab.GroupKey = groupKey;
                 if (filePath == null)
@@ -490,8 +493,13 @@ namespace DevPad
                 }
 
                 group.AddTab(newTab);
+                if (select)
+                {
+                    group.SelectTab(newTab);
+                }
 
                 await newTab.InitializeAsync(filePath);
+                Program.Trace("initialized");
                 newTab.MonacoEvent += OnTabMonacoEvent;
                 newTab.FileChanged += OnTabFileChanged;
                 newTab.PropertyChanged += OnTabPropertyChanged;
@@ -688,9 +696,10 @@ namespace DevPad
             if (fd.ShowDialog(this) != true)
                 return;
 
+            var last = fd.FileName;
             foreach (var fileName in fd.FileNames)
             {
-                await OpenFileAsync(groupKey, fileName);
+                await OpenFileAsync(groupKey, fileName, fileName == last);
             }
         }
 
@@ -769,7 +778,7 @@ namespace DevPad
         private async void OnSaveAsCommand(object sender, ExecutedRoutedEventArgs e) => await SaveTabAsAsync(CurrentTab);
         private async void OnSaveCommand(object sender, ExecutedRoutedEventArgs e) => await SaveTabAsync(CurrentTab);
         private async void OnSaveAllCommand(object sender, ExecutedRoutedEventArgs e) => await SaveAllTabsAsync();
-        private async void OnNewCommand(object sender, ExecutedRoutedEventArgs e) => await AddTabAsync(CurrentGroup.Key, null);
+        private async void OnNewTabCommand(object sender, ExecutedRoutedEventArgs e) => await AddTabAsync(CurrentGroup.Key, null, true);
         private async void OnOpenCommand(object sender, ExecutedRoutedEventArgs e) => await OpenAsync(CurrentGroup.Key, null);
         private async void OnCloseAll(object sender, RoutedEventArgs e) => await CloseAllGroups(true, true, false);
         private void OnCloseTab(object sender, RoutedEventArgs e) => _ = CloseTabAsync(e.GetDataContext<MonacoTab>(), true, true);
@@ -778,8 +787,8 @@ namespace DevPad
         private void OnClearRecentList(object sender, RoutedEventArgs e) => Settings.Current.ClearRecentFiles();
         private void OnFind(object sender, RoutedEventArgs e) => _ = CurrentTab?.ShowFindUIAsync();
         private void OnFormat(object sender, RoutedEventArgs e) => _ = CurrentTab?.FormatDocumentAsync();
-        private void OnOpenConfig(object sender, RoutedEventArgs e) => _ = OpenFileAsync(CurrentGroup.Key, Settings.ConfigurationFilePath);
-        private async void OnAddTab(object sender, RoutedEventArgs e) => await AddTabAsync(CurrentGroup.Key, null);
+        private void OnOpenConfig(object sender, RoutedEventArgs e) => _ = OpenFileAsync(CurrentGroup.Key, Settings.ConfigurationFilePath, true);
+        private async void OnAddTab(object sender, RoutedEventArgs e) => await AddTabAsync(CurrentGroup.Key, null, true);
 
         private void OnAboutClick(object sender, RoutedEventArgs e)
         {
@@ -791,10 +800,7 @@ namespace DevPad
         private void OnTabSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (_state == State.Closing)
-            {
-                CurrentTab = null;
                 return;
-            }
 
             // never end up with + tab selected
             var ctl = (TabControl)sender;
@@ -809,8 +815,6 @@ namespace DevPad
                 var tab = (MonacoTab)e.AddedItems[0];
                 if (!tab.IsAdd)
                 {
-                    CurrentTab = tab;
-
                     _dataContext.RaisePropertyChanged(null);
 
                     SetTitle();
@@ -935,6 +939,9 @@ namespace DevPad
             if (_languagesLoaded)
                 return;
 
+            if (CurrentTab?.WebView == null)
+            {
+            }
             var langs = await CurrentTab.WebView.GetLanguages();
             LanguagesMenuItem.Items.Clear();
             foreach (var group in langs.OrderBy(k => k.Value.Name).GroupBy(n => n.Value.Name.Substring(0, 1), comparer: StringComparer.OrdinalIgnoreCase))
@@ -1008,7 +1015,7 @@ namespace DevPad
                     RecentFilesMenuItem.Items.Add(item);
                     item.Click += (s, e2) =>
                     {
-                        _ = OpenFileAsync(CurrentGroup.Key, file.FilePath);
+                        _ = OpenFileAsync(CurrentGroup.Key, file.FilePath, true);
                     };
                 }
 

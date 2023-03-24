@@ -504,6 +504,8 @@ namespace DevPad.Model
             {
                 if (disposing)
                 {
+                    Program.Trace("Name:" + Name);
+
                     // dispose managed state (managed objects)
                     WebView?.Dispose();
                 }
