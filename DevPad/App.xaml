@@ -166,7 +166,7 @@
             Opacity="0.4"
             Color="#FFC9C7BA" />
 
-        <LinearGradientBrush x:Key="TabItemSelectedUp">
+        <LinearGradientBrush x:Key="TabItemSelectedBar">
             <GradientStop Offset="0" Color="#F4F4F4" />
             <GradientStop Offset="0.05" Color="#3C7FB1" />
             <GradientStop Offset="0.95" Color="#3C7FB1" />
@@ -207,13 +207,13 @@
                                     SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
                             </Border>
                             <Border
-                                x:Name="UpBd"
+                                x:Name="BarBd"
                                 Height="2"
                                 Margin="4,0,4,0"
                                 Padding="0,2,0,0"
                                 HorizontalAlignment="Stretch"
                                 VerticalAlignment="Top"
-                                Background="{StaticResource TabItemSelectedUp}"
+                                Background="{StaticResource TabItemSelectedBar}"
                                 BorderThickness="0" />
                         </Grid>
                         <ControlTemplate.Triggers>
@@ -222,7 +222,7 @@
                             </Trigger>
                             <Trigger Property="IsSelected" Value="False">
                                 <Setter TargetName="Bd" Property="TextBlock.Foreground" Value="{StaticResource TabItemDisabledForeground}" />
-                                <Setter TargetName="UpBd" Property="Visibility" Value="Collapsed" />
+                                <Setter TargetName="BarBd" Property="Visibility" Value="Collapsed" />
                             </Trigger>
                             <Trigger Property="IsSelected" Value="true">
                                 <Setter Property="Panel.ZIndex" Value="1" />
@@ -262,6 +262,7 @@
                                 </MultiTrigger.Conditions>
                                 <Setter Property="Margin" Value="-2,-1,-2,-2" />
                                 <Setter TargetName="Content" Property="Margin" Value="0,1,0,0" />
+                                <Setter TargetName="BarBd" Property="VerticalAlignment" Value="Bottom" />
                             </MultiTrigger>
                             <MultiTrigger>
                                 <MultiTrigger.Conditions>

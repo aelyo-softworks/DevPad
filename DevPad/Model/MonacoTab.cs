@@ -41,6 +41,7 @@ namespace DevPad.Model
         public bool IsUntitled => FilePath == null && !IsAdd;
         public virtual string FontFamily => string.Empty;
         public virtual string PinButtonTooltip => Resources.Resources.PinTabTooltip;
+        public virtual string UnpinButtonTooltip => Resources.Resources.UnpinTabTooltip;
         public virtual string CloseButtonTooltip => Resources.Resources.CloseTabTooltip;
         public virtual string AddButtonTooltip => string.Empty;
         public string BackColor => "Transparent";
@@ -51,6 +52,8 @@ namespace DevPad.Model
         public string ModelLanguageName { get => DictionaryObjectGetNullifiedPropertyValue(); private set => DictionaryObjectSetPropertyValue(value); }
         public string CursorPosition { get => DictionaryObjectGetNullifiedPropertyValue(); private set => DictionaryObjectSetPropertyValue(value); }
         public string CursorSelection { get => DictionaryObjectGetNullifiedPropertyValue(); private set => DictionaryObjectSetPropertyValue(value); }
+        public bool IsPinned { get => DictionaryObjectGetPropertyValue(false); set { if (DictionaryObjectSetPropertyValue(value)) OnPropertyChanged(nameof(IsUnpinned)); } }
+        public bool IsUnpinned => !IsPinned && !IsAdd;
         public int UntitledNumber { get; set; }
         public string Key => FilePath != null ? FilePath : UntitledNumber.ToString();
         public virtual string Name => IsUntitled ? Settings.GetUntitledName(UntitledNumber) : Path.GetFileName(FilePath);

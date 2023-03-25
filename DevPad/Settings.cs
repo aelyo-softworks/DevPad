@@ -2,6 +2,8 @@
 using System.ComponentModel;
 using System.IO;
 using System.Text.Json.Serialization;
+using DevPad.Ipc;
+using DevPad.Resources;
 using DevPad.Utilities;
 
 namespace DevPad
@@ -28,5 +30,8 @@ namespace DevPad
         [JsonIgnore]
         [Browsable(false)]
         public string UserDataFolder { get; set; } = DefaultUserDataFolder;
+
+        [LocalizedCategory("Startup")]
+        public virtual SingleInstanceMode SingleInstanceMode { get => GetPropertyValue(SingleInstanceMode.OneInstancePerDesktop); set { SetPropertyValue(value); } }
     }
 }

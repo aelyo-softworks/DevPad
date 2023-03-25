@@ -78,7 +78,11 @@
                 <MenuItem
                     x:Name="PreferencesMenuItem"
                     Click="OnPreferences"
-                    Header="_Preferences..." />
+                    Header="General _Preferences..." />
+                <MenuItem
+                    x:Name="PerDesktopPreferencesMenuItem"
+                    Click="OnPerDesktopPreferences"
+                    Header="Per Virtual Des_ktop Preferences..." />
                 <MenuItem
                     x:Name="RestartAsAdminMenuItem"
                     Click="OnRestartAsAdmin"
@@ -146,10 +150,13 @@
                         StaysOpenOnClick="True" />
                 </MenuItem>
             </MenuItem>
-            <MenuItem Header="_Help">
+            <MenuItem
+                x:Name="HelpMenu"
+                Header="_Help"
+                SubmenuOpened="OnHelpOpened">
                 <MenuItem Click="OnOpenConfig" Header="_Open Configuration File" />
                 <MenuItem Click="OnOpenConfigFolder" Header="_Open Configuration Folder" />
-                <Separator />
+                <Separator x:Name="HelpSeparator" />
                 <MenuItem
                     x:Name="AboutMenuItem"
                     Click="OnAboutClick"
@@ -240,9 +247,21 @@
                                         Click="OnPinTab"
                                         Opacity="0.7"
                                         ToolTip="{Binding PinButtonTooltip}"
-                                        Visibility="{Binding IsAdd, Converter={StaticResource ReverseBooleanToVisibilityConverter}}">
+                                        Visibility="{Binding IsUnpinned, Converter={StaticResource BooleanToVisibilityConverter}}">
                                         <Button.Content>
                                             <Image Width="16" Source="pack://application:,,,/Resources/unpinned.png" />
+                                        </Button.Content>
+                                    </Button>
+                                    <Button
+                                        Background="Transparent"
+                                        BorderBrush="Transparent"
+                                        BorderThickness="0"
+                                        Click="OnUnpinTab"
+                                        Opacity="0.7"
+                                        ToolTip="{Binding UnpinButtonTooltip}"
+                                        Visibility="{Binding IsPinned, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                        <Button.Content>
+                                            <Image Width="16" Source="pack://application:,,,/Resources/pinned.png" />
                                         </Button.Content>
                                     </Button>
                                     <Button

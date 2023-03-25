@@ -386,6 +386,15 @@ namespace DevPad.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Running on &apos;{0}&apos;.
+        /// </summary>
+        internal static string RunningOnDeskop {
+            get {
+                return ResourceManager.GetString("RunningOnDeskop", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Security.
         /// </summary>
         internal static string Security {

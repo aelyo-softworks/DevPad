@@ -12,8 +12,8 @@ namespace DevPad
             InitializeComponent();
 
             Copyright.Text = "Aelyo DevPad V" + AssemblyUtilities.GetInformationalVersion() + " " + AssemblyUtilities.GetConfiguration() + Environment.NewLine +
-                "Copyright (C) 2022-" + DateTime.Now.Year + " Aelyo Softworks." + Environment.NewLine +
-                "All rights reserved.";
+                 "Copyright (C) 2022-" + DateTime.Now.Year + " Aelyo Softworks." + Environment.NewLine +
+                 "All rights reserved.";
         }
 
         protected override void OnKeyDown(KeyEventArgs e)

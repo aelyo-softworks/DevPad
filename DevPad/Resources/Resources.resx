@@ -226,6 +226,9 @@
   <data name="ReservedNameError" xml:space="preserve">
     <value>This name is reserved</value>
   </data>
+  <data name="RunningOnDeskop" xml:space="preserve">
+    <value>Running on '{0}'</value>
+  </data>
   <data name="Security" xml:space="preserve">
     <value>Security</value>
   </data>

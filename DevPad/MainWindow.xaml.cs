@@ -30,6 +30,7 @@ namespace DevPad
         private readonly ObservableCollection<TabGroup> _groups = new ObservableCollection<TabGroup>();
         private readonly TabGroup _defaultTabGroup = new TabGroup { Name = DevPad.Resources.Resources.DefaultGroupName, IsDefault = true };
         private WindowDataContext _dataContext;
+        private MenuItem _desktopMenuItem;
         private bool _onChangedShown;
         private bool _webViewUnavailable;
         private bool _languagesLoaded;
@@ -72,6 +73,7 @@ namespace DevPad
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
+            Handle = new WindowInteropHelper(this).Handle;
             _dataContext = new WindowDataContext(this);
             DataContext = _dataContext;
 
@@ -138,8 +140,9 @@ namespace DevPad
             _state = State.Ready;
         }
 
+        public IntPtr Handle { get; private set; } // so we can access from any thread
         public PerDesktopSettings Settings => DesktopId.HasValue ? PerDesktopSettings.Get(DesktopId.Value) : null;
-        public Guid? DesktopId => WindowsUtilities.GetWindowDesktopId(new WindowInteropHelper(this).Handle);
+        public Guid? DesktopId => WindowsUtilities.GetWindowDesktopId(Handle);
         public TabGroup DefaultGroup => _defaultTabGroup;
         public TabGroup CurrentGroup => GroupsTab.SelectedItem is TabGroup group && !group.IsAdd ? group : _defaultTabGroup;
         public MonacoTab CurrentTab => CurrentGroup.Tabs.ElementAtOrDefault(CurrentGroup.SelectedTabIndex);
@@ -242,10 +245,12 @@ namespace DevPad
 
         private void OnRemoteCommand(SingleInstanceCommandEventArgs e)
         {
+            // e.CallingDesktopId is Guid.Empty in debug mode
             switch (e.Type)
             {
                 case SingleInstanceCommandType.SendCommandLine:
-                    if (e.CallingDesktopId != DesktopId)
+                    var instanceMode = DevPad.Settings.Current.SingleInstanceMode;
+                    if (instanceMode == SingleInstanceMode.OneInstancePerDesktop && e.CallingDesktopId != DesktopId)
                         break;
 
                     e.Handled = true;
@@ -253,7 +258,7 @@ namespace DevPad
                     var cmdLine = CommandLine.From(e.Arguments?.Select(a => string.Format("{0}", a))?.ToArray());
                     Dispatcher.Invoke(() =>
                     {
-                        WindowsUtilities.SetForegroundWindow(new WindowInteropHelper(this).Handle);
+                        WindowsUtilities.SetForegroundWindow(Handle);
                         WindowState = WindowState.Normal;
                         Show();
                         ExecCommandLine(cmdLine);
@@ -815,6 +820,16 @@ namespace DevPad
             return false;
         }
 
+        private void PinUnpinTab(MonacoTab tab, bool pin)
+        {
+            if (tab == null)
+                return;
+
+            tab.IsPinned = pin;
+        }
+
+        private void OnUnpinTab(object sender, RoutedEventArgs e) => PinUnpinTab(e.GetDataContext<MonacoTab>(), false);
+        private void OnPinTab(object sender, RoutedEventArgs e) => PinUnpinTab(e.GetDataContext<MonacoTab>(), true);
         private void OnEditCurrentGroup(object sender, RoutedEventArgs e) => EditGroup(CurrentGroup);
         private void OnCloseGroup(object sender, RoutedEventArgs e) => CloseGroup(e.GetDataContext<TabGroup>());
         private void OnEditGroup(object sender, RoutedEventArgs e) => EditGroup(e.GetDataContext<TabGroup>());
@@ -1031,6 +1046,14 @@ namespace DevPad
 
         private void OnPreferences(object sender, RoutedEventArgs e)
         {
+            var dlg = new ObjectProperties(DevPad.Settings.Current, false);
+            dlg.Owner = this;
+            dlg.Title = DevPad.Resources.Resources.Preferences;
+            dlg.ShowDialog();
+        }
+
+        private void OnPerDesktopPreferences(object sender, RoutedEventArgs e)
+        {
             var dlg = new ObjectProperties(Settings, false);
             dlg.Owner = this;
             dlg.Title = DevPad.Resources.Resources.Preferences;
@@ -1096,11 +1119,6 @@ namespace DevPad
             }
         }
 
-        private void OnPinTab(object sender, RoutedEventArgs e)
-        {
-
-        }
-
         private void OnGroupSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (_state != State.Ready)
@@ -1153,6 +1171,22 @@ namespace DevPad
             var group = e.GetDataContext<TabGroup>();
             GroupsTab.ContextMenu.Visibility = group != null && !group.IsAdd ? Visibility.Visible : Visibility.Collapsed;
             GroupsTab.ContextMenu.DataContext = group;
+        }
+
+        private void OnHelpOpened(object sender, RoutedEventArgs e)
+        {
+            var desktop = WindowsUtilities.GetWindowDesktopName(Current);
+            if (desktop != null)
+            {
+                if (_desktopMenuItem == null)
+                {
+                    _desktopMenuItem = new MenuItem();
+                    _desktopMenuItem.IsEnabled = false;
+                    HelpMenu.Items.Insert(3, _desktopMenuItem);
+                    HelpMenu.Items.Insert(4, new Separator());
+                }
+                _desktopMenuItem.Header = string.Format(DevPad.Resources.Resources.RunningOnDeskop, desktop);
+            }
         }
     }
 }

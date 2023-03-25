@@ -37,9 +37,11 @@ namespace DevPad
         }
 
         [JsonIgnore]
+        [Browsable(false)]
         public string ConfigurationFilePath { get; private set; }
 
         [JsonIgnore]
+        [Browsable(false)]
         public string AutoSavesDirectoryPath { get; private set; }
 
         private static string GetUntitledFilePath(int number, string groupKey) => Settings.GetUntitledName(number) + "\0" + groupKey;

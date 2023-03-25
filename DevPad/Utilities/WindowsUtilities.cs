@@ -9,11 +9,14 @@ using System.Security.Principal;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
 #if SETUP
 using Resources = DevPad.Setup.Resources;
+#else
+using System.Windows.Interop;
 #endif
 
 namespace DevPad.Utilities
@@ -699,6 +702,21 @@ namespace DevPad.Utilities
 
             return Process.Start(info) != null;
         }
+
+#if SETUP
+#else
+        public static string GetWindowDesktopName(Window window)
+        {
+            if (window == null)
+                return null;
+
+            var id = GetWindowDesktopId(new WindowInteropHelper(window).Handle);
+            if (!id.HasValue)
+                return null;
+
+            return GetWindowDesktopName(id.Value);
+        }
+#endif
 
         public static string GetWindowDesktopName(Guid id) => GetWindowDesktops().FirstOrDefault(d => d.Item1 == id)?.Item2 ?? id.ToString();
         public static IReadOnlyList<Tuple<Guid, string>> GetWindowDesktops()
