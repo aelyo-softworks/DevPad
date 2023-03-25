@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using DevPad.Resources;
 
 namespace DevPad.Utilities
@@ -57,7 +58,10 @@ namespace DevPad.Utilities
         public string ThemeFilePath => WindowsUtilities.GetCurrentThemeFilePath();
 
         [LocalizedCategory("Windows")]
-        public Guid DesktopId => MainWindow.Current.DesktopId;
+        public string CurrentDesktop => WindowsUtilities.GetWindowDesktopName(MainWindow.Current.DesktopId ?? Guid.Empty);
+
+        [LocalizedCategory("Windows")]
+        public string Desktops => string.Join(", ", WindowsUtilities.GetWindowDesktops().Select(d => d.Item1 + " ('" + d.Item2 + "')"));
 
         [LocalizedCategory("Process")]
         public string CommandLine => Environment.CommandLine;

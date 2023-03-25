@@ -15,8 +15,7 @@ namespace DevPad.Utilities
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        public void SerializeToConfigurationWhenIdle(int dueTime = 1000) => DevPadExtensions.DoWhenIdle(SerializeToConfiguration, dueTime);
-        public void SerializeToConfiguration() => Serialize(ConfigurationFilePath);
+        public void SerializeToConfigurationWhenIdle(string filePath, int dueTime = 1000) => DevPadExtensions.DoWhenIdle(() => Serialize(filePath), dueTime);
         public void Serialize(string filePath)
         {
             if (filePath == null)
@@ -99,10 +98,6 @@ namespace DevPad.Utilities
             return clone;
         }
 
-        private static readonly Lazy<string> _configurationFilePath = new Lazy<string>(() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), typeof(T).Namespace, typeof(T).Name + ".json"), true);
-        public static string ConfigurationFilePath => _configurationFilePath.Value;
-
-        public static void BackupFromConfiguration(TimeSpan? maxDuration = null) => Backup(ConfigurationFilePath, maxDuration);
         public static void Backup(string filePath, TimeSpan? maxDuration = null)
         {
             if (filePath == null)
@@ -147,7 +142,6 @@ namespace DevPad.Utilities
             }
         }
 
-        public static void RemoveAllConfiguration() => RemoveAll(ConfigurationFilePath);
         public static void RemoveAll(string filePath)
         {
             if (filePath == null)
@@ -160,7 +154,6 @@ namespace DevPad.Utilities
             Directory.Delete(dir, true);
         }
 
-        public static T DeserializeFromConfiguration() => Deserialize(ConfigurationFilePath);
         public static T Deserialize(string filePath) => Deserialize(filePath, new T());
         public static T Deserialize(string filePath, T defaultValue)
         {

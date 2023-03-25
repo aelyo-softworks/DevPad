@@ -43,9 +43,12 @@ namespace DevPad
                 return;
             }
 
+            var desktopId = WindowsUtilities.GetDesktopId() ?? Guid.Empty;
+            Trace("parent desktop: " + desktopId);
+
             if (CommandLine.Current.GetArgument<bool>("quit"))
             {
-                var count = SingleInstance.Quit().Count();
+                var count = SingleInstance.Quit(desktopId).Count();
                 Environment.ExitCode = 1;
                 return;
             }
@@ -53,7 +56,7 @@ namespace DevPad
             if (CommandLine.Current.GetArgument<bool>("ping"))
             {
                 WindowsUtilities.AllocConsole();
-                foreach (var result in SingleInstance.Ping())
+                foreach (var result in SingleInstance.Ping(desktopId))
                 {
                     var txt = "Ping result: " + result.HResult + " Process id:" + result.Output;
                     Trace(txt);
@@ -72,7 +75,7 @@ namespace DevPad
             }
 
             // try to call already running process
-            if (!IsNewInstance && SingleInstance.SendCommandLine(0, Environment.GetCommandLineArgs()).Any(r => r.HResult == 0))
+            if (!IsNewInstance && SingleInstance.SendCommandLine(desktopId, 0, Environment.GetCommandLineArgs()).Any(r => r.HResult == 0))
                 return;
 
             WindowsApplication.PublisherName = AssemblyUtilities.GetCompany();
@@ -97,6 +100,11 @@ namespace DevPad
             {
                 SingleInstance.UnregisterCommandTarget();
             }
+        }
+
+        private static void F_HandleCreated(object sender, EventArgs e)
+        {
+            throw new NotImplementedException();
         }
 
         private static bool _errorShown;

@@ -67,7 +67,7 @@ namespace DevPad.Model
             }
         }
 
-        public string AutoSaveFilePath => IsFileView ? Path.Combine(Settings.AutoSavesDirectoryPath, AutoSaveId) : null;
+        public string AutoSaveFilePath => IsFileView ? Path.Combine(MainWindow.Current.Settings.AutoSavesDirectoryPath, AutoSaveId) : null;
         public string AutoSaveId
         {
             get
@@ -129,7 +129,7 @@ namespace DevPad.Model
                 if (text == null)
                     return;
 
-                var path = Path.Combine(Settings.AutoSavesDirectoryPath, id);
+                var path = Path.Combine(MainWindow.Current.Settings.AutoSavesDirectoryPath, id);
                 IOUtilities.FileEnsureDirectory(path);
                 File.WriteAllText(path, text);
             }
@@ -343,7 +343,7 @@ namespace DevPad.Model
                     if (IsEditorCreated)
                     {
                         HasContentChanged = true;
-                        _ = AutoSaveWhenIdleAsync(Settings.Current.AutoSavePeriod * 1000);
+                        _ = AutoSaveWhenIdleAsync(MainWindow.Current.Settings.AutoSavePeriod * 1000);
                     }
                     break;
 
@@ -361,11 +361,11 @@ namespace DevPad.Model
                     break;
 
                 case DevPadEventType.EditorCreated:
-                    if (!Settings.Current.ShowMinimap)
+                    if (!MainWindow.Current.Settings.ShowMinimap)
                     {
                         await EnableMinimapAsync(false);
                     }
-                    await SetEditorThemeAsync(Settings.Current.Theme);
+                    await SetEditorThemeAsync(MainWindow.Current.Settings.Theme);
                     await FocusEditorAsync();
 
                     var status = await LoadFileIfAnyAsync();

@@ -107,6 +107,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="PerDesktopSettings.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="Utilities\AssemblyUtilities.cs" />
     <Compile Include="Utilities\CommandLine.cs" />

@@ -15,18 +15,19 @@ namespace DevPad.Ipc
 
         public static event EventHandler<SingleInstanceCommandEventArgs> Command;
 
-        public static IEnumerable<CommandResult> SendCommandLine(int targetPid = 0, IEnumerable<string> arguments = null) => Send(targetPid, SingleInstanceCommandType.SendCommandLine, arguments?.ToArray());
-        public static IEnumerable<CommandResult> Quit(int targetPid = -1) => Send(targetPid, SingleInstanceCommandType.Quit);
-        public static IEnumerable<CommandResult> Ping(int targetPid = -1) => Send(targetPid, SingleInstanceCommandType.Ping);
+        public static IEnumerable<CommandResult> SendCommandLine(Guid desktopId, int targetPid = 0, IEnumerable<string> arguments = null) => Send(desktopId, targetPid, SingleInstanceCommandType.SendCommandLine, arguments?.ToArray());
+        public static IEnumerable<CommandResult> Quit(Guid desktopId, int targetPid = -1) => Send(desktopId, targetPid, SingleInstanceCommandType.Quit);
+        public static IEnumerable<CommandResult> Ping(Guid desktopId, int targetPid = -1) => Send(desktopId, targetPid, SingleInstanceCommandType.Ping);
 
-        private static IEnumerable<CommandResult> Send(int targetPid, SingleInstanceCommandType type, params object[] arguments) => Send(targetPid, (int)type, arguments);
-        private static IEnumerable<CommandResult> Send(int targetPid, int type, params object[] arguments)
+        private static IEnumerable<CommandResult> Send(Guid desktopId, int targetPid, SingleInstanceCommandType type, params object[] arguments) => Send(desktopId, targetPid, (int)type, arguments);
+        private static IEnumerable<CommandResult> Send(Guid desktopId, int targetPid, int type, params object[] arguments)
         {
             var input = new List<object>
             {
                 WindowsUtilities.CurrentProcess.Id,
                 Environment.UserDomainName,
                 Environment.UserName,
+                desktopId.ToString("N"),
             };
 
             if (input.Count != _wellKnownArgs)
@@ -43,9 +44,9 @@ namespace DevPad.Ipc
         [DllImport("user32")]
         public static extern bool SetForegroundWindow(IntPtr hwnd);
 
-        public static void AllowSetForegroundWindow()
+        public static void AllowSetForegroundWindow(Guid desktopId)
         {
-            foreach (var result in Ping())
+            foreach (var result in Ping(desktopId))
             {
                 if (result.HResult == 0 && result.Output is int pid && pid > 0)
                 {
@@ -66,6 +67,7 @@ namespace DevPad.Ipc
             public int ProcessId;
             public string UserDomainName;
             public string UserName;
+            public Guid DesktopId;
             public object[] Arguments;
 
             public static SingleInstanceCommand Parse(CommandTargetEventArgs e)
@@ -82,12 +84,16 @@ namespace DevPad.Ipc
                 if (!(args[2] is string userName))
                     return null;
 
+                if (!(args[3] is string did) || !Guid.TryParse(did, out var desktopId))
+                    return null;
+
                 args = args.Skip(_wellKnownArgs).ToArray();
                 var cmd = new SingleInstanceCommand
                 {
                     ProcessId = processId,
                     UserDomainName = userDomainName,
                     UserName = userName,
+                    DesktopId = desktopId,
                     Arguments = args
                 };
                 return cmd;
@@ -100,7 +106,7 @@ namespace DevPad.Ipc
             if (cmd == null)
                 return;
 
-            var ce = new SingleInstanceCommandEventArgs((SingleInstanceCommandType)e.Id, cmd.ProcessId, cmd.UserDomainName, cmd.UserName, cmd.Arguments);
+            var ce = new SingleInstanceCommandEventArgs((SingleInstanceCommandType)e.Id, cmd.ProcessId, cmd.UserDomainName, cmd.UserName, cmd.DesktopId, cmd.Arguments);
             Command?.Invoke(sender, ce);
             if (ce._outputSet)
             {
@@ -113,7 +119,7 @@ namespace DevPad.Ipc
             }
         }
 
-        private const int _wellKnownArgs = 3;
+        private const int _wellKnownArgs = 4;
 
         [DllImport("user32")]
         private static extern bool AllowSetForegroundWindow(int processId);

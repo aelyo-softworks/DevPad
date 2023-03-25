@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
@@ -9,6 +11,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Win32;
+
+#if SETUP
+using Resources = DevPad.Setup.Resources;
+#endif
 
 namespace DevPad.Utilities
 {
@@ -80,6 +86,9 @@ namespace DevPad.Utilities
 
         [DllImport("user32")]
         public static extern IntPtr GetDesktopWindow();
+
+        [DllImport("user32")]
+        public static extern IntPtr GetShellWindow();
 
         [DllImport("user32")]
         public static extern IntPtr GetForegroundWindow();
@@ -691,17 +700,113 @@ namespace DevPad.Utilities
             return Process.Start(info) != null;
         }
 
-        public static Guid GetWindowDesktopId(IntPtr handle)
+        public static string GetWindowDesktopName(Guid id) => GetWindowDesktops().FirstOrDefault(d => d.Item1 == id)?.Item2 ?? id.ToString();
+        public static IReadOnlyList<Tuple<Guid, string>> GetWindowDesktops()
+        {
+            var list = new List<Tuple<Guid, string>>();
+            using (var key = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VirtualDesktops", false))
+            {
+                if (key != null)
+                {
+                    if (key.GetValue("VirtualDesktopIDs") is byte[] ids)
+                    {
+                        const int guidLength = 16;
+                        var offset = 0;
+                        do
+                        {
+                            if ((offset + guidLength) > ids.Length)
+                                break;
+
+                            var id = new byte[guidLength];
+                            Array.Copy(ids, offset, id, 0, id.Length);
+                            var guid = new Guid(id);
+                            string name = null;
+
+                            using (var keyName = key.OpenSubKey(Path.Combine("Desktops", guid.ToString("B")), false))
+                            {
+                                if (keyName != null)
+                                {
+                                    name = keyName.GetValue("Name") as string;
+                                }
+                            }
+
+                            name = name.Nullify() ?? string.Format(Resources.Resources.DesktopIndexedName, list.Count + 1);
+                            list.Add(new Tuple<Guid, string>(guid, name));
+                            offset += guidLength;
+                        }
+                        while (true);
+                    }
+                }
+            }
+            return list;
+        }
+
+        public static Guid? GetDesktopId()
+        {
+            using (var form = new NoActivateForm())
+            {
+                form.Show();
+                return GetWindowDesktopId(form.Handle) ?? Guid.Empty;
+            }
+        }
+
+        private sealed class NoActivateForm : Form
+        {
+            public NoActivateForm()
+            {
+                Location = new System.Drawing.Point(-30000, -30000);
+                Width = 0;
+                Height = 0;
+                Text = string.Empty;
+                FormBorderStyle = FormBorderStyle.None;
+                ShowInTaskbar = false;
+                MinimizeBox = false;
+                MaximizeBox = false;
+            }
+
+            protected override bool ShowWithoutActivation => true;
+        }
+
+        public static Guid? GetWindowDesktopId(IntPtr handle)
         {
             try
             {
                 var mgr = (IVirtualDesktopManager)new VirtualDesktopManager();
-                mgr.GetWindowDesktopId(handle, out var guid);
+                if (mgr.GetWindowDesktopId(handle, out var guid) < 0)
+                    return null;
+
                 return guid;
             }
             catch
             {
                 return Guid.Empty;
+            }
+        }
+
+        public static bool IsWindowOnCurrentDesktop(IntPtr handle)
+        {
+            try
+            {
+                var mgr = (IVirtualDesktopManager)new VirtualDesktopManager();
+                mgr.IsWindowOnCurrentVirtualDesktop(handle, out var ret);
+                return ret;
+            }
+            catch
+            {
+                return true;
+            }
+        }
+
+        public static void MoveWindowToDesktop(IntPtr handle, Guid desktopId)
+        {
+            try
+            {
+                var mgr = (IVirtualDesktopManager)new VirtualDesktopManager();
+                mgr.MoveWindowToDesktop(handle, desktopId);
+            }
+            catch
+            {
+                // continue
             }
         }
 

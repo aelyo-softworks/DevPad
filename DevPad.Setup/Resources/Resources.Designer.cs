@@ -97,6 +97,15 @@ namespace DevPad.Setup.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Desktop {0}.
+        /// </summary>
+        internal static string DesktopIndexedName {
+            get {
+                return ResourceManager.GetString("DesktopIndexedName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
         /// </summary>
         internal static System.Drawing.Icon DevPadIcon {

@@ -25,11 +25,11 @@ namespace DevPad
     public partial class MainWindow : Window
     {
         public static RoutedCommand SaveAll = new RoutedCommand();
-        public static MainWindow Current => (MainWindow)Application.Current.MainWindow;
+        public static MainWindow Current => (MainWindow)Application.Current?.MainWindow;
 
         private readonly ObservableCollection<TabGroup> _groups = new ObservableCollection<TabGroup>();
-        private readonly WindowDataContext _dataContext;
         private readonly TabGroup _defaultTabGroup = new TabGroup { Name = DevPad.Resources.Resources.DefaultGroupName, IsDefault = true };
+        private WindowDataContext _dataContext;
         private bool _onChangedShown;
         private bool _webViewUnavailable;
         private bool _languagesLoaded;
@@ -67,6 +67,11 @@ namespace DevPad
             FindMenuItem.Icon = FindMenuItem.Icon ?? new Image { Source = IconUtilities.GetStockIconImageSource(StockIconId.FIND) };
             RecentFoldersMenuItem.Icon = RecentFoldersMenuItem.Icon ?? new Image { Source = IconUtilities.GetStockIconImageSource(StockIconId.FOLDER) };
 
+            Loaded += OnLoaded;
+        }
+
+        private void OnLoaded(object sender, RoutedEventArgs e)
+        {
             _dataContext = new WindowDataContext(this);
             DataContext = _dataContext;
 
@@ -76,9 +81,9 @@ namespace DevPad
 
             GroupsTab.SelectedItem = _defaultTabGroup;
 
-            if (Settings.Current.RecentGroups != null)
+            if (Settings.RecentGroups != null)
             {
-                foreach (var group in Settings.Current.RecentGroups)
+                foreach (var group in Settings.RecentGroups)
                 {
                     var existing = _groups.FirstOrDefault(g => g.Key == group.Key);
                     if (existing != null)
@@ -91,9 +96,9 @@ namespace DevPad
                 }
             }
 
-            if (!Program.IsNewInstance && Settings.Current.RecentFilesPaths != null)
+            if (!Program.IsNewInstance && Settings.RecentFilesPaths != null)
             {
-                foreach (var file in Settings.Current.RecentFilesPaths.Where(f => f.OpenOrder > 0).OrderBy(f => f.OpenOrder))
+                foreach (var file in Settings.RecentFilesPaths.Where(f => f.OpenOrder > 0).OrderBy(f => f.OpenOrder))
                 {
                     if (file.UntitledNumber > 0)
                     {
@@ -106,7 +111,7 @@ namespace DevPad
                 }
             }
 
-            RevealFile(Settings.Current.ActiveFilePath);
+            RevealFile(Settings.ActiveFilePath);
             SetTitle();
 
             foreach (var group in Groups.Where(t => !t.FileViewTabs.Any()))
@@ -125,7 +130,7 @@ namespace DevPad
                 }
             }
 
-            var activeGroup = GetGroupOrDefault(Settings.Current.ActiveGroupKey);
+            var activeGroup = GetGroupOrDefault(Settings.ActiveGroupKey);
             GroupsTab.SelectedItem = activeGroup;
 
             ExecCommandLine(CommandLine.Current);
@@ -133,7 +138,8 @@ namespace DevPad
             _state = State.Ready;
         }
 
-        public Guid DesktopId => WindowsUtilities.GetWindowDesktopId(new WindowInteropHelper(this).Handle);
+        public PerDesktopSettings Settings => DesktopId.HasValue ? PerDesktopSettings.Get(DesktopId.Value) : null;
+        public Guid? DesktopId => WindowsUtilities.GetWindowDesktopId(new WindowInteropHelper(this).Handle);
         public TabGroup DefaultGroup => _defaultTabGroup;
         public TabGroup CurrentGroup => GroupsTab.SelectedItem is TabGroup group && !group.IsAdd ? group : _defaultTabGroup;
         public MonacoTab CurrentTab => CurrentGroup.Tabs.ElementAtOrDefault(CurrentGroup.SelectedTabIndex);
@@ -150,6 +156,73 @@ namespace DevPad
                     }
                 }
             }
+        }
+
+        protected override void OnClosing(CancelEventArgs e)
+        {
+            base.OnClosing(e);
+            if (_state != State.Closing)
+            {
+                _state = State.Closing;
+                Settings.SerializeToConfigurationWhenIdle(0); // flush if any change in queue
+                foreach (var tab in AllViewTabs)
+                {
+                    tab?.Dispose();
+                }
+            }
+        }
+
+        protected override async void OnPreviewKeyDown(KeyEventArgs e)
+        {
+            if (e.Key == Key.F12 && !Program.InDebugMode)
+            {
+                e.Handled = true;
+            }
+
+            // for some reason, Home and End are completely eaten by WebView/Monaco?
+            // so we capture them and do it "manually"
+            if (e.Key == Key.Home)
+            {
+                e.Handled = true;
+                var hasFocus = await CurrentTab?.EditorHasFocusAsync();
+                if (hasFocus) // because widgets (find, etc.) can get focus too
+                {
+                    if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+                    {
+                        _ = CurrentTab?.MoveEditorToAsync(1, 1);
+                    }
+                    else
+                    {
+                        _ = CurrentTab?.MoveEditorToAsync(column: 1);
+                    }
+                }
+                else
+                {
+                    await CurrentTab?.MoveWidgetsToStartAsync();
+                }
+            }
+
+            if (e.Key == Key.End)
+            {
+                e.Handled = true;
+                var hasFocus = await CurrentTab?.EditorHasFocusAsync();
+                if (hasFocus)
+                {
+                    if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+                    {
+                        _ = CurrentTab?.MoveEditorToAsync(int.MaxValue, int.MaxValue);
+                    }
+                    else
+                    {
+                        _ = CurrentTab?.MoveEditorToAsync(column: int.MaxValue);
+                    }
+                }
+                else
+                {
+                    await CurrentTab?.MoveWidgetsToEndAsync();
+                }
+            }
+            base.OnPreviewKeyDown(e);
         }
 
         public static void ShowSystemInfo(Window window = null)
@@ -172,25 +245,34 @@ namespace DevPad
             switch (e.Type)
             {
                 case SingleInstanceCommandType.SendCommandLine:
+                    if (e.CallingDesktopId != DesktopId)
+                        break;
+
                     e.Handled = true;
-                    Program.Trace(e.Type + " process:" + e.CallingProcessId + " user:" + e.UserDomainName + "\\" + e.UserName);
+                    Program.Trace(e.Type + " process:" + e.CallingProcessId + " user:" + e.UserDomainName + "\\" + e.UserName + " desktop:" + e.CallingDesktopId);
                     var cmdLine = CommandLine.From(e.Arguments?.Select(a => string.Format("{0}", a))?.ToArray());
-                    Dispatcher.Invoke(() => ExecCommandLine(cmdLine));
+                    Dispatcher.Invoke(() =>
+                    {
+                        WindowsUtilities.SetForegroundWindow(new WindowInteropHelper(this).Handle);
+                        WindowState = WindowState.Normal;
+                        Show();
+                        ExecCommandLine(cmdLine);
+                    });
                     break;
 
                 case SingleInstanceCommandType.Ping:
                     e.Handled = true;
-                    Program.Trace(e.Type + " process:" + e.CallingProcessId + " user:" + e.UserDomainName + "\\" + e.UserName);
+                    Program.Trace(e.Type + " process:" + e.CallingProcessId + " user:" + e.UserDomainName + "\\" + e.UserName + " deskop:" + e.CallingDesktopId);
                     e.Output = WindowsUtilities.CurrentProcess.Id;
                     break;
 
                 case SingleInstanceCommandType.Quit:
                     e.Handled = true;
-                    Program.Trace(e.Type + " process:" + e.CallingProcessId + " user:" + e.UserDomainName + "\\" + e.UserName);
+                    Program.Trace(e.Type + " process:" + e.CallingProcessId + " user:" + e.UserDomainName + "\\" + e.UserName + " deskop:" + e.CallingDesktopId);
                     Dispatcher.Invoke(async () =>
                     {
                         await CloseAllGroups(false, true);
-                        Settings.Current.SerializeToConfigurationWhenIdle(0); // flush if any change in queue
+                        Settings.SerializeToConfigurationWhenIdle(0); // flush if any change in queue
                         _state = State.Closing;
                         Close();
                     });
@@ -252,8 +334,8 @@ namespace DevPad
                     return;
             }
 
-            Settings.Current.RemoveRecentGroup(group);
-            Settings.Current.SerializeToConfigurationWhenIdle();
+            Settings.RemoveRecentGroup(group);
+            Settings.SerializeToConfigurationWhenIdle();
             _groups.Remove(group);
         }
 
@@ -268,9 +350,9 @@ namespace DevPad
             if (dlg.ShowDialog() != true)
                 return;
 
-            Settings.Current.RemoveRecentGroup(oldGroup);
-            Settings.Current.AddRecentGroup(group);
-            Settings.Current.SerializeToConfigurationWhenIdle();
+            Settings.RemoveRecentGroup(oldGroup);
+            Settings.AddRecentGroup(group);
+            Settings.SerializeToConfigurationWhenIdle();
         }
 
         private async Task<TabGroup> AddGroup()
@@ -282,8 +364,8 @@ namespace DevPad
                 return null;
 
             await AddGroup(group, true);
-            Settings.Current.AddRecentGroup(group);
-            Settings.Current.SerializeToConfigurationWhenIdle();
+            Settings.AddRecentGroup(group);
+            Settings.SerializeToConfigurationWhenIdle();
             return group;
         }
 
@@ -302,7 +384,7 @@ namespace DevPad
             public WindowDataContext(MainWindow main)
             {
                 _main = main;
-                Settings.Current.PropertyChanged += OnSettingsPropertyChanged;
+                _main.Settings.PropertyChanged += OnSettingsPropertyChanged;
             }
 
             public Dock GroupsTabPlacement { get => DictionaryObjectGetPropertyValue(Dock.Top); set => DictionaryObjectSetPropertyValue(value); }
@@ -336,86 +418,19 @@ namespace DevPad
 
             public bool ShowMinimap
             {
-                get => Settings.Current.ShowMinimap;
+                get => _main.Settings.ShowMinimap;
                 set
                 {
                     if (ShowMinimap == value)
                         return;
 
-                    Settings.Current.ShowMinimap = value;
-                    Settings.Current.SerializeToConfigurationWhenIdle();
+                    _main.Settings.ShowMinimap = value;
+                    _main.Settings.SerializeToConfigurationWhenIdle();
                     OnPropertyChanged();
 
                     _ = _main.CurrentTab?.EnableMinimapAsync(value);
                 }
             }
-        }
-
-        protected override void OnClosing(CancelEventArgs e)
-        {
-            base.OnClosing(e);
-            if (_state != State.Closing)
-            {
-                _state = State.Closing;
-                Settings.Current.SerializeToConfigurationWhenIdle(0); // flush if any change in queue
-                foreach (var tab in AllViewTabs)
-                {
-                    tab?.Dispose();
-                }
-            }
-        }
-
-        protected override async void OnPreviewKeyDown(KeyEventArgs e)
-        {
-            if (e.Key == Key.F12 && !Program.InDebugMode)
-            {
-                e.Handled = true;
-            }
-
-            // for some reason, Home and End are completely eaten by WebView/Monaco?
-            // so we capture them and do it "manually"
-            if (e.Key == Key.Home)
-            {
-                e.Handled = true;
-                var hasFocus = await CurrentTab?.EditorHasFocusAsync();
-                if (hasFocus) // because widgets (find, etc.) can get focus too
-                {
-                    if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
-                    {
-                        _ = CurrentTab?.MoveEditorToAsync(1, 1);
-                    }
-                    else
-                    {
-                        _ = CurrentTab?.MoveEditorToAsync(column: 1);
-                    }
-                }
-                else
-                {
-                    await CurrentTab?.MoveWidgetsToStartAsync();
-                }
-            }
-
-            if (e.Key == Key.End)
-            {
-                e.Handled = true;
-                var hasFocus = await CurrentTab?.EditorHasFocusAsync();
-                if (hasFocus)
-                {
-                    if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
-                    {
-                        _ = CurrentTab?.MoveEditorToAsync(int.MaxValue, int.MaxValue);
-                    }
-                    else
-                    {
-                        _ = CurrentTab?.MoveEditorToAsync(column: int.MaxValue);
-                    }
-                }
-                else
-                {
-                    await CurrentTab?.MoveWidgetsToEndAsync();
-                }
-            }
-            base.OnPreviewKeyDown(e);
         }
 
         private TabGroup GetGroup(MonacoTab tab) => Groups.FirstOrDefault(g => g.Key.EqualsIgnoreCase(tab.GroupKey)) ?? DefaultGroup;
@@ -453,8 +468,8 @@ namespace DevPad
 
             tab = await AddTabAsync(group.Key, filePath, selectTab);
             tab.GroupKey = group.Key;
-            Settings.Current.AddRecentFile(filePath, group.Key, tab.Index + 1);
-            Settings.Current.SerializeToConfigurationWhenIdle();
+            Settings.AddRecentFile(filePath, group.Key, tab.Index + 1);
+            Settings.SerializeToConfigurationWhenIdle();
             WindowsUtilities.SHAddToRecentDocs(filePath);
             Program.WindowsApplication.PublishRecentList();
             SetTitle();
@@ -486,26 +501,26 @@ namespace DevPad
             {
                 if (tab.FilePath != null)
                 {
-                    Settings.Current.RemoveRecentFile(tab.FilePath);
-                    Settings.Current.SerializeToConfigurationWhenIdle();
+                    Settings.RemoveRecentFile(tab.FilePath);
+                    Settings.SerializeToConfigurationWhenIdle();
                 }
                 else if (tab.IsUntitled)
                 {
-                    Settings.Current.RemoveRecentUntitledFile(tab.UntitledNumber, group.Key);
-                    Settings.Current.SerializeToConfigurationWhenIdle();
+                    Settings.RemoveRecentUntitledFile(tab.UntitledNumber, group.Key);
+                    Settings.SerializeToConfigurationWhenIdle();
                 }
             }
             else if (removeFromOpened)
             {
                 if (tab.FilePath != null)
                 {
-                    Settings.Current.RemoveOpened(tab.FilePath);
-                    Settings.Current.SerializeToConfigurationWhenIdle();
+                    Settings.RemoveOpened(tab.FilePath);
+                    Settings.SerializeToConfigurationWhenIdle();
                 }
                 else if (tab.IsUntitled)
                 {
-                    Settings.Current.RemoveRecentUntitledFile(tab.UntitledNumber, group.Key);
-                    Settings.Current.SerializeToConfigurationWhenIdle();
+                    Settings.RemoveRecentUntitledFile(tab.UntitledNumber, group.Key);
+                    Settings.SerializeToConfigurationWhenIdle();
                 }
             }
         }
@@ -712,7 +727,7 @@ namespace DevPad
             }
             else
             {
-                if (Settings.Current.OpenFromCurrentTabFolder && CurrentTab.FilePath != null)
+                if (Settings.OpenFromCurrentTabFolder && CurrentTab.FilePath != null)
                 {
                     fd.InitialDirectory = Path.GetDirectoryName(CurrentTab.FilePath);
                     fd.RestoreDirectory = false;
@@ -814,9 +829,10 @@ namespace DevPad
         private void OnCloseTab(object sender, RoutedEventArgs e) => _ = CloseTabAsync(e.GetDataContext<MonacoTab>(), true, false, true);
         private void OnExitClick(object sender, RoutedEventArgs e) => Close();
         private void OnRestartAsAdmin(object sender, RoutedEventArgs e) => RestartAsAdmin(true);
-        private void OnClearRecentList(object sender, RoutedEventArgs e) => Settings.Current.ClearRecentFiles();
+        private void OnClearRecentList(object sender, RoutedEventArgs e) => Settings.ClearRecentFiles();
         private void OnFind(object sender, RoutedEventArgs e) => _ = CurrentTab?.ShowFindUIAsync();
         private void OnFormat(object sender, RoutedEventArgs e) => _ = CurrentTab?.FormatDocumentAsync();
+        private void OnOpenConfigFolder(object sender, RoutedEventArgs e) => WindowsUtilities.OpenExplorer(Path.GetDirectoryName(Settings.ConfigurationFilePath));
         private void OnOpenConfig(object sender, RoutedEventArgs e) => _ = OpenFileAsync(CurrentGroup.Key, Settings.ConfigurationFilePath, true);
         private async void OnAddTab(object sender, RoutedEventArgs e) => await AddTabAsync(CurrentGroup.Key, null, true);
 
@@ -855,8 +871,8 @@ namespace DevPad
                         if (group.ActiveTabKey != tab.Key)
                         {
                             group.ActiveTabKey = tab.Key;
-                            Settings.Current.AddRecentGroup(group);
-                            Settings.Current.SerializeToConfigurationWhenIdle();
+                            Settings.AddRecentGroup(group);
+                            Settings.SerializeToConfigurationWhenIdle();
                         }
                     }
                 }
@@ -926,7 +942,7 @@ namespace DevPad
             switch (e.EventType)
             {
                 case DevPadEventType.EditorCreated:
-                    await tab.SetFontSizeAsync(Settings.Current.FontSize);
+                    await tab.SetFontSizeAsync(Settings.FontSize);
                     break;
 
                 case DevPadEventType.OpenResource:
@@ -945,9 +961,9 @@ namespace DevPad
                         case EditorOption.fontInfo:
                             var option = await tab.GetEditorOptionsAsync<JsonElement>(cfe.Option);
                             var fontSize = option.GetValue("fontSize", 0d);
-                            if (fontSize > 0 && fontSize != Settings.Current.FontSize)
+                            if (fontSize > 0 && fontSize != Settings.FontSize)
                             {
-                                Settings.Current.SerializeToConfigurationWhenIdle();
+                                Settings.SerializeToConfigurationWhenIdle();
                             }
                             break;
                     }
@@ -957,8 +973,8 @@ namespace DevPad
                     // add untitled to recent files when it changes
                     if (tab.IsUntitled)
                     {
-                        Settings.Current.AddRecentUntitledFile(tab.UntitledNumber, tab.Index + 1, tab.GroupKey);
-                        Settings.Current.SerializeToConfigurationWhenIdle();
+                        Settings.AddRecentUntitledFile(tab.UntitledNumber, tab.Index + 1, tab.GroupKey);
+                        Settings.SerializeToConfigurationWhenIdle();
                     }
                     break;
             }
@@ -969,9 +985,6 @@ namespace DevPad
             if (_languagesLoaded)
                 return;
 
-            if (CurrentTab?.WebView == null)
-            {
-            }
             var langs = await CurrentTab.WebView.GetLanguages();
             LanguagesMenuItem.Items.Clear();
             foreach (var group in langs.OrderBy(k => k.Value.Name).GroupBy(n => n.Value.Name.Substring(0, 1), comparer: StringComparer.OrdinalIgnoreCase))
@@ -1007,18 +1020,18 @@ namespace DevPad
             _languagesLoaded = true;
         }
 
-        private void OnNewWindow(object sender, RoutedEventArgs e)
-        {
-            var info = new ProcessStartInfo();
-            info.FileName = Environment.GetCommandLineArgs()[0];
-            info.Arguments = "/newinstance";
-            info.UseShellExecute = true;
-            Process.Start(info);
-        }
+        //private void OnNewWindow(object sender, RoutedEventArgs e)
+        //{
+        //    var info = new ProcessStartInfo();
+        //    info.FileName = Environment.GetCommandLineArgs()[0];
+        //    info.Arguments = "/newinstance";
+        //    info.UseShellExecute = true;
+        //    Process.Start(info);
+        //}
 
         private void OnPreferences(object sender, RoutedEventArgs e)
         {
-            var dlg = new ObjectProperties(Settings.Current, false);
+            var dlg = new ObjectProperties(Settings, false);
             dlg.Owner = this;
             dlg.Title = DevPad.Resources.Resources.Preferences;
             dlg.ShowDialog();
@@ -1034,7 +1047,7 @@ namespace DevPad
                 RestartAsAdminMenuItem.Visibility = Visibility.Visible;
             }
 
-            var files = Settings.Current.RecentFilesPaths?.Where(f => f.UntitledNumber == 0).ToArray();
+            var files = Settings.RecentFilesPaths?.Where(f => f.UntitledNumber == 0).ToArray();
             RecentFilesMenuItem.IsEnabled = files != null && files.Length > 0;
             if (RecentFilesMenuItem.IsEnabled)
             {
@@ -1055,18 +1068,18 @@ namespace DevPad
                 RecentFilesMenuItem.Items.Add(clear);
                 clear.Click += (s, e2) =>
                 {
-                    Settings.Current.ClearRecentFiles();
+                    Settings.ClearRecentFiles();
                 };
 
                 var clean = new MenuItem { Header = DevPad.Resources.Resources.CleanRecentList };
                 RecentFilesMenuItem.Items.Add(clean);
                 clean.Click += (s, e2) =>
                 {
-                    Settings.Current.CleanRecentFiles();
+                    Settings.CleanRecentFiles();
                 };
             }
 
-            var folderPaths = Settings.Current.RecentFolderPaths;
+            var folderPaths = Settings.RecentFolderPaths;
             RecentFoldersMenuItem.IsEnabled = folderPaths.Count > 0;
             if (RecentFoldersMenuItem.IsEnabled)
             {
@@ -1107,10 +1120,10 @@ namespace DevPad
             if (group.IsAdd)
                 return;
 
-            if (Settings.Current.ActiveGroupKey != group.Key)
+            if (Settings.ActiveGroupKey != group.Key)
             {
-                Settings.Current.ActiveGroupKey = group.Key;
-                Settings.Current.SerializeToConfigurationWhenIdle();
+                Settings.ActiveGroupKey = group.Key;
+                Settings.SerializeToConfigurationWhenIdle();
             }
         }
 
