@@ -168,8 +168,8 @@
 
         <LinearGradientBrush x:Key="TabItemSelectedUp">
             <GradientStop Offset="0" Color="#F4F4F4" />
-            <GradientStop Offset="0.15" Color="#3C7FB1" />
-            <GradientStop Offset="0.85" Color="#3C7FB1" />
+            <GradientStop Offset="0.05" Color="#3C7FB1" />
+            <GradientStop Offset="0.95" Color="#3C7FB1" />
             <GradientStop Offset="1.0" Color="#F4F4F4" />
         </LinearGradientBrush>
 

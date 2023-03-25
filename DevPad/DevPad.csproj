@@ -216,6 +216,10 @@
     <Content Include="Monaco\**">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Resource Include="Resources\close.png" />
+    <Resource Include="Resources\pinned.png" />
+    <Resource Include="Resources\plus.png" />
+    <Resource Include="Resources\unpinned.png" />
     <Resource Include="Resources\DevPad48.png" />
   </ItemGroup>
   <ItemGroup>

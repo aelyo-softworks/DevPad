@@ -232,7 +232,7 @@ namespace DevPad.Utilities
                             return "Hyper-V";
 
                         if (SearchASCIICaseInsensitive(bytes, "Microsoft") && !SearchASCIICaseInsensitive(bytes, "Surface"))
-                            return "Azure";
+                            return "Microsoft";
 
                         if (SearchASCIICaseInsensitive(bytes, "VMWare"))
                             return "VMWare";

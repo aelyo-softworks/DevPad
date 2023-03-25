@@ -56,6 +56,9 @@ namespace DevPad.Utilities
         [LocalizedCategory("Windows")]
         public string ThemeFilePath => WindowsUtilities.GetCurrentThemeFilePath();
 
+        [LocalizedCategory("Windows")]
+        public Guid DesktopId => MainWindow.Current.DesktopId;
+
         [LocalizedCategory("Process")]
         public string CommandLine => Environment.CommandLine;
 

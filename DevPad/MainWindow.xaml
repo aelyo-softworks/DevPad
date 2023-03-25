@@ -171,29 +171,35 @@
                 <DataTemplate>
                     <DockPanel TextBlock.Foreground="{Binding ForeColor, Converter={StaticResource GenericConverter}, ConverterParameter=Black}">
                         <TextBlock
-                            Padding="4"
+                            Padding="4,0,4,2"
                             FontFamily="{Binding FontFamily}"
                             Text="{Binding Name}"
                             ToolTip="{Binding Name}"
                             Visibility="{Binding IsAdd, Converter={StaticResource ReverseBooleanToVisibilityConverter}}" />
                         <Button
-                            Padding="4"
                             Background="Transparent"
+                            BorderBrush="Transparent"
                             BorderThickness="0"
                             Click="OnCloseGroup"
-                            Content="✕"
-                            FontFamily="Segoe UI Symbol"
-                            Foreground="Black"
+                            Opacity="0.7"
                             ToolTip="{Binding CloseButtonTooltip}"
-                            Visibility="{Binding IsClosable, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                            Visibility="{Binding IsClosable, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <Button.Content>
+                                <Image Width="16" Source="pack://application:,,,/Resources/close.png" />
+                            </Button.Content>
+                        </Button>
                         <Button
                             Background="Transparent"
+                            BorderBrush="Transparent"
                             BorderThickness="0"
                             Click="OnAddGroup"
-                            Content=" 🞣 "
-                            FontFamily="Segoe UI Symbol"
+                            Opacity="0.7"
                             ToolTip="{Binding AddButtonTooltip}"
-                            Visibility="{Binding IsAdd, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                            Visibility="{Binding IsAdd, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <Button.Content>
+                                <Image Width="16" Source="pack://application:,,,/Resources/plus.png" />
+                            </Button.Content>
+                        </Button>
                     </DockPanel>
                 </DataTemplate>
             </TabControl.ItemTemplate>
@@ -219,7 +225,7 @@
                                         Source="{Binding Image}"
                                         Visibility="{Binding Image, Converter={StaticResource NullToVisibilityConverter}}" />
                                     <TextBlock
-                                        Padding="4,0,0,2"
+                                        Padding="4,0,4,2"
                                         HorizontalAlignment="Stretch"
                                         FontFamily="{Binding FontFamily}"
                                         Text="{Binding Name}" />
@@ -229,29 +235,40 @@
                                         Visibility="{Binding HasContentChanged, Converter={StaticResource BooleanToVisibilityConverter}}" />
                                     <Button
                                         Background="Transparent"
+                                        BorderBrush="Transparent"
                                         BorderThickness="0"
                                         Click="OnPinTab"
-                                        Content="  "
-                                        FontFamily="Segoe UI Symbol"
+                                        Opacity="0.7"
                                         ToolTip="{Binding PinButtonTooltip}"
-                                        Visibility="{Binding IsAdd, Converter={StaticResource ReverseBooleanToVisibilityConverter}}" />
+                                        Visibility="{Binding IsAdd, Converter={StaticResource ReverseBooleanToVisibilityConverter}}">
+                                        <Button.Content>
+                                            <Image Width="16" Source="pack://application:,,,/Resources/unpinned.png" />
+                                        </Button.Content>
+                                    </Button>
                                     <Button
                                         Background="Transparent"
+                                        BorderBrush="Transparent"
                                         BorderThickness="0"
                                         Click="OnCloseTab"
-                                        Content=" ✕ "
-                                        FontFamily="Segoe UI Symbol"
-                                        Foreground="Black"
+                                        Opacity="0.7"
                                         ToolTip="{Binding CloseButtonTooltip}"
-                                        Visibility="{Binding IsAdd, Converter={StaticResource ReverseBooleanToVisibilityConverter}}" />
+                                        Visibility="{Binding IsAdd, Converter={StaticResource ReverseBooleanToVisibilityConverter}}">
+                                        <Button.Content>
+                                            <Image Width="16" Source="pack://application:,,,/Resources/close.png" />
+                                        </Button.Content>
+                                    </Button>
                                     <Button
                                         Background="Transparent"
+                                        BorderBrush="Transparent"
                                         BorderThickness="0"
                                         Click="OnAddTab"
-                                        Content=" 🞣 "
-                                        FontFamily="Segoe UI Symbol"
+                                        Opacity="0.7"
                                         ToolTip="{Binding AddButtonTooltip}"
-                                        Visibility="{Binding IsAdd, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                        Visibility="{Binding IsAdd, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                        <Button.Content>
+                                            <Image Width="16" Source="pack://application:,,,/Resources/plus.png" />
+                                        </Button.Content>
+                                    </Button>
                                 </DockPanel>
                             </DataTemplate>
                         </TabControl.ItemTemplate>

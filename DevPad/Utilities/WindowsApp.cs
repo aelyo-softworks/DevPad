@@ -114,16 +114,8 @@ namespace DevPad.Utilities
         {
             var list = (ICustomDestinationList)new DestinationList();
             list.SetAppID(AppUserModelId);
-
-            list.BeginList(out _, typeof(IObjectArray).GUID, out var removed);
+            list.BeginList(out _, typeof(IObjectArray).GUID, out _);
             list.AppendKnownCategory(KNOWNDESTCATEGORY.KDC_RECENT);
-
-            removed.GetCount(out var removedCount);
-
-            var oa = (IObjectCollection)new EnumerableObjectCollection();
-            oa.AddObject(CreateItemFromParsingName(@"d:\temp\test2.xml"));
-            var x = list.AppendCategory("test", oa);
-
             list.CommitList();
         }
 

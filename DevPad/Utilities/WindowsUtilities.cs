@@ -690,6 +690,36 @@ namespace DevPad.Utilities
 
             return Process.Start(info) != null;
         }
+
+        public static Guid GetWindowDesktopId(IntPtr handle)
+        {
+            try
+            {
+                var mgr = (IVirtualDesktopManager)new VirtualDesktopManager();
+                mgr.GetWindowDesktopId(handle, out var guid);
+                return guid;
+            }
+            catch
+            {
+                return Guid.Empty;
+            }
+        }
+
+        [ComImport, Guid("AA509086-5CA9-4C25-8F95-589D3C07B48A")]
+        private class VirtualDesktopManager { }
+
+        [ComImport, InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid("A5CD92FF-29BE-454C-8D04-D82879FB3F1B")]
+        private interface IVirtualDesktopManager
+        {
+            [PreserveSig]
+            int IsWindowOnCurrentVirtualDesktop(IntPtr topLevelWindow, out bool onCurrentDesktop);
+
+            [PreserveSig]
+            int GetWindowDesktopId(IntPtr topLevelWindow, out Guid desktopId);
+
+            [PreserveSig]
+            int MoveWindowToDesktop(IntPtr topLevelWindow, [MarshalAs(UnmanagedType.LPStruct)] Guid desktopId);
+        }
     }
 
     public enum SHARD
