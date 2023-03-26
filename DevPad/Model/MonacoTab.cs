@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -39,7 +40,7 @@ namespace DevPad.Model
         public bool IsAdd => this is MonacoAddTab;
         public bool IsFileView => WebView != null;
         public bool IsUntitled => FilePath == null && !IsAdd;
-        public virtual string FontFamily => string.Empty;
+        public virtual string FontFamily => "Segoe UI";
         public virtual string PinButtonTooltip => Resources.Resources.PinTabTooltip;
         public virtual string UnpinButtonTooltip => Resources.Resources.UnpinTabTooltip;
         public virtual string CloseButtonTooltip => Resources.Resources.CloseTabTooltip;
@@ -52,6 +53,7 @@ namespace DevPad.Model
         public string ModelLanguageName { get => DictionaryObjectGetNullifiedPropertyValue(); private set => DictionaryObjectSetPropertyValue(value); }
         public string CursorPosition { get => DictionaryObjectGetNullifiedPropertyValue(); private set => DictionaryObjectSetPropertyValue(value); }
         public string CursorSelection { get => DictionaryObjectGetNullifiedPropertyValue(); private set => DictionaryObjectSetPropertyValue(value); }
+        public Encoding Encoding { get => DictionaryObjectGetPropertyValue<Encoding>(); set => DictionaryObjectSetPropertyValue(value); }
         public bool IsPinned { get => DictionaryObjectGetPropertyValue(false); set { if (DictionaryObjectSetPropertyValue(value)) OnPropertyChanged(nameof(IsUnpinned)); } }
         public bool IsUnpinned => !IsPinned && !IsAdd;
         public int UntitledNumber { get; set; }
@@ -204,7 +206,15 @@ namespace DevPad.Model
                 FilesWatcher.FileChanged -= OnFileChanged;
             }
 
-            File.WriteAllText(filePath, text);
+            var encoding = Encoding;
+            if (encoding != null)
+            {
+                File.WriteAllText(filePath, text, encoding);
+            }
+            else
+            {
+                File.WriteAllText(filePath, text);
+            }
             HasContentChanged = false;
             DeleteAutoSave();
 
@@ -312,7 +322,8 @@ namespace DevPad.Model
             // not this the most performant load system... we should make chunks
             try
             {
-                _documentText = File.ReadAllText(filePath);
+                _documentText = EncodingDetector.ReadAllText(filePath, Settings.Current.EncodingDetectionMode, out var encoding);
+                Encoding = encoding;
             }
             catch (Exception ex)
             {

@@ -8,12 +8,13 @@
     <OutputType>WinExe</OutputType>
     <RootNamespace>DevPad</RootNamespace>
     <AssemblyName>DevPad</AssemblyName>
-    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.8.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <WarningLevel>4</WarningLevel>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -69,6 +70,7 @@
     <Compile Include="About.xaml.cs">
       <DependentUpon>About.xaml</DependentUpon>
     </Compile>
+    <Compile Include="EncodingName.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="Ipc\CommandResult.cs" />
     <Compile Include="Ipc\CommandTarget.cs" />
@@ -111,6 +113,8 @@
     <Compile Include="PerDesktopSettings.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="Utilities\AssemblyUtilities.cs" />
+    <Compile Include="Utilities\EncodingDetectorMode.cs" />
+    <Compile Include="Utilities\EncodingDetector.cs" />
     <Compile Include="Utilities\CommandLine.cs" />
     <Compile Include="Utilities\ConcurrentHashSet.cs" />
     <Compile Include="Utilities\Conversions.cs" />
@@ -229,7 +233,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Web.WebView2">
-      <Version>1.0.1587.40</Version>
+      <Version>1.0.1661.34</Version>
     </PackageReference>
     <PackageReference Include="System.Text.Json">
       <Version>7.0.2</Version>

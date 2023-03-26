@@ -49,19 +49,7 @@ namespace DevPad
             InitializeComponent();
 
             // resize back for small screens
-            var wa = Monitor.FromWindow(WindowsUtilities.GetDesktopWindow())?.WorkingArea;
-            if (wa.HasValue)
-            {
-                if (Width > wa.Value.Width)
-                {
-                    Width = wa.Value.Width;
-                }
-
-                if (Height > wa.Value.Height)
-                {
-                    Height = wa.Value.Height;
-                }
-            }
+            this.MinimizeToScreen();
 
             NewMenuItem.Icon = NewMenuItem.Icon ?? new Image { Source = IconUtilities.GetStockIconImageSource(StockIconId.DOCASSOC) };
             AboutMenuItem.Icon = AboutMenuItem.Icon ?? new Image { Source = IconUtilities.GetStockIconImageSource(StockIconId.HELP) };
@@ -234,6 +222,7 @@ namespace DevPad
             var dlg = new ObjectProperties(si, true);
             dlg.Height = 800;
             dlg.Width = 800;
+            dlg.MinimizeToScreen();
             dlg.Title = DevPad.Resources.Resources.SystemInfo;
             dlg.Owner = window;
             if (dlg.Owner == null)
@@ -415,11 +404,46 @@ namespace DevPad
                 OnPropertyChanged(nameof(CursorSelection));
                 OnPropertyChanged(nameof(ModelLanguageName));
                 OnPropertyChanged(nameof(ShowMinimap));
+                OnPropertyChanged(nameof(EncodingName));
             }
 
             public string CursorPosition => _main.CurrentTab?.CursorPosition;
             public string CursorSelection => _main.CurrentTab?.CursorSelection;
             public string ModelLanguageName => _main.CurrentTab?.ModelLanguageName;
+            public string EncodingName
+            {
+                get
+                {
+                    var encoding = _main.CurrentTab?.Encoding;
+                    if (encoding == null)
+                        return string.Empty;
+
+                    var bom = encoding.GetPreamble();
+                    if (bom != null && bom.Length > 0)
+                        return string.Format(DevPad.Resources.Resources.EncodingBom, encoding.WebName);
+
+                    if (encoding == Encoding.Default)
+                        return "ansi";
+
+                    return encoding.WebName;
+                }
+            }
+
+            //public string EncodingToolTip
+            //{
+            //    get
+            //    {
+            //        var encoding = _main.CurrentTab?.Encoding;
+            //        if (encoding == null)
+            //            return string.Empty;
+
+            //        var bom = encoding.GetPreamble();
+            //        if (bom != null && bom.Length > 0)
+            //            return string.Format(DevPad.Resources.Resources.EncodingBom, encoding.EncodingName);
+
+            //        return encoding.EncodingName;
+            //    }
+            //}
 
             public bool ShowMinimap
             {
@@ -1175,17 +1199,53 @@ namespace DevPad
 
         private void OnHelpOpened(object sender, RoutedEventArgs e)
         {
-            var desktop = WindowsUtilities.GetWindowDesktopName(Current);
-            if (desktop != null)
+            if (WindowsUtilities.KernelVersion.Major >= 10)
             {
-                if (_desktopMenuItem == null)
+                var desktop = WindowsUtilities.GetWindowDesktopName(Current);
+                if (desktop != null)
                 {
-                    _desktopMenuItem = new MenuItem();
-                    _desktopMenuItem.IsEnabled = false;
-                    HelpMenu.Items.Insert(3, _desktopMenuItem);
-                    HelpMenu.Items.Insert(4, new Separator());
+                    if (_desktopMenuItem == null)
+                    {
+                        _desktopMenuItem = new MenuItem();
+                        _desktopMenuItem.IsEnabled = false;
+                        HelpMenu.Items.Insert(3, _desktopMenuItem);
+                        HelpMenu.Items.Insert(4, new Separator());
+                    }
+                    _desktopMenuItem.Header = string.Format(DevPad.Resources.Resources.RunningOnDeskop, desktop);
                 }
-                _desktopMenuItem.Header = string.Format(DevPad.Resources.Resources.RunningOnDeskop, desktop);
+            }
+        }
+
+        private void OnEncodingChange(object sender, RoutedEventArgs e)
+        {
+            var name = Conversions.ChangeType<EncodingName>((sender as FrameworkElement)?.Tag);
+            Encoding encoding = null;
+            switch (name)
+            {
+                case EncodingName.Ansi:
+                    encoding = Encoding.Default;
+                    break;
+
+                case EncodingName.Utf16LE:
+                    encoding = Encoding.Unicode;
+                    break;
+
+                case EncodingName.Utf16BE:
+                    encoding = Encoding.BigEndianUnicode;
+                    break;
+
+                case EncodingName.Utf8:
+                    encoding = EncodingDetector.UTF8NoBom;
+                    break;
+
+                case EncodingName.Utf8BOM:
+                    encoding = Encoding.UTF8;
+                    break;
+            }
+
+            if (encoding != null && CurrentTab != null)
+            {
+                CurrentTab.Encoding = encoding;
             }
         }
     }

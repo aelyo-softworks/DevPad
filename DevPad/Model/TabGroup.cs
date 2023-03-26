@@ -24,7 +24,7 @@ namespace DevPad.Model
         public bool IsAdd => this is AddTabGroup;
         public bool IsClosable => !IsAdd && !IsDefault;
         public string Key => Name + "\0" + ForeColor?.ToString() + "\0" + BackColor?.ToString();
-        public virtual string FontFamily => string.Empty;
+        public virtual string FontFamily => "Segoe UI";
         public virtual int SelectedTabIndex { get => DictionaryObjectGetPropertyValue(0); set => DictionaryObjectSetPropertyValue(value); }
         public virtual string Name { get => DictionaryObjectGetPropertyValue<string>(); set => DictionaryObjectSetPropertyValue(value); }
         public virtual string ForeColor { get => DictionaryObjectGetNullifiedPropertyValue(); set => DictionaryObjectSetPropertyValue(value); }

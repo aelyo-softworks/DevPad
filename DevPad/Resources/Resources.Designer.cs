@@ -278,6 +278,15 @@ namespace DevPad.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to {0} BOM.
+        /// </summary>
+        internal static string EncodingBom {
+            get {
+                return ResourceManager.GetString("EncodingBom", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Error.
         /// </summary>
         internal static string Error {

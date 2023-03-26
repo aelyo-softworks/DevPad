@@ -33,5 +33,8 @@ namespace DevPad
 
         [LocalizedCategory("Startup")]
         public virtual SingleInstanceMode SingleInstanceMode { get => GetPropertyValue(SingleInstanceMode.OneInstancePerDesktop); set { SetPropertyValue(value); } }
+
+        [LocalizedCategory("Behavior")]
+        public virtual EncodingDetectorMode EncodingDetectionMode { get => GetPropertyValue(EncodingDetectorMode.AutoDetect); set { SetPropertyValue(value); } }
     }
 }

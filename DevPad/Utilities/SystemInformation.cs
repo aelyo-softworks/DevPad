@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using DevPad.Resources;
+using DevPad.Utilities.Grid;
 
 namespace DevPad.Utilities
 {
-    public class SystemInformation
+    public class SystemInformation : IPropertyGridObject
     {
         [LocalizedCategory("System")]
         public string Processor => SystemUtilities.Processor;
@@ -83,5 +85,16 @@ namespace DevPad.Utilities
 
         [LocalizedCategory("Security")]
         public TokenElevationType TokenElevationType => SystemUtilities.GetTokenElevationType();
+
+        void IPropertyGridObject.EditorClosed(PropertyGridProperty property, object editor) { }
+        bool IPropertyGridObject.TryShowEditor(PropertyGridProperty property, object editor, out bool? result) { result = null; return false; }
+        void IPropertyGridObject.FinalizeProperties(PropertyGridDataProvider dataProvider, IList<PropertyGridProperty> properties)
+        {
+            if (WindowsUtilities.KernelVersion.Major < 10)
+            {
+                properties.Remove(properties.First(p => p.Name.Equals(nameof(Desktops))));
+                properties.Remove(properties.First(p => p.Name.Equals(nameof(CurrentDesktop))));
+            }
+        }
     }
 }

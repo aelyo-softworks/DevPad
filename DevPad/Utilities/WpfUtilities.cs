@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
 using System.Windows.Markup.Primitives;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
@@ -94,6 +95,32 @@ namespace DevPad.Utilities
                 }
             }, priority);
             return tcs.Task;
+        }
+
+        public static void MinimizeToScreen(this Window window)
+        {
+            if (window == null)
+                throw new ArgumentNullException(nameof(window));
+
+            var handle = new WindowInteropHelper(window).Handle;
+            if (handle == IntPtr.Zero)
+            {
+                handle = WindowsUtilities.GetDesktopWindow();
+            }
+
+            var wa = Monitor.FromWindow(handle)?.WorkingArea;
+            if (wa.HasValue)
+            {
+                if (window.Width > wa.Value.Width)
+                {
+                    window.Width = wa.Value.Width;
+                }
+
+                if (window.Height > wa.Value.Height)
+                {
+                    window.Height = wa.Value.Height;
+                }
+            }
         }
 
         public static T GetSelectedDataContext<T>(this TreeView treeView)

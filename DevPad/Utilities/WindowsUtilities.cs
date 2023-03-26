@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
 using Microsoft.Win32;
+using System.ComponentModel;
 
 #if SETUP
 using Resources = DevPad.Setup.Resources;
@@ -30,6 +31,9 @@ namespace DevPad.Utilities
 
         private static readonly Lazy<Process> _parentProcess = new Lazy<Process>(() => GetParentProcess(), true);
         public static Process ParentProcess => _parentProcess.Value; // can be null
+
+        private static readonly Lazy<IReadOnlyList<string>> _userLanguages = new Lazy<IReadOnlyList<string>>(GetUserLanguages);
+        public static IReadOnlyList<string> UserLanguages => _userLanguages.Value;
 
         private static readonly Lazy<Version> _kernelVersion = new Lazy<Version>(() =>
         {
@@ -73,6 +77,54 @@ namespace DevPad.Utilities
             }
             return null;
         }
+
+        private static IReadOnlyList<string> GetUserLanguages()
+        {
+            try
+            {
+                GetUserLanguages('?', out var langs);
+                return Conversions.SplitToList<string>(langs, '?').AsReadOnly();
+            }
+            catch
+            {
+                const int MUI_LANGUAGE_NAME = 8;
+                return GetUserPreferredUILanguages(MUI_LANGUAGE_NAME);
+            }
+        }
+
+        private static IReadOnlyList<string> GetUserPreferredUILanguages(int flags)
+        {
+            var list = new List<string>();
+            var size = 0;
+            if (!GetUserPreferredUILanguages(flags, out _, IntPtr.Zero, ref size))
+                throw new Win32Exception(Marshal.GetLastWin32Error());
+
+            var ptr = Marshal.AllocHGlobal(size * 2);
+            try
+            {
+                if (!GetUserPreferredUILanguages(flags, out var count, ptr, ref size))
+                    throw new Win32Exception(Marshal.GetLastWin32Error());
+
+                var current = ptr;
+                for (var i = 0; i < count; i++)
+                {
+                    var str = Marshal.PtrToStringUni(current);
+                    list.Add(str);
+                    current += (str.Length + 1) * 2;
+                }
+                return list.AsReadOnly();
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(ptr);
+            }
+        }
+
+        [DllImport("bcp47langs")]
+        private static extern int GetUserLanguages(char delimiter, [MarshalAs(UnmanagedType.HString)] out string userLanguages);
+
+        [DllImport("kernel32", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern bool GetUserPreferredUILanguages(int dwFlags, out int pulNumLanguages, IntPtr pwszLanguagesBuffer, ref int pcchLanguagesBuffer);
 
         [DllImport("ntdll")]
         private static extern int NtQueryInformationProcess(IntPtr processHandle, int processInformationClass, ref PROCESS_BASIC_INFORMATION processInformation, int processInformationLength, out int returnLength);
