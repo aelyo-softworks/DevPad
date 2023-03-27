@@ -73,15 +73,6 @@
         <Button
             Width="75"
             Height="23"
-            Margin="0,40,10,10"
-            HorizontalAlignment="Right"
-            VerticalAlignment="Bottom"
-            Click="OnCancelClick"
-            Content="Cancel"
-            IsCancel="True" />
-        <Button
-            Width="75"
-            Height="23"
             Margin="0,0,90,10"
             HorizontalAlignment="Right"
             VerticalAlignment="Bottom"
@@ -89,5 +80,14 @@
             Content="OK"
             IsDefault="True"
             IsEnabled="{Binding IsValid}" />
+        <Button
+            Width="75"
+            Height="23"
+            Margin="0,40,10,10"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Bottom"
+            Click="OnCancelClick"
+            Content="Cancel"
+            IsCancel="True" />
     </Grid>
 </Window>

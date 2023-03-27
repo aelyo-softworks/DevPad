@@ -75,6 +75,9 @@ namespace DevPad
             {
                 foreach (var group in Settings.RecentGroups)
                 {
+                    if (group.Name == _defaultTabGroup.Name)
+                        continue;
+
                     var existing = _groups.FirstOrDefault(g => g.Key == group.Key);
                     if (existing != null)
                     {
@@ -392,19 +395,14 @@ namespace DevPad
                 }
             }
 
-            public void RaisePropertyChanged(string propertyName)
+            public void RaisePropertyChanged()
             {
-                if (propertyName != null)
-                {
-                    OnPropertyChanged(propertyName);
-                    return;
-                }
-
                 OnPropertyChanged(nameof(CursorPosition));
                 OnPropertyChanged(nameof(CursorSelection));
                 OnPropertyChanged(nameof(ModelLanguageName));
                 OnPropertyChanged(nameof(ShowMinimap));
                 OnPropertyChanged(nameof(EncodingName));
+                OnPropertyChanged(nameof(EncodingToolTip));
             }
 
             public string CursorPosition => _main.CurrentTab?.CursorPosition;
@@ -429,21 +427,32 @@ namespace DevPad
                 }
             }
 
-            //public string EncodingToolTip
-            //{
-            //    get
-            //    {
-            //        var encoding = _main.CurrentTab?.Encoding;
-            //        if (encoding == null)
-            //            return string.Empty;
+            public string EncodingToolTip
+            {
+                get
+                {
+                    var encoding = _main.CurrentTab?.Encoding;
+                    if (encoding == null)
+                        return string.Empty;
 
-            //        var bom = encoding.GetPreamble();
-            //        if (bom != null && bom.Length > 0)
-            //            return string.Format(DevPad.Resources.Resources.EncodingBom, encoding.EncodingName);
+                    var name = encoding.BodyName;
+                    if (!encoding.WebName.EqualsIgnoreCase(name))
+                    {
+                        name += Environment.NewLine + encoding.WebName;
+                    }
 
-            //        return encoding.EncodingName;
-            //    }
-            //}
+                    if (!encoding.EncodingName.EqualsIgnoreCase(name) && !encoding.EncodingName.EqualsIgnoreCase(encoding.WebName))
+                    {
+                        name += Environment.NewLine + encoding.EncodingName;
+                    }
+
+                    var bom = encoding.GetPreamble();
+                    if (bom != null && bom.Length > 0)
+                        return string.Format(DevPad.Resources.Resources.EncodingBom, name);
+
+                    return name;
+                }
+            }
 
             public bool ShowMinimap
             {
@@ -691,7 +700,7 @@ namespace DevPad
             if (tab == null || !tab.IsFileView)
                 return;
 
-            var filter = await BuildFilterAsync();
+            var filter = BuildFilter();
             if (filter.Item1 == null)
                 return;
 
@@ -735,7 +744,7 @@ namespace DevPad
 
         private async Task OpenAsync(string groupKey, string directoryPath)
         {
-            var filter = await BuildFilterAsync();
+            var filter = BuildFilter();
             if (filter.Item1 == null)
                 return;
 
@@ -777,13 +786,13 @@ namespace DevPad
             }
         }
 
-        private async Task<(string, int)> BuildFilterAsync()
+        private (string, int) BuildFilter()
         {
             var view = DefaultGroup.FileViewTabs.FirstOrDefault()?.WebView;
             if (view == null)
                 return (null, 0);
 
-            var languages = await view.GetLanguages();
+            var languages = MonacoExtensions.GetLanguages();
             var sb = new StringBuilder();
             var index = 0;
             foreach (var kv in languages.OrderBy(k => k.Value.Name))
@@ -900,7 +909,7 @@ namespace DevPad
                 var tab = (MonacoTab)e.AddedItems[0];
                 if (!tab.IsAdd)
                 {
-                    _dataContext.RaisePropertyChanged(null);
+                    _dataContext.RaisePropertyChanged();
 
                     SetTitle();
 
@@ -924,7 +933,7 @@ namespace DevPad
             switch (e.PropertyName)
             {
                 case nameof(MonacoTab.IsEditorCreated):
-                    _dataContext.RaisePropertyChanged(null);
+                    _dataContext.RaisePropertyChanged();
                     break;
 
                 case nameof(MonacoTab.HasContentChanged):
@@ -932,7 +941,7 @@ namespace DevPad
                     break;
 
                 default:
-                    _dataContext.RaisePropertyChanged(e.PropertyName);
+                    _dataContext.RaisePropertyChanged();
                     break;
             }
         }
@@ -1019,12 +1028,12 @@ namespace DevPad
             }
         }
 
-        private async void OnLanguagesOpened(object sender, RoutedEventArgs e)
+        private void OnLanguagesOpened(object sender, RoutedEventArgs e)
         {
             if (_languagesLoaded)
                 return;
 
-            var langs = await CurrentTab.WebView.GetLanguages();
+            var langs = MonacoExtensions.GetLanguages();
             LanguagesMenuItem.Items.Clear();
             foreach (var group in langs.OrderBy(k => k.Value.Name).GroupBy(n => n.Value.Name.Substring(0, 1), comparer: StringComparer.OrdinalIgnoreCase))
             {

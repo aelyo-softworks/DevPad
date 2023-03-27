@@ -10,11 +10,33 @@ namespace DevPad.MonacoModel
 {
     public static class MonacoExtensions
     {
+        public static bool LanguagesLoaded { get; private set; }
+
         private static ConcurrentDictionary<string, LanguageExtensionPoint> _languagesById;
         private static ConcurrentDictionary<string, IReadOnlyList<LanguageExtensionPoint>> _languagesByExtension;
 
-        private static async Task FillLanguages(WebView2 webView)
+        private static bool _loadingLanguages;
+
+        public static async Task LoadLanguages(WebView2 webView)
         {
+            if (webView == null)
+                throw new ArgumentNullException(nameof(webView));
+
+            if (LanguagesLoaded)
+                return;
+
+            if (_loadingLanguages)
+            {
+                do
+                {
+                    await Task.Delay(20);
+                }
+                while (_loadingLanguages);
+                return;
+            }
+
+            _loadingLanguages = true;
+
             var json = await webView.ExecuteScriptAsync("monaco.languages.getLanguages()").ConfigureAwait(false);
             var languages = JsonSerializer.Deserialize<LanguageExtensionPoint[]>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
@@ -46,13 +68,6 @@ namespace DevPad.MonacoModel
                 // TODO: add some well-known languages that are not recognized by Monaco
                 addExtensionLike(".idl", ".c");
 
-                foreach (var kv in _languagesByExtension)
-                {
-                    Program.WindowsApplication.FileExtensions.Add(kv.Key);
-                }
-
-                Program.WindowsApplication.Register();
-
                 void addExtensionLike(string ext, string likeExt)
                 {
                     if (_languagesByExtension.ContainsKey(ext))
@@ -75,14 +90,20 @@ namespace DevPad.MonacoModel
                     _languagesByExtension[ext] = list;
                 }
             }
+
+            _loadingLanguages = false;
+            LanguagesLoaded = true;
         }
 
-        public static async ValueTask<string> GetLanguageName(this WebView2 webView, string id)
+        public static string GetLanguageName(string id)
         {
+            if (!LanguagesLoaded)
+                throw new InvalidOperationException();
+
             if (id == null)
                 return null;
 
-            var languages = await GetLanguages(webView);
+            var languages = GetLanguages();
             languages.TryGetValue(id, out var lang);
             if (lang != null)
                 return lang.Name;
@@ -90,21 +111,19 @@ namespace DevPad.MonacoModel
             return null;
         }
 
-        public static async ValueTask<IDictionary<string, IReadOnlyList<LanguageExtensionPoint>>> GetLanguagesByExtension(this WebView2 webView)
+        public static IDictionary<string, IReadOnlyList<LanguageExtensionPoint>> GetLanguagesByExtension()
         {
-            if (_languagesByExtension == null)
-            {
-                await FillLanguages(webView);
-            }
+            if (!LanguagesLoaded)
+                throw new InvalidOperationException();
+
             return _languagesByExtension;
         }
 
-        public static async ValueTask<IDictionary<string, LanguageExtensionPoint>> GetLanguages(this WebView2 webView)
+        public static IDictionary<string, LanguageExtensionPoint> GetLanguages()
         {
-            if (_languagesById == null)
-            {
-                await FillLanguages(webView);
-            }
+            if (!LanguagesLoaded)
+                throw new InvalidOperationException();
+
             return _languagesById;
         }
 

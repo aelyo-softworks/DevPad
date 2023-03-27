@@ -2,6 +2,8 @@
     x:Class="DevPad.App"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:DevPad"
+    xmlns:sfw="clr-namespace:DevPad.Utilities.Grid"
     xmlns:utils="clr-namespace:DevPad.Utilities"
     StartupUri="MainWindow.xaml">
     <Application.Resources>
@@ -33,6 +35,24 @@
                 <utils:UniversalConverterCase ConvertedValue="Collapsed" Value="true" />
             </utils:UniversalConverter.Switch>
         </utils:UniversalConverter>
+
+        <local:ExtensionsToRegister x:Key="ExtensionsToRegister" x:Shared="false" />
+
+        <DataTemplate x:Key="RegisterExtensionEditor">
+            <DockPanel LastChildFill="true">
+                <Button
+                    Width="50"
+                    HorizontalContentAlignment="Left"
+                    Command="{x:Static sfw:PropertyGrid.BrowseCommand}"
+                    CommandParameter="ExtensionsToRegister"
+                    Content="Edit ..."
+                    DockPanel.Dock="Right" />
+                <TextBox
+                    DockPanel.Dock="Left"
+                    IsEnabled="False"
+                    Text="{Binding TextValue}" />
+            </DockPanel>
+        </DataTemplate>
 
         <Style x:Key="ValidationTextBox" TargetType="{x:Type TextBox}">
             <Setter Property="Validation.ErrorTemplate">

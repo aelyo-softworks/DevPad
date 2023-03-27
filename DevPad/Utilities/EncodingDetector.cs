@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -40,7 +41,7 @@ namespace DevPad.Utilities
 
         // https://devblogs.microsoft.com/oldnewthing/20190701-00/?p=102636
         [DllImport("kernel32")]
-        private static extern int MultiByteToWideChar(int CodePage, int dwFlags, byte[] lpMultiByteStr, int cbMultiByte, [Out] char[] lpWideCharStr, int cchWideChar);
+        private static extern int MultiByteToWideChar(int CodePage, int dwFlags, byte[] lpMultiByteStr, int cbMultiByte, [Out] ushort[] lpWideCharStr, int cchWideChar);
 
         private static readonly char[] _to1252Table = Init1252Table();
         private static char[] Init1252Table()
@@ -51,9 +52,9 @@ namespace DevPad.Utilities
                 as8bit[i] = (byte)(i + 0x80);
             }
 
-            var to1252Table = new char[32];
-            MultiByteToWideChar(1252, 0, as8bit, as8bit.Length, to1252Table, 32);
-            return to1252Table;
+            var table = new ushort[32];
+            MultiByteToWideChar(1252, 0, as8bit, as8bit.Length, table, table.Length);
+            return table.Select(us => (char)us).ToArray();
         }
 
         private static byte To1252(char ch)
@@ -100,13 +101,13 @@ namespace DevPad.Utilities
                     var ch = To1252(c);
                     if (ch > 0x7F)
                     {
-                        if (((c & 0xE0) == 0xC0) && (i < (p.Length - 1)) && ((To1252(p[i + 1]) & 0xC0) == 0x80))
+                        if (((c & 0xE0) == 0xC0) && ((i + 1) < p.Length) && ((To1252(p[i + 1]) & 0xC0) == 0x80))
                             return true;
 
-                        if (((c & 0xF0) == 0xE0) && (i < (p.Length - 2)) && ((To1252(p[i + 1]) & 0xC0) == 0x80) && ((To1252(p[i + 2]) & 0xC0) == 0x80))
+                        if (((c & 0xF0) == 0xE0) && ((i + 2) < p.Length) && ((To1252(p[i + 1]) & 0xC0) == 0x80) && ((To1252(p[i + 2]) & 0xC0) == 0x80))
                             return true;
 
-                        if (((c & 0xF8) == 0xF0) && (i < (p.Length - 3)) && ((To1252(p[i + 1]) & 0xC0) == 0x80) && ((To1252(p[i + 2]) & 0xC0) == 0x80) && ((To1252(p[i + 3]) & 0xC0) == 0x80))
+                        if (((c & 0xF8) == 0xF0) && ((i + 3) < p.Length) && ((To1252(p[i + 1]) & 0xC0) == 0x80) && ((To1252(p[i + 2]) & 0xC0) == 0x80) && ((To1252(p[i + 3]) & 0xC0) == 0x80))
                             return true;
                     }
                     return false;

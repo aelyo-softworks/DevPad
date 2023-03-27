@@ -71,6 +71,9 @@
       <DependentUpon>About.xaml</DependentUpon>
     </Compile>
     <Compile Include="EncodingName.cs" />
+    <Compile Include="ExtensionsToRegister.xaml.cs">
+      <DependentUpon>ExtensionsToRegister.xaml</DependentUpon>
+    </Compile>
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="Ipc\CommandResult.cs" />
     <Compile Include="Ipc\CommandTarget.cs" />
@@ -185,6 +188,10 @@
     <Compile Include="Utilities\WindowsUtilities.cs" />
     <Compile Include="Utilities\WinformsUtilities.cs" />
     <Compile Include="Utilities\WpfUtilities.cs" />
+    <Page Include="ExtensionsToRegister.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

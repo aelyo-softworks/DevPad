@@ -19,7 +19,7 @@ namespace DevPad.Utilities
 
         private static int? GetApplicationIconIndex()
         {
-            var progid = Program.WindowsApplication.ApplicationIconProgId;
+            var progid = WindowsApp.ApplicationIconProgId;
             var ctx = CreateBindCtx(progid, STGM.STGM_CREATE);
             if (ctx == null)
                 return null;

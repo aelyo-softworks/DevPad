@@ -14,8 +14,6 @@ namespace DevPad
 {
     public class PerDesktopSettings : Serializable<PerDesktopSettings>
     {
-        private const int _defaultAutoSavePeriod = 2;
-
         private static readonly ConcurrentDictionary<Guid, PerDesktopSettings> _settings = new ConcurrentDictionary<Guid, PerDesktopSettings>();
 
         public static PerDesktopSettings Get(Guid desktopId)
@@ -31,7 +29,6 @@ namespace DevPad
                 settings = Deserialize(configurationFilePath);
                 settings = _settings.AddOrUpdate(desktopId, settings, (k, o) => o);
                 settings.ConfigurationFilePath = configurationFilePath;
-                settings.AutoSavesDirectoryPath = Path.Combine(Path.GetDirectoryName(configurationFilePath), "autosaves");
             }
             return settings;
         }
@@ -39,10 +36,6 @@ namespace DevPad
         [JsonIgnore]
         [Browsable(false)]
         public string ConfigurationFilePath { get; private set; }
-
-        [JsonIgnore]
-        [Browsable(false)]
-        public string AutoSavesDirectoryPath { get; private set; }
 
         private static string GetUntitledFilePath(int number, string groupKey) => Settings.GetUntitledName(number) + "\0" + groupKey;
 
@@ -98,10 +91,6 @@ namespace DevPad
 
         [LocalizedCategory("Behavior")]
         public virtual bool OpenFromCurrentTabFolder { get => GetPropertyValue(true); set { SetPropertyValue(value); } }
-
-        [LocalizedCategory("Behavior")]
-        [LocalizedDisplayName("AutoSavePeriodDisplayName")]
-        public virtual int AutoSavePeriod { get => GetPropertyValue(_defaultAutoSavePeriod); set { SetPropertyValue(value); } }
 
         private Dictionary<string, RecentFile> GetRecentFiles()
         {

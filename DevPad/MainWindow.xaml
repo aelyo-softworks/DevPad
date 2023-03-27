@@ -309,7 +309,10 @@
             </StatusBarItem>
             <StatusBarItem HorizontalAlignment="Right">
                 <DockPanel>
-                    <TextBlock Margin="0,0,10,0" Text="{Binding EncodingName}">
+                    <TextBlock
+                        Margin="0,0,10,0"
+                        Text="{Binding EncodingName}"
+                        ToolTip="{Binding EncodingToolTip}">
                         <TextBlock.ContextMenu>
                             <ContextMenu>
                                 <MenuItem
@@ -322,11 +325,11 @@
                                     Tag="Utf8BOM" />
                                 <MenuItem
                                     Click="OnEncodingChange"
-                                    Header="utf-16 BE"
+                                    Header="utf-16 BE BOM"
                                     Tag="Utf16BE" />
                                 <MenuItem
                                     Click="OnEncodingChange"
-                                    Header="utf-16 LE"
+                                    Header="utf-16 LE BOM"
                                     Tag="Utf16LE" />
                                 <MenuItem
                                     Click="OnEncodingChange"

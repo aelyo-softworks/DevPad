@@ -53,7 +53,7 @@ namespace DevPad.Model
         public string ModelLanguageName { get => DictionaryObjectGetNullifiedPropertyValue(); private set => DictionaryObjectSetPropertyValue(value); }
         public string CursorPosition { get => DictionaryObjectGetNullifiedPropertyValue(); private set => DictionaryObjectSetPropertyValue(value); }
         public string CursorSelection { get => DictionaryObjectGetNullifiedPropertyValue(); private set => DictionaryObjectSetPropertyValue(value); }
-        public Encoding Encoding { get => DictionaryObjectGetPropertyValue<Encoding>(); set => DictionaryObjectSetPropertyValue(value); }
+        public Encoding Encoding { get => DictionaryObjectGetPropertyValue<Encoding>(); set { if (DictionaryObjectSetPropertyValue(value)) HasContentChanged = true; } }
         public bool IsPinned { get => DictionaryObjectGetPropertyValue(false); set { if (DictionaryObjectSetPropertyValue(value)) OnPropertyChanged(nameof(IsUnpinned)); } }
         public bool IsUnpinned => !IsPinned && !IsAdd;
         public int UntitledNumber { get; set; }
@@ -72,7 +72,7 @@ namespace DevPad.Model
             }
         }
 
-        public string AutoSaveFilePath => IsFileView ? Path.Combine(MainWindow.Current.Settings.AutoSavesDirectoryPath, AutoSaveId) : null;
+        public string AutoSaveFilePath => IsFileView ? Path.Combine(Settings.AutoSavesDirectoryPath, AutoSaveId) : null;
         public string AutoSaveId
         {
             get
@@ -134,7 +134,7 @@ namespace DevPad.Model
                 if (text == null)
                     return;
 
-                var path = Path.Combine(MainWindow.Current.Settings.AutoSavesDirectoryPath, id);
+                var path = Path.Combine(Settings.AutoSavesDirectoryPath, id);
                 IOUtilities.FileEnsureDirectory(path);
                 File.WriteAllText(path, text);
             }
@@ -144,7 +144,7 @@ namespace DevPad.Model
         private async Task SetEditorLanguageFromFilePathAsync(string filePath)
         {
             var ext = Path.GetExtension(filePath);
-            var langs = await WebView.GetLanguagesByExtension();
+            var langs = MonacoExtensions.GetLanguagesByExtension();
             string lang;
             if (langs.TryGetValue(ext, out var langObject))
             {
@@ -309,7 +309,7 @@ namespace DevPad.Model
             if (FilePath != null)
             {
                 var ext = Path.GetExtension(FilePath);
-                var langs = await WebView.GetLanguagesByExtension();
+                var langs = MonacoExtensions.GetLanguagesByExtension();
                 if (langs.TryGetValue(ext, out var langObject) && langObject.Count > 0)
                 {
                     lang = langObject[0].Id;
@@ -357,7 +357,7 @@ namespace DevPad.Model
                     if (IsEditorCreated)
                     {
                         HasContentChanged = true;
-                        _ = AutoSaveWhenIdleAsync(MainWindow.Current.Settings.AutoSavePeriod * 1000);
+                        _ = AutoSaveWhenIdleAsync(Settings.Current.AutoSavePeriod * 1000);
                     }
                     break;
 
@@ -375,6 +375,11 @@ namespace DevPad.Model
                     break;
 
                 case DevPadEventType.EditorCreated:
+                    if (!MonacoExtensions.LanguagesLoaded)
+                    {
+                        await MonacoExtensions.LoadLanguages(WebView);
+                    }
+
                     if (!MainWindow.Current.Settings.ShowMinimap)
                     {
                         await EnableMinimapAsync(false);
@@ -407,12 +412,12 @@ namespace DevPad.Model
 
                     langId = await ExecuteScriptAsync("editor.getModel().getLanguageId()");
                     langId = UnescapeEditorText(langId);
-                    await setLang();
+                    setLang();
                     break;
 
                 case DevPadEventType.ModelLanguageChanged:
                     langId = e.RootElement.GetNullifiedValue("newLanguage");
-                    await setLang();
+                    setLang();
                     break;
 
                 case DevPadEventType.CursorPositionChanged:
@@ -435,11 +440,11 @@ namespace DevPad.Model
                     break;
             }
 
-            async Task setLang()
+            void setLang()
             {
                 if (langId != null)
                 {
-                    text = await WebView.GetLanguageName(langId);
+                    text = MonacoExtensions.GetLanguageName(langId);
                     ModelLanguageName = text ?? langId;
                 }
                 else
