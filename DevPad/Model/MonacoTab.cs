@@ -51,6 +51,7 @@ namespace DevPad.Model
         public bool HasContentChanged { get => DictionaryObjectGetPropertyValue(false); private set => DictionaryObjectSetPropertyValue(value); }
         public bool IsEditorCreated { get => DictionaryObjectGetPropertyValue(false); private set => DictionaryObjectSetPropertyValue(value); }
         public string ModelLanguageName { get => DictionaryObjectGetNullifiedPropertyValue(); private set => DictionaryObjectSetPropertyValue(value); }
+        public string ModelLanguageId { get => DictionaryObjectGetNullifiedPropertyValue(); private set => DictionaryObjectSetPropertyValue(value); }
         public string CursorPosition { get => DictionaryObjectGetNullifiedPropertyValue(); private set => DictionaryObjectSetPropertyValue(value); }
         public string CursorSelection { get => DictionaryObjectGetNullifiedPropertyValue(); private set => DictionaryObjectSetPropertyValue(value); }
         public Encoding Encoding { get => DictionaryObjectGetPropertyValue<Encoding>(); set { if (DictionaryObjectSetPropertyValue(value)) HasContentChanged = true; } }
@@ -261,6 +262,7 @@ namespace DevPad.Model
         {
             try
             {
+                //Program.Trace(script);
                 return await WebView.ExecuteScriptAsync(script);
             }
             catch (ObjectDisposedException ex)
@@ -380,10 +382,7 @@ namespace DevPad.Model
                         await MonacoExtensions.LoadLanguages(WebView);
                     }
 
-                    if (!MainWindow.Current.Settings.ShowMinimap)
-                    {
-                        await EnableMinimapAsync(false);
-                    }
+                    await EnableMinimapAsync(Settings.Current.ShowMinimap);
                     await SetEditorThemeAsync(MainWindow.Current.Settings.Theme);
                     await FocusEditorAsync();
 
@@ -446,10 +445,12 @@ namespace DevPad.Model
                 {
                     text = MonacoExtensions.GetLanguageName(langId);
                     ModelLanguageName = text ?? langId;
+                    ModelLanguageId = langId;
                 }
                 else
                 {
                     ModelLanguageName = string.Empty;
+                    ModelLanguageId = string.Empty;
                 }
             }
 

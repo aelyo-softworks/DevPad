@@ -95,6 +95,8 @@
     <Compile Include="MonacoModel\DevPadObject.cs" />
     <Compile Include="MonacoModel\EditorOption.cs" />
     <Compile Include="MonacoModel\KeyCode.cs" />
+    <Compile Include="Resources\LocalizedDescriptionAttribute.cs" />
+    <Compile Include="AutoDetectLanguageMode.cs" />
     <Compile Include="Utilities\LanguageDetector.cs" />
     <Compile Include="MonacoModel\LanguageExtensionPoint.cs" />
     <Compile Include="MonacoModel\MonacoExtensions.cs" />
@@ -230,6 +232,7 @@
     <Content Include="Monaco\**">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="Properties\UpdateAssemblyInfo.exe" />
     <Resource Include="Resources\close.png" />
     <Resource Include="Resources\pinned.png" />
     <Resource Include="Resources\plus.png" />
@@ -249,6 +252,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.manifest" />
+    <None Include="Properties\pre-commit" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\Resources.resx">

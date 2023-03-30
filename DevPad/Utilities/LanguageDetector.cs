@@ -64,7 +64,6 @@ namespace DevPad.Utilities
                         addScore(ls);
                     }
                 }
-                Console.WriteLine(token);
 
                 void skipWhitespaces()
                 {
@@ -101,7 +100,23 @@ namespace DevPad.Utilities
                     score = kv.Value;
                 }
             }
+
+            if (lang == Language.Unknown && isJson())
+                return Language.Json;
+
             return lang;
+
+            bool isJson()
+            {
+                text = text.Trim();
+                if (text == null || text == "null" || text == "[]")
+                    return false;
+
+                if (text.StartsWith("{") && text.EndsWith("}"))
+                    return true;
+
+                return false;
+            }
 
             void addScore(LanguageScore ls)
             {
@@ -212,7 +227,7 @@ namespace DevPad.Utilities
 
                 ["console"] = new List<LanguageScore>
                     {
-                        new LanguageScore(Language.JavaScript),
+                        new LanguageScore(Language.JavaScript){ExactMatch = "console" },
                     },
 
                 ["cout"] = new List<LanguageScore>

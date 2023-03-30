@@ -115,6 +115,15 @@ namespace DevPad.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Auto detect.
+        /// </summary>
+        internal static string AutoDetect {
+            get {
+                return ResourceManager.GetString("AutoDetect", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Auto-Save Period (sec).
         /// </summary>
         internal static string AutoSavePeriodDisplayName {
@@ -278,6 +287,15 @@ namespace DevPad.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Don&apos;t auto detect.
+        /// </summary>
+        internal static string DontAutoDetect {
+            get {
+                return ResourceManager.GetString("DontAutoDetect", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to {0} BOM.
         /// </summary>
         internal static string EncodingBom {
@@ -323,6 +341,15 @@ namespace DevPad.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Language auto detection wants to change from &apos;{0}&apos; to &apos;{1}&apos;. Are you sure?.
+        /// </summary>
+        internal static string LanguageChanging {
+            get {
+                return ResourceManager.GetString("LanguageChanging", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Name cannot be empty or whitespace.
         /// </summary>
         internal static string NameError {
@@ -337,6 +364,24 @@ namespace DevPad.Resources {
         internal static string OneFileFilter {
             get {
                 return ResourceManager.GetString("OneFileFilter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to One Instance.
+        /// </summary>
+        internal static string OneInstance {
+            get {
+                return ResourceManager.GetString("OneInstance", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to One Instance Per Virtual Desktop.
+        /// </summary>
+        internal static string OneInstancePerDesktop {
+            get {
+                return ResourceManager.GetString("OneInstancePerDesktop", resourceCulture);
             }
         }
         
@@ -373,6 +418,15 @@ namespace DevPad.Resources {
         internal static string Process {
             get {
                 return ResourceManager.GetString("Process", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Auto detect and prompt when language changes.
+        /// </summary>
+        internal static string PromptIfLanguageChanges {
+            get {
+                return ResourceManager.GetString("PromptIfLanguageChanges", resourceCulture);
             }
         }
         

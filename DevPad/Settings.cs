@@ -36,19 +36,28 @@ namespace DevPad
 
         internal new void OnPropertyChanged(string name) => base.OnPropertyChanged(name);
 
+        public void SerializeToConfigurationWhenIdle(int dueTime = 1000) => DevPadExtensions.DoWhenIdle(SerializeToConfiguration, dueTime, nameof(SerializeToConfigurationWhenIdle) + "Global");
+        public void SerializeToConfiguration() => Serialize(ConfigurationFilePath);
+
         [JsonIgnore]
         [Browsable(false)]
         public string UserDataFolder { get; set; } = DefaultUserDataFolder;
 
         [LocalizedCategory("Startup")]
+        [DefaultValue(SingleInstanceMode.OneInstancePerDesktop)]
         public virtual SingleInstanceMode SingleInstanceMode { get => GetPropertyValue(SingleInstanceMode.OneInstancePerDesktop); set { SetPropertyValue(value); } }
 
         [LocalizedCategory("Behavior")]
+        [DefaultValue(EncodingDetectorMode.AutoDetect)]
         public virtual EncodingDetectorMode EncodingDetectionMode { get => GetPropertyValue(EncodingDetectorMode.AutoDetect); set { SetPropertyValue(value); } }
 
         [LocalizedCategory("Behavior")]
+        [DefaultValue(AutoDetectLanguageMode.AutoDetect)]
+        public virtual AutoDetectLanguageMode AutoDetectLanguageMode { get => GetPropertyValue(AutoDetectLanguageMode.AutoDetect); set { SetPropertyValue(value); } }
+
+        [LocalizedCategory("Appearance")]
         [DefaultValue(true)]
-        public virtual bool AutoDetectLanguageOnPaste { get => GetPropertyValue(true); set { SetPropertyValue(value); } }
+        public virtual bool ShowMinimap { get => GetPropertyValue(true); set { SetPropertyValue(value); } }
 
         [LocalizedCategory("Behavior")]
         [LocalizedDisplayName("AutoSavePeriodDisplayName")]

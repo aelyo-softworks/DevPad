@@ -5,7 +5,6 @@ using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace DevPad.Utilities
 {
@@ -31,7 +30,6 @@ namespace DevPad.Utilities
             var options = new JsonSerializerOptions
             {
                 WriteIndented = true,
-                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
             };
             var json = JsonSerializer.Serialize((T)(object)this, options);
             File.WriteAllText(filePath, json);

@@ -4,8 +4,8 @@ namespace DevPad.Resources
 {
     public class LocalizedDisplayNameAttribute : DisplayNameAttribute
     {
-        public LocalizedDisplayNameAttribute(string name)
-            : base(name)
+        public LocalizedDisplayNameAttribute(string displayName)
+            : base(displayName)
         {
         }
 

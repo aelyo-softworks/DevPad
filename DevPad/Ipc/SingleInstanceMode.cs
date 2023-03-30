@@ -1,13 +1,13 @@
-﻿using System.ComponentModel;
+﻿using DevPad.Resources;
 
 namespace DevPad.Ipc
 {
     public enum SingleInstanceMode
     {
-        [Description("One Instance Per Virtual Desktop")]
+        [LocalizedDescription(nameof(OneInstancePerDesktop))]
         OneInstancePerDesktop,
 
-        [Description("One Instance")]
+        [LocalizedDescription(nameof(OneInstance))]
         OneInstance
     }
 }

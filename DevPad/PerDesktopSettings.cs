@@ -78,18 +78,19 @@ namespace DevPad
 
         [LocalizedCategory("Appearance")]
         [PropertyGridOptions(IsEnum = true, EnumNames = new[] { "vs", "vs-dark", "hc-light", "hc-black" })]
+        [DefaultValue("vs")]
         public virtual string Theme { get => GetPropertyValue("vs"); set { SetPropertyValue(value); } }
 
         [LocalizedCategory("Appearance")]
-        public virtual bool ShowMinimap { get => GetPropertyValue(true); set { SetPropertyValue(value); } }
-
-        [LocalizedCategory("Appearance")]
+        [DefaultValue(13d)]
         public virtual double FontSize { get => GetPropertyValue(13d); set { SetPropertyValue(value); } }
 
         [LocalizedCategory("Startup")]
+        [DefaultValue(true)]
         public virtual bool RestoreTabs { get => GetPropertyValue(true); set { SetPropertyValue(value); } }
 
         [LocalizedCategory("Behavior")]
+        [DefaultValue(true)]
         public virtual bool OpenFromCurrentTabFolder { get => GetPropertyValue(true); set { SetPropertyValue(value); } }
 
         private Dictionary<string, RecentFile> GetRecentFiles()

@@ -12,6 +12,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Threading;
 using DevPad.Ipc;
 using DevPad.Model;
 using DevPad.MonacoModel;
@@ -40,7 +41,8 @@ namespace DevPad
         {
             Opening,
             Ready,
-            Closing
+            Closing,
+            Closed,
         }
 
         public MainWindow()
@@ -76,7 +78,10 @@ namespace DevPad
                 foreach (var group in Settings.RecentGroups)
                 {
                     if (group.Name == _defaultTabGroup.Name)
+                    {
+                        _defaultTabGroup.ActiveTabKey = group.ActiveTabKey;
                         continue;
+                    }
 
                     var existing = _groups.FirstOrDefault(g => g.Key == group.Key);
                     if (existing != null)
@@ -155,14 +160,27 @@ namespace DevPad
         protected override void OnClosing(CancelEventArgs e)
         {
             base.OnClosing(e);
+            if (_state == State.Closed)
+                return;
+
             if (_state != State.Closing)
             {
                 _state = State.Closing;
-                Settings.SerializeToConfigurationWhenIdle(0); // flush if any change in queue
-                foreach (var tab in AllViewTabs)
+                e.Cancel = true;
+
+                // in autosave case, we need to get the text async and in the UI thread
+                Task.Run(() => Dispatcher.Invoke(async () =>
                 {
-                    tab?.Dispose();
-                }
+                    Settings.SerializeToConfigurationWhenIdle(0);
+                    DevPad.Settings.Current.SerializeToConfigurationWhenIdle(0);
+                    foreach (var tab in AllViewTabs)
+                    {
+                        await tab.CloseAsync(false);
+                        tab.Dispose();
+                    }
+                    _state = State.Closed;
+                    Close();
+                }));
             }
         }
 
@@ -412,7 +430,7 @@ namespace DevPad
 
             private void OnSettingsPropertyChanged(object sender, PropertyChangedEventArgs e)
             {
-                if (e.PropertyName == nameof(Settings.ShowMinimap))
+                if (e.PropertyName == nameof(DevPad.Settings.Current.ShowMinimap))
                 {
                     OnPropertyChanged(e.PropertyName);
                 }
@@ -479,14 +497,14 @@ namespace DevPad
 
             public bool ShowMinimap
             {
-                get => _main.Settings.ShowMinimap;
+                get => DevPad.Settings.Current.ShowMinimap;
                 set
                 {
                     if (ShowMinimap == value)
                         return;
 
-                    _main.Settings.ShowMinimap = value;
-                    _main.Settings.SerializeToConfigurationWhenIdle();
+                    DevPad.Settings.Current.ShowMinimap = value;
+                    DevPad.Settings.Current.SerializeToConfigurationWhenIdle();
                     OnPropertyChanged();
 
                     _ = _main.CurrentTab?.EnableMinimapAsync(value);
@@ -547,7 +565,6 @@ namespace DevPad
 
             // close must happen before we remove the control
             await tab.CloseAsync(deleteAutoSave);
-            //_tabs.Remove(tab);
             var group = GetGroup(tab);
             group.RemoveTab(tab);
             tab.Dispose();
@@ -1008,7 +1025,7 @@ namespace DevPad
 
         private async void OnTabMonacoEvent(object sender, DevPadEventArgs e)
         {
-            Program.Trace("e:" + e);
+            //Program.Trace("e:" + e);
             var tab = (MonacoTab)sender;
             switch (e.EventType)
             {
@@ -1017,8 +1034,10 @@ namespace DevPad
                     break;
 
                 case DevPadEventType.Paste:
-                    if (DevPad.Settings.Current.AutoDetectLanguageOnPaste)
+                    var autoDetectMode = DevPad.Settings.Current.AutoDetectLanguageMode;
+                    if (autoDetectMode != AutoDetectLanguageMode.DontAutoDetect)
                     {
+                        var langId = tab.ModelLanguageId;
                         if (e.RootElement.GetNullifiedValue("languageId") == null &&
                             e.RootElement.GetValue("range.startLineNumber", -1) == 1 &&
                             e.RootElement.GetValue("range.startColumn", -1) == 1)
@@ -1030,7 +1049,17 @@ namespace DevPad
                                 var lang = det.Detect(text);
                                 if (lang != Utilities.Language.Unknown)
                                 {
-                                    _ = Dispatcher.Invoke(async () => await tab.SetEditorLanguageAsync(lang.ToString().ToLowerInvariant()));
+                                    var newLangId = lang.ToString().ToLowerInvariant();
+                                    _ = Dispatcher.Invoke(async () =>
+                                    {
+                                        if (autoDetectMode == AutoDetectLanguageMode.PromptIfLanguageChanges && langId != newLangId && langId != LanguageExtensionPoint.DefaultLanguageId)
+                                        {
+                                            if (this.ShowConfirm(string.Format(DevPad.Resources.Resources.LanguageChanging, MonacoExtensions.GetLanguageName(langId), MonacoExtensions.GetLanguageName(newLangId))) != MessageBoxResult.Yes)
+                                                return;
+                                        }
+
+                                        await tab.SetEditorLanguageAsync(newLangId);
+                                    });
                                 }
                             });
                         }
@@ -1055,6 +1084,7 @@ namespace DevPad
                             var fontSize = option.GetValue("fontSize", 0d);
                             if (fontSize > 0 && fontSize != Settings.FontSize)
                             {
+                                Settings.FontSize = fontSize;
                                 Settings.SerializeToConfigurationWhenIdle();
                             }
                             break;
@@ -1123,10 +1153,15 @@ namespace DevPad
 
         private void OnPreferences(object sender, RoutedEventArgs e)
         {
-            var dlg = new ObjectProperties(DevPad.Settings.Current, false);
+            var clone = DevPad.Settings.Current;
+            var dlg = new ObjectProperties(clone, false);
             dlg.Owner = this;
             dlg.Title = DevPad.Resources.Resources.Preferences;
-            dlg.ShowDialog();
+            if (dlg.ShowDialog() != true)
+                return;
+
+            DevPad.Settings.Current.CopyFrom(clone);
+            DevPad.Settings.Current.SerializeToConfigurationWhenIdle();
         }
 
         private void OnPerDesktopPreferences(object sender, RoutedEventArgs e)

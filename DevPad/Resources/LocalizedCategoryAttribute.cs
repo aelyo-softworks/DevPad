@@ -4,8 +4,8 @@ namespace DevPad.Resources
 {
     public class LocalizedCategoryAttribute : CategoryAttribute
     {
-        public LocalizedCategoryAttribute(string name)
-            : base(name)
+        public LocalizedCategoryAttribute(string category)
+            : base(category)
         {
         }
 

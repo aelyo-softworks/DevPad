@@ -1,0 +1,10 @@
+#!/bin/sh
+#
+# update AssemblyInfoVersion.cs
+# Called by "git commit" with no arguments.  The hook should
+# exit with non-zero status after issuing an appropriate message if
+# it wants to stop the commit.
+#
+
+UpdateAssemblyInfo.exe "DevPad/Properties/AssemblyVersionInfo.cs"
+git add "DevPad/Properties/AssemblyVersionInfo.cs"

@@ -135,6 +135,9 @@
   <data name="Appearance" xml:space="preserve">
     <value>Appearance</value>
   </data>
+  <data name="AutoDetect" xml:space="preserve">
+    <value>Auto detect</value>
+  </data>
   <data name="AutoSavePeriodDisplayName" xml:space="preserve">
     <value>Auto-Save Period (sec)</value>
   </data>
@@ -190,6 +193,9 @@
   <data name="DevPadIcon" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>DevPad.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="DontAutoDetect" xml:space="preserve">
+    <value>Don't auto detect</value>
+  </data>
   <data name="EncodingBom" xml:space="preserve">
     <value>{0} BOM</value>
   </data>
@@ -205,11 +211,20 @@
   <data name="HideDetails" xml:space="preserve">
     <value>Hide Details</value>
   </data>
+  <data name="LanguageChanging" xml:space="preserve">
+    <value>Language auto detection wants to change from '{0}' to '{1}'. Are you sure?</value>
+  </data>
   <data name="NameError" xml:space="preserve">
     <value>Name cannot be empty or whitespace</value>
   </data>
   <data name="OneFileFilter" xml:space="preserve">
     <value>{0} Files ({1})|{1}</value>
+  </data>
+  <data name="OneInstance" xml:space="preserve">
+    <value>One Instance</value>
+  </data>
+  <data name="OneInstancePerDesktop" xml:space="preserve">
+    <value>One Instance Per Virtual Desktop</value>
   </data>
   <data name="Only64BitWindows" xml:space="preserve">
     <value>DevPad only supports 64-bit versions of Windows.</value>
@@ -222,6 +237,9 @@
   </data>
   <data name="Process" xml:space="preserve">
     <value>Process</value>
+  </data>
+  <data name="PromptIfLanguageChanges" xml:space="preserve">
+    <value>Auto detect and prompt when language changes</value>
   </data>
   <data name="Quit" xml:space="preserve">
     <value>Quit</value>

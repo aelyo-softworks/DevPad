@@ -125,6 +125,8 @@
     <Content Include="..\DevPad\Resources\DevPad.ico">
       <Link>Resources\DevPad.ico</Link>
     </Content>
+    <Content Include="Build\DevPad.Setup.Debug.exe" />
+    <Content Include="Build\DevPad.Setup.exe" />
     <None Include="Build\build_release.cmd" />
   </ItemGroup>
   <ItemGroup>
