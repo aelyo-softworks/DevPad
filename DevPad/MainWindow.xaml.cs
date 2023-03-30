@@ -166,6 +166,29 @@ namespace DevPad
             }
         }
 
+        protected override void OnDrop(DragEventArgs e)
+        {
+            if (!e.Data.GetDataPresent(DataFormats.FileDrop))
+                return;
+
+            var files = e.Data.GetData(DataFormats.FileDrop) as string[];
+            if (files != null && files.Length > 0)
+            {
+                var groupKey = CurrentGroup?.Key;
+                Task.Run(() =>
+                {
+                    var last = files.Last();
+                    foreach (var file in files)
+                    {
+                        Dispatcher.Invoke(async () =>
+                        {
+                            await OpenFileAsync(groupKey, file, file == last);
+                        });
+                    }
+                });
+            }
+        }
+
         protected override async void OnPreviewKeyDown(KeyEventArgs e)
         {
             if (e.Key == Key.F12 && !Program.InDebugMode)
@@ -985,12 +1008,33 @@ namespace DevPad
 
         private async void OnTabMonacoEvent(object sender, DevPadEventArgs e)
         {
-            //Program.Trace("e:" + e);
+            Program.Trace("e:" + e);
             var tab = (MonacoTab)sender;
             switch (e.EventType)
             {
                 case DevPadEventType.EditorCreated:
                     await tab.SetFontSizeAsync(Settings.FontSize);
+                    break;
+
+                case DevPadEventType.Paste:
+                    if (DevPad.Settings.Current.AutoDetectLanguageOnPaste)
+                    {
+                        if (e.RootElement.GetNullifiedValue("languageId") == null &&
+                            e.RootElement.GetValue("range.startLineNumber", -1) == 1 &&
+                            e.RootElement.GetValue("range.startColumn", -1) == 1)
+                        {
+                            _ = Task.Run(async () =>
+                            {
+                                var text = await Dispatcher.Invoke(async () => await tab.GetEditorTextAsync(false));
+                                var det = new Detector();
+                                var lang = det.Detect(text);
+                                if (lang != Utilities.Language.Unknown)
+                                {
+                                    _ = Dispatcher.Invoke(async () => await tab.SetEditorLanguageAsync(lang.ToString().ToLowerInvariant()));
+                                }
+                            });
+                        }
+                    }
                     break;
 
                 case DevPadEventType.OpenResource:
@@ -1256,6 +1300,55 @@ namespace DevPad
             {
                 CurrentTab.Encoding = encoding;
             }
+        }
+
+        private static MonacoTab GetTabFromContextMenu(RoutedEventArgs e) => (e.OriginalSource as DependencyObject).GetVisualSelfOrParent<ContextMenu>()?.Tag as MonacoTab;
+        private void OnOpenFileLocation(object sender, RoutedEventArgs e)
+        {
+            var tab = GetTabFromContextMenu(e);
+            if (tab == null || tab.FilePath == null || !IOUtilities.PathIsFile(tab.FilePath))
+                return;
+
+            WindowsUtilities.OpenExplorer(Path.GetDirectoryName(tab.FilePath));
+        }
+
+        private void OnCopyFilePathToClipboard(object sender, RoutedEventArgs e)
+        {
+            var tab = GetTabFromContextMenu(e);
+            if (tab == null || tab.FilePath == null || !IOUtilities.PathIsFile(tab.FilePath))
+                return;
+
+            Clipboard.SetText(tab.FilePath);
+        }
+
+        private void OnSaveTab(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void OnCloseAllTabs(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void OnCloseAllTabsButThis(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void OnCloseAllTabsButPinned(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void OnPinThisTab(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void OnSave(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

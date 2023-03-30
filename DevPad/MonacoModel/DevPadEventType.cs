@@ -15,5 +15,6 @@
         ModelLanguageChanged = 10,
         ConfigurationChanged = 11,
         OpenResource = 12,
+        Paste = 13,
     }
 }

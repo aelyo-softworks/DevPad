@@ -12,6 +12,7 @@ namespace DevPad
         public RecentFileOptions Options { get; set; }
         public Color Color { get; set; }
         public string GroupKey { get; set; }
+        public string LanguageId { get; set; }
 
         public string DisplayName => LastAccessTime + " " + FilePath;
 

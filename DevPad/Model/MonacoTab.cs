@@ -270,7 +270,7 @@ namespace DevPad.Model
             }
         }
 
-        private async Task<string> GetEditorTextAsync(bool throwOnNull)
+        public async Task<string> GetEditorTextAsync(bool throwOnNull)
         {
             var text = await ExecuteScriptAsync("editor.getValue()");
             if (text == null)

@@ -56,6 +56,10 @@
             chrome.webview.hostObjects.sync.devPad.onEvent(2);
         });
 
+        editor.onDidPaste(evt => {
+            chrome.webview.hostObjects.sync.devPad.onEvent(13, JSON.stringify(evt));
+        });
+
         editor.onDidChangeModelLanguage(evt => {
             chrome.webview.hostObjects.sync.devPad.onEvent(10, JSON.stringify(evt));
         });

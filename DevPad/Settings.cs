@@ -47,6 +47,10 @@ namespace DevPad
         public virtual EncodingDetectorMode EncodingDetectionMode { get => GetPropertyValue(EncodingDetectorMode.AutoDetect); set { SetPropertyValue(value); } }
 
         [LocalizedCategory("Behavior")]
+        [DefaultValue(true)]
+        public virtual bool AutoDetectLanguageOnPaste { get => GetPropertyValue(true); set { SetPropertyValue(value); } }
+
+        [LocalizedCategory("Behavior")]
         [LocalizedDisplayName("AutoSavePeriodDisplayName")]
         public virtual int AutoSavePeriod { get => GetPropertyValue(_defaultAutoSavePeriod); set { SetPropertyValue(value); } }
 

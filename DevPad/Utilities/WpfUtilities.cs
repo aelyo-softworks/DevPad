@@ -146,6 +146,23 @@ namespace DevPad.Utilities
             return default;
         }
 
+        public static IEnumerable<DependencyObject> GetVisualParents(this DependencyObject source)
+        {
+            if (source == null)
+                yield break;
+
+            var parent = VisualTreeHelper.GetParent(source);
+            if (parent != null)
+            {
+                yield return parent;
+                foreach (var grandParent in GetVisualParents(parent))
+                {
+                    yield return grandParent;
+                }
+            }
+        }
+
+        public static DependencyObject GetVisualParent(this DependencyObject source) => source != null ? VisualTreeHelper.GetParent(source) : null;
         public static T GetVisualSelfOrParent<T>(this DependencyObject source) where T : DependencyObject
         {
             if (source == null)
