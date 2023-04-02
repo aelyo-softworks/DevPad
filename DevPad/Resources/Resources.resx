@@ -214,6 +214,9 @@
   <data name="LanguageChanging" xml:space="preserve">
     <value>Language auto detection wants to change from '{0}' to '{1}'. Are you sure?</value>
   </data>
+  <data name="LoadingPercent" xml:space="preserve">
+    <value>Loading ({0} %)...</value>
+  </data>
   <data name="NameError" xml:space="preserve">
     <value>Name cannot be empty or whitespace</value>
   </data>

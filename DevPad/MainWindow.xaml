@@ -331,10 +331,13 @@
         </TabControl>
         <StatusBar Grid.Row="2">
             <StatusBarItem>
-                <TextBlock Text="{Binding CursorPosition}" />
+                <TextBlock Text="{Binding CursorPosition}" Visibility="{Binding LoadingPercent, Converter={StaticResource ReverseNullToVisibilityConverter}}" />
             </StatusBarItem>
             <StatusBarItem>
-                <TextBlock Text="{Binding CursorSelection}" />
+                <TextBlock Text="{Binding CursorSelection}" Visibility="{Binding LoadingPercent, Converter={StaticResource ReverseNullToVisibilityConverter}}" />
+            </StatusBarItem>
+            <StatusBarItem>
+                <TextBlock Text="{Binding LoadingPercent}" Visibility="{Binding LoadingPercent, Converter={StaticResource NullToVisibilityConverter}}" />
             </StatusBarItem>
             <StatusBarItem HorizontalAlignment="Right">
                 <DockPanel>

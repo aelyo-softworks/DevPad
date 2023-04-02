@@ -283,8 +283,13 @@ namespace DevPad
             {
                 case SingleInstanceCommandType.SendCommandLine:
                     var instanceMode = DevPad.Settings.Current.SingleInstanceMode;
+#if DEBUG // see Program.cs for explanation
+                    if (instanceMode == SingleInstanceMode.OneInstancePerDesktop && e.CallingDesktopId != DesktopId && e.CallingDesktopId != Guid.Empty)
+                        break;
+#else
                     if (instanceMode == SingleInstanceMode.OneInstancePerDesktop && e.CallingDesktopId != DesktopId)
                         break;
+#endif
 
                     e.Handled = true;
                     Program.Trace(e.Type + " process:" + e.CallingProcessId + " user:" + e.UserDomainName + "\\" + e.UserName + " desktop:" + e.CallingDesktopId);
@@ -444,11 +449,25 @@ namespace DevPad
                 OnPropertyChanged(nameof(ShowMinimap));
                 OnPropertyChanged(nameof(EncodingName));
                 OnPropertyChanged(nameof(EncodingToolTip));
+                OnPropertyChanged(nameof(LoadingPercent));
             }
 
             public string CursorPosition => _main.CurrentTab?.CursorPosition;
             public string CursorSelection => _main.CurrentTab?.CursorSelection;
             public string ModelLanguageName => _main.CurrentTab?.ModelLanguageName;
+
+            public string LoadingPercent
+            {
+                get
+                {
+                    var percent = _main.CurrentTab?.LoadingPercent;
+                    if (percent == null)
+                        return null;
+
+                    return string.Format(DevPad.Resources.Resources.LoadingPercent, percent.Value);
+                }
+            }
+
             public string EncodingName
             {
                 get

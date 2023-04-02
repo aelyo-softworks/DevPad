@@ -10,6 +10,36 @@ namespace DevPad.Utilities
     {
         public static Encoding UTF8NoBom { get; } = new UTF8Encoding(false);
 
+        public static Encoding DetectEncoding(string filePath, EncodingDetectorMode mode, int autoDetectTestBytesLength = 1024)
+        {
+            if (filePath == null)
+                throw new ArgumentNullException(nameof(filePath));
+
+            if (autoDetectTestBytesLength <= 64)
+                throw new ArgumentOutOfRangeException(nameof(autoDetectTestBytesLength));
+
+            Encoding defaultEncoding;
+            switch (mode)
+            {
+                case EncodingDetectorMode.UseUTF8AsDefault:
+                    defaultEncoding = Encoding.UTF8;
+                    break;
+
+                case EncodingDetectorMode.UseAnsiAsDefault:
+                    defaultEncoding = Encoding.Default;
+                    break;
+
+                default:
+                    return DetectEncoding(filePath, autoDetectTestBytesLength);
+            }
+
+            using (var reader = new StreamReader(filePath, defaultEncoding, true))
+            {
+                reader.Peek();
+                return reader.CurrentEncoding;
+            }
+        }
+
         public static string ReadAllText(string filePath, EncodingDetectorMode mode, out Encoding detectedEncoding)
         {
             if (filePath == null)
@@ -86,36 +116,73 @@ namespace DevPad.Utilities
             var p = Encoding.UTF8.GetString(bytes);
             for (var i = 0; i < p.Length; i++)
             {
-                var c = p[i];
-                if (isSuspicious())
+                if (IsSuspicious(p, i))
                 {
                     detectedEncoding = Encoding.Default;
                     return detectedEncoding.GetString(bytes);
-                }
-
-                bool isSuspicious()
-                {
-                    if (c == 0xFFFD)
-                        return true;
-
-                    var ch = To1252(c);
-                    if (ch > 0x7F)
-                    {
-                        if (((c & 0xE0) == 0xC0) && ((i + 1) < p.Length) && ((To1252(p[i + 1]) & 0xC0) == 0x80))
-                            return true;
-
-                        if (((c & 0xF0) == 0xE0) && ((i + 2) < p.Length) && ((To1252(p[i + 1]) & 0xC0) == 0x80) && ((To1252(p[i + 2]) & 0xC0) == 0x80))
-                            return true;
-
-                        if (((c & 0xF8) == 0xF0) && ((i + 3) < p.Length) && ((To1252(p[i + 1]) & 0xC0) == 0x80) && ((To1252(p[i + 2]) & 0xC0) == 0x80) && ((To1252(p[i + 3]) & 0xC0) == 0x80))
-                            return true;
-                    }
-                    return false;
                 }
             }
 
             detectedEncoding = UTF8NoBom;
             return p;
+        }
+
+        private static bool IsSuspicious(string str, int i)
+        {
+            char c = str[i];
+            if (c == 0xFFFD)
+                return true;
+
+            var ch = To1252(c);
+            if (ch > 0x7F)
+            {
+                if (((c & 0xE0) == 0xC0) && ((i + 1) < str.Length) && ((To1252(str[i + 1]) & 0xC0) == 0x80))
+                    return true;
+
+                if (((c & 0xF0) == 0xE0) && ((i + 2) < str.Length) && ((To1252(str[i + 1]) & 0xC0) == 0x80) && ((To1252(str[i + 2]) & 0xC0) == 0x80))
+                    return true;
+
+                if (((c & 0xF8) == 0xF0) && ((i + 3) < str.Length) && ((To1252(str[i + 1]) & 0xC0) == 0x80) && ((To1252(str[i + 2]) & 0xC0) == 0x80) && ((To1252(str[i + 3]) & 0xC0) == 0x80))
+                    return true;
+            }
+            return false;
+        }
+
+        private static Encoding DetectEncoding(string filePath, int autoDetectTestBytesLength)
+        {
+            using (var reader = new StreamReader(filePath, UTF8NoBom, true))
+            {
+                reader.Peek();
+                if (reader.CurrentEncoding != UTF8NoBom) // is there a BOM?
+                    return reader.CurrentEncoding;
+            }
+
+            byte[] bytes;
+            int read;
+            using (var file = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            {
+                if (autoDetectTestBytesLength > file.Length)
+                {
+                    autoDetectTestBytesLength = (int)file.Length;
+                }
+
+                if ((autoDetectTestBytesLength % 2) == 1)
+                {
+                    autoDetectTestBytesLength--;
+                }
+
+                bytes = new byte[autoDetectTestBytesLength];
+                read = file.Read(bytes, 0, bytes.Length);
+            }
+
+            var p = Encoding.UTF8.GetString(bytes, 0, read);
+            for (var i = 0; i < p.Length; i++)
+            {
+                if (IsSuspicious(p, i))
+                    return Encoding.Default;
+            }
+
+            return UTF8NoBom;
         }
     }
 }

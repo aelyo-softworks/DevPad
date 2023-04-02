@@ -140,9 +140,18 @@
             editor.revealLine(lineNumber);
         }
 
-        function loadFromHost(lang) {
-            monaco.editor.setModelLanguage(editor.getModel(), lang);
-            editor.setValue(chrome.webview.hostObjects.sync.devPad.load());
+        function loadChunksFromHost() {
+            do {
+                var text = chrome.webview.hostObjects.sync.devPad.load();
+                if (!text)
+                    break;
+
+                var lines = editor.getModel().getLineCount();
+                var col = editor.getModel().getLineMaxColumn(lines);
+                var range = new monaco.Range(lines, col, lines, col);
+                editor.executeEdits('', [{ range: range, text: text }])
+            }
+            while (true);
         }
     </script>
 </body>

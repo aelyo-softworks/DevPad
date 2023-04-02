@@ -18,8 +18,10 @@ namespace DevPad.Model
     public class MonacoTab : DictionaryObject, IDisposable
     {
         private readonly DevPadObject _dpo = new DevPadObject();
-        private string _documentText;
         private bool _disposedValue;
+        private readonly char[] _buffer = new char[65536 * 16];
+        private long _totalRead;
+        private StreamReader _reader;
 
         public event EventHandler<DevPadEventArgs> MonacoEvent;
         public event EventHandler<FileSystemEventArgs> FileChanged;
@@ -50,6 +52,7 @@ namespace DevPad.Model
         public bool IsMonacoReady { get => DictionaryObjectGetPropertyValue(false); private set => DictionaryObjectSetPropertyValue(value); }
         public bool HasContentChanged { get => DictionaryObjectGetPropertyValue(false); private set => DictionaryObjectSetPropertyValue(value); }
         public bool IsEditorCreated { get => DictionaryObjectGetPropertyValue(false); private set => DictionaryObjectSetPropertyValue(value); }
+        public int? LoadingPercent { get => DictionaryObjectGetPropertyValue<int?>(); private set => DictionaryObjectSetPropertyValue(value); }
         public string ModelLanguageName { get => DictionaryObjectGetNullifiedPropertyValue(); private set => DictionaryObjectSetPropertyValue(value); }
         public string ModelLanguageId { get => DictionaryObjectGetNullifiedPropertyValue(); private set => DictionaryObjectSetPropertyValue(value); }
         public string CursorPosition { get => DictionaryObjectGetNullifiedPropertyValue(); private set => DictionaryObjectSetPropertyValue(value); }
@@ -247,6 +250,7 @@ namespace DevPad.Model
                 if (disposing)
                 {
                     // dispose managed state (managed objects)
+                    _reader?.Dispose();
                     WebView?.Dispose();
                 }
 
@@ -321,27 +325,56 @@ namespace DevPad.Model
                 FilesWatcher.FileChanged += OnFileChanged;
             }
 
-            // not this the most performant load system... we should make chunks
             try
             {
-                _documentText = EncodingDetector.ReadAllText(filePath, Settings.Current.EncodingDetectionMode, out var encoding);
-                Encoding = encoding;
+                var encoding = EncodingDetector.DetectEncoding(filePath, Settings.Current.EncodingDetectionMode);
+                // equivalent of Encoding = encoding but w/o raising property changed (this is init value)
+                DictionaryObjectSetPropertyValue(encoding, DictionaryObjectPropertySetOptions.DontRaiseOnPropertyChanged, nameof(Encoding));
+
+                _reader?.Dispose();
+                _reader = new StreamReader(filePath, encoding);
+                LoadingPercent = 0;
+                await ExecuteScriptAsync($"loadChunksFromHost()");
             }
             catch (Exception ex)
             {
+                _reader?.Dispose();
                 Program.ShowError(MainWindow.Current, ex, false);
                 await MainWindow.Current.CloseTabAsync(this, true, true, true);
                 return LoadStatus.Error;
             }
 
-            await ExecuteScriptAsync($"loadFromHost('{lang}')");
+            await SetEditorLanguageAsync(lang);
+
             await SetEditorPositionAsync();
             return fromAutoSave ? LoadStatus.OkFromAutoSave : LoadStatus.Ok;
         }
 
+        private void DevPadOnLoad(object sender, DevPadLoadEventArgs e)
+        {
+            var read = _reader.ReadBlock(_buffer, 0, _buffer.Length);
+            if (read == 0)
+            {
+                LoadingPercent = null;
+                e.DocumentText = null;
+                _reader.Dispose();
+                return;
+            }
+
+            _totalRead += read;
+            e.DocumentText = new string(_buffer, 0, read);
+            if (_reader.BaseStream.Length == 0)
+            {
+                LoadingPercent = 100;
+            }
+            else
+            {
+                LoadingPercent = (int)(_totalRead * 100 / _reader.BaseStream.Length);
+            }
+        }
+
         private void OnContextMenuRequested(object sender, CoreWebView2ContextMenuRequestedEventArgs e) => e.Handled = true;
         private void OnFileChanged(object sender, FileSystemEventArgs e) => Task.Run(() => Application.Current.Dispatcher.Invoke(() => FileChanged?.Invoke(this, e)));
-        private void DevPadOnLoad(object sender, DevPadLoadEventArgs e) => e.DocumentText = _documentText;
         private async void DevPadEvent(object sender, DevPadEventArgs e)
         {
             MonacoEvent?.Invoke(this, e);

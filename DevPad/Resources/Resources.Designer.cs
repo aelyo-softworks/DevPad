@@ -350,6 +350,15 @@ namespace DevPad.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Loading ({0} %)....
+        /// </summary>
+        internal static string LoadingPercent {
+            get {
+                return ResourceManager.GetString("LoadingPercent", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Name cannot be empty or whitespace.
         /// </summary>
         internal static string NameError {
