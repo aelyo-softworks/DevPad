@@ -220,7 +220,7 @@
                         SelectionChanged="OnTabSelectionChanged">
                         <TabControl.ItemTemplate>
                             <DataTemplate>
-                                <DockPanel ToolTip="{Binding FilePath}">
+                                <DockPanel ContextMenuOpening="OnTabMenuOpening" ToolTip="{Binding FilePath}">
                                     <DockPanel.ContextMenu>
                                         <ContextMenu
                                             Padding="2"
@@ -229,9 +229,8 @@
                                             Visibility="{Binding IsAdd, Converter={StaticResource ReverseBooleanToVisibilityConverter}}">
                                             <MenuItem
                                                 x:Name="SaveMenuItem"
-                                                Click="OnSave"
-                                                Header="Save" />
-                                            <MenuItem Click="OnSaveTab" Header="_Save Full Path" />
+                                                Click="OnSaveTab"
+                                                Header="_Save Full Path" />
                                             <Separator />
                                             <MenuItem Click="OnCloseTab" Header="Close" />
                                             <MenuItem Click="OnCloseAllTabs" Header="Close _All Tabs" />
@@ -244,14 +243,24 @@
                                             <MenuItem Click="OnCopyFilePathToClipboard" Header="_Copy Full Path" />
                                             <MenuItem Click="OnOpenFileLocation" Header="Open Containing _Folder" />
                                             <Separator />
-                                            <MenuItem Click="OnPinThisTab" Header="_Pin Tab" />
-                                            <MenuItem x:Name="MoveToGroupMenuItem" Header="_Move To Group">
-                                                <MenuItem Header="Lazy" />
-                                            </MenuItem>
+                                            <MenuItem
+                                                x:Name="UnPinAllTabsMenuItem"
+                                                Click="OnUnPinAllTabs"
+                                                Header="_Unpin All Tabs" />
+                                            <MenuItem
+                                                Click="OnPinThisTab"
+                                                Header="_Pin Tab"
+                                                Visibility="{Binding IsUnpinned, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                            <MenuItem
+                                                Click="OnUnPinThisTab"
+                                                Header="_Unpin Tab"
+                                                Visibility="{Binding IsPinned, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                            <MenuItem x:Name="MoveToGroupMenuItem" Header="_Move To Group" />
                                             <Separator />
-                                            <MenuItem x:Name="OpenWithMenuItem" Header="_Open With">
-                                                <MenuItem Header="Lazy" />
-                                            </MenuItem>
+                                            <MenuItem
+                                                x:Name="OpenWithMenuItem"
+                                                Click="OnOpenWith"
+                                                Header="_Open With..." />
                                         </ContextMenu>
                                     </DockPanel.ContextMenu>
                                     <Image

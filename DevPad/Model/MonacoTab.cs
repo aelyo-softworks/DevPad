@@ -19,7 +19,8 @@ namespace DevPad.Model
     {
         private readonly DevPadObject _dpo = new DevPadObject();
         private bool _disposedValue;
-        private readonly char[] _buffer = new char[65536 * 16];
+        private char[] _buffer;
+        private int? _bufferSize;
         private long _totalRead;
         private StreamReader _reader;
 
@@ -34,6 +35,8 @@ namespace DevPad.Model
             if (!IsAdd)
             {
                 WebView = new WebView2();
+                WebView.AllowDrop = false;
+                WebView.AllowExternalDrop = false;
             }
         }
 
@@ -250,6 +253,8 @@ namespace DevPad.Model
                 if (disposing)
                 {
                     // dispose managed state (managed objects)
+                    _buffer = null;
+                    _bufferSize = null;
                     _reader?.Dispose();
                     WebView?.Dispose();
                 }
@@ -290,7 +295,7 @@ namespace DevPad.Model
             return UnescapeEditorText(text);
         }
 
-        private enum LoadStatus
+        private enum LoadingStatus
         {
             Ok,
             OkFromAutoSave,
@@ -298,7 +303,7 @@ namespace DevPad.Model
             Error,
         }
 
-        private async Task<LoadStatus> LoadFileIfAnyAsync()
+        private async Task<LoadingStatus> LoadFileIfAnyAsync()
         {
             var fromAutoSave = false;
             var filePath = FilePath;
@@ -309,7 +314,7 @@ namespace DevPad.Model
                 fromAutoSave = true;
             }
             if (filePath == null)
-                return LoadStatus.NoFile;
+                return LoadingStatus.NoFile;
 
             var lang = LanguageExtensionPoint.DefaultLanguageId;
             if (FilePath != null)
@@ -334,6 +339,13 @@ namespace DevPad.Model
                 _reader?.Dispose();
                 _reader = new StreamReader(filePath, encoding);
                 LoadingPercent = 0;
+                var max = Settings.Current.MaxLoadBufferSize;
+                if (max < 1024)
+                {
+                    max = Settings._defaultMaxLoadBufferSize;
+                }
+
+                _bufferSize = (int)Math.Min(_reader.BaseStream.Length, max);
                 await ExecuteScriptAsync($"loadChunksFromHost()");
             }
             catch (Exception ex)
@@ -341,23 +353,31 @@ namespace DevPad.Model
                 _reader?.Dispose();
                 Program.ShowError(MainWindow.Current, ex, false);
                 await MainWindow.Current.CloseTabAsync(this, true, true, true);
-                return LoadStatus.Error;
+                return LoadingStatus.Error;
             }
 
             await SetEditorLanguageAsync(lang);
 
             await SetEditorPositionAsync();
-            return fromAutoSave ? LoadStatus.OkFromAutoSave : LoadStatus.Ok;
+            return fromAutoSave ? LoadingStatus.OkFromAutoSave : LoadingStatus.Ok;
         }
 
         private void DevPadOnLoad(object sender, DevPadLoadEventArgs e)
         {
-            var read = _reader.ReadBlock(_buffer, 0, _buffer.Length);
+            if (_buffer == null && _reader != null)
+            {
+                _buffer = new char[_bufferSize.Value];
+            }
+
+            var read = (_reader?.ReadBlock(_buffer, 0, _buffer.Length)).GetValueOrDefault();
             if (read == 0)
             {
                 LoadingPercent = null;
                 e.DocumentText = null;
-                _reader.Dispose();
+                _reader?.Dispose();
+                _reader = null;
+                _buffer = null;
+                _bufferSize = null;
                 return;
             }
 
@@ -391,8 +411,11 @@ namespace DevPad.Model
                 case DevPadEventType.ContentChanged:
                     if (IsEditorCreated)
                     {
-                        HasContentChanged = true;
-                        _ = AutoSaveWhenIdleAsync(Settings.Current.AutoSavePeriod * 1000);
+                        if (LoadingPercent == null)
+                        {
+                            HasContentChanged = true;
+                            _ = AutoSaveWhenIdleAsync(Settings.Current.AutoSavePeriod * 1000);
+                        }
                     }
                     break;
 
@@ -422,15 +445,15 @@ namespace DevPad.Model
                     var status = await LoadFileIfAnyAsync();
                     switch (status)
                     {
-                        case LoadStatus.Ok:
+                        case LoadingStatus.Ok:
                             HasContentChanged = false;
                             break;
 
-                        case LoadStatus.OkFromAutoSave:
+                        case LoadingStatus.OkFromAutoSave:
                             HasContentChanged = true;
                             break;
 
-                        case LoadStatus.Error:
+                        case LoadingStatus.Error:
                             return;
                     }
 

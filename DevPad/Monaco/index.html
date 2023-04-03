@@ -37,6 +37,7 @@
                 automaticLayout: true,
                 language: 'plaintext',
                 fontSize: '12px',
+                dragAndDrop: false,
                 mouseWheelZoom: true,
                 contextmenu: false
             },
@@ -141,18 +142,17 @@
         }
 
         function loadChunksFromHost() {
-            do {
-                var text = chrome.webview.hostObjects.sync.devPad.load();
-                if (!text)
-                    break;
+            var text = chrome.webview.hostObjects.sync.devPad.load();
+            if (text === null)
+                return;
 
-                var lines = editor.getModel().getLineCount();
-                var col = editor.getModel().getLineMaxColumn(lines);
-                var range = new monaco.Range(lines, col, lines, col);
-                editor.executeEdits('', [{ range: range, text: text }])
-            }
-            while (true);
+            var lines = editor.getModel().getLineCount();
+            var col = editor.getModel().getLineMaxColumn(lines);
+            var range = new monaco.Range(lines, col, lines, col);
+            editor.executeEdits('', [{ range: range, text: text }])
+            setTimeout(loadChunksFromHost, 0); // allows refresh of the page in the browser while loading in background
         }
+
     </script>
 </body>
 </html>

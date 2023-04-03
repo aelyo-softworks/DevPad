@@ -181,6 +181,9 @@ namespace DevPad.Utilities
         [DllImport("user32")]
         private static extern bool AttachThreadInput(int idAttach, int idAttachTo, bool fAttach);
 
+        [DllImport("shell32")]
+        private static extern int SHOpenWithDialog(IntPtr handle, ref OPENASINFO info);
+
         [DllImport("user32")]
         private static extern int GetWindowTextLength(IntPtr hWnd);
 
@@ -235,6 +238,14 @@ namespace DevPad.Utilities
         [DllImport("kernel32")]
         public static extern bool AllocConsole();
 
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+        private struct OPENASINFO
+        {
+            public string cszFile;
+            public string cszClass;
+            public OPEN_AS_INFO_FLAGS oaifInFlags;
+        }
+
         [StructLayout(LayoutKind.Sequential)]
         private struct PROCESS_BASIC_INFORMATION
         {
@@ -281,6 +292,18 @@ namespace DevPad.Utilities
             public int top;
             public int right;
             public int bottom;
+        }
+
+        [Flags]
+        private enum OPEN_AS_INFO_FLAGS
+        {
+            OAIF_ALLOW_REGISTRATION = 0x00000001,
+            OAIF_REGISTER_EXT = 0x00000002,
+            OAIF_EXEC = 0x00000004,
+            OAIF_FORCE_REGISTRATION = 0x00000008,
+            OAIF_HIDE_REGISTRATION = 0x00000020,
+            OAIF_URL_PROTOCOL = 0x00000040,
+            OAIF_FILE_IS_URI = 0x00000080,
         }
 
         private const int GWL_STYLE = -16;
@@ -696,6 +719,24 @@ namespace DevPad.Utilities
 #pragma warning disable S4036
             Process.Start("explorer.exe", "/e,/root,/select," + directoryPath);
 #pragma warning restore S4036
+        }
+
+        public static int OpenWith(string filePath) => OpenWith(IntPtr.Zero, filePath);
+        public static int OpenWith(IntPtr hwnd, string filePath)
+        {
+            if (filePath == null)
+                throw new ArgumentNullException(nameof(filePath));
+
+            if (Environment.OSVersion.Version.Major > 5)
+            {
+                var info = new OPENASINFO();
+                info.cszFile = filePath;
+                info.oaifInFlags = OPEN_AS_INFO_FLAGS.OAIF_HIDE_REGISTRATION | OPEN_AS_INFO_FLAGS.OAIF_EXEC;
+                return SHOpenWithDialog(hwnd, ref info);
+            }
+
+            Process.Start("rundll32", "shell32.dll,OpenAs_RunDLL " + filePath);
+            return 0;
         }
 
         public static RegistryKey EnsureSubKey(RegistryKey root, string name)

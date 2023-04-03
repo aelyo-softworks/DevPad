@@ -85,14 +85,6 @@ namespace DevPad
         [DefaultValue(13d)]
         public virtual double FontSize { get => GetPropertyValue(13d); set { SetPropertyValue(value); } }
 
-        [LocalizedCategory("Startup")]
-        [DefaultValue(true)]
-        public virtual bool RestoreTabs { get => GetPropertyValue(true); set { SetPropertyValue(value); } }
-
-        [LocalizedCategory("Behavior")]
-        [DefaultValue(true)]
-        public virtual bool OpenFromCurrentTabFolder { get => GetPropertyValue(true); set { SetPropertyValue(value); } }
-
         private Dictionary<string, RecentFile> GetRecentFiles()
         {
             var dic = new Dictionary<string, RecentFile>(StringComparer.Ordinal);
@@ -183,10 +175,10 @@ namespace DevPad
             if (filePath == null)
                 throw new ArgumentNullException(nameof(filePath));
 
-            AddRecentFile(filePath, 0, 0, null);
+            AddRecentFile(filePath, 0, 0, null, RecentFileOptions.None);
         }
 
-        public void AddRecentFile(string filePath, string groupKey, int openOrder)
+        public void AddRecentFile(string filePath, string groupKey, int openOrder, RecentFileOptions options = RecentFileOptions.None)
         {
             if (filePath == null)
                 throw new ArgumentNullException(nameof(filePath));
@@ -197,14 +189,14 @@ namespace DevPad
             if (!IOUtilities.PathIsFile(filePath))
                 return;
 
-            AddRecentFile(filePath, 0, openOrder, groupKey);
+            AddRecentFile(filePath, 0, openOrder, groupKey, options);
         }
 
-        public void AddRecentUntitledFile(int untitledNumber, int openOrder, string groupKey) => AddRecentFile(GetUntitledFilePath(untitledNumber, groupKey), untitledNumber, openOrder, groupKey);
-        private void AddRecentFile(string filePath, int untitledNumber, int openOrder, string groupKey)
+        public void AddRecentUntitledFile(int untitledNumber, int openOrder, string groupKey, RecentFileOptions options = RecentFileOptions.None) => AddRecentFile(GetUntitledFilePath(untitledNumber, groupKey), untitledNumber, openOrder, groupKey, options);
+        private void AddRecentFile(string filePath, int untitledNumber, int openOrder, string groupKey, RecentFileOptions options)
         {
             var dic = GetRecentFiles();
-            dic[filePath] = new RecentFile { FilePath = filePath, OpenOrder = openOrder, UntitledNumber = untitledNumber, GroupKey = groupKey };
+            dic[filePath] = new RecentFile { FilePath = filePath, OpenOrder = openOrder, UntitledNumber = untitledNumber, GroupKey = groupKey, Options = options };
             SetRecentFiles(dic);
         }
 

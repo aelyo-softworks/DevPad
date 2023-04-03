@@ -12,9 +12,17 @@ namespace DevPad.MonacoModel
 
         public string load()
         {
-            var e = new DevPadLoadEventArgs();
-            Load?.Invoke(this, e);
-            return e.DocumentText;
+            try
+            {
+                var e = new DevPadLoadEventArgs();
+                Load?.Invoke(this, e);
+                return e.DocumentText;
+            }
+            catch (Exception ex)
+            {
+                Program.Trace(ex);
+                throw;
+            }
         }
 
         public void onEvent(DevPadEventType type, string json = null)
@@ -23,23 +31,31 @@ namespace DevPad.MonacoModel
             if (handler == null)
                 return;
 
-            DevPadEventArgs e;
-            switch (type)
+            try
             {
-                case DevPadEventType.KeyDown:
-                case DevPadEventType.KeyUp:
-                    e = new DevPadKeyEventArgs(type, json);
-                    break;
+                DevPadEventArgs e;
+                switch (type)
+                {
+                    case DevPadEventType.KeyDown:
+                    case DevPadEventType.KeyUp:
+                        e = new DevPadKeyEventArgs(type, json);
+                        break;
 
-                case DevPadEventType.ConfigurationChanged:
-                    e = new DevPadConfigurationChangedEventArgs(json);
-                    break;
+                    case DevPadEventType.ConfigurationChanged:
+                        e = new DevPadConfigurationChangedEventArgs(json);
+                        break;
 
-                default:
-                    e = new DevPadEventArgs(type, json);
-                    break;
+                    default:
+                        e = new DevPadEventArgs(type, json);
+                        break;
+                }
+                handler?.Invoke(this, e);
             }
-            handler?.Invoke(this, e);
+            catch (Exception ex)
+            {
+                Program.Trace(ex);
+                throw;
+            }
         }
     }
 #pragma warning restore IDE1006 // Naming Styles

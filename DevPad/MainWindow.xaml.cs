@@ -94,18 +94,20 @@ namespace DevPad
                 }
             }
 
+            MonacoTab tab;
             if (!Program.IsNewInstance && Settings.RecentFilesPaths != null)
             {
-                foreach (var file in Settings.RecentFilesPaths.Where(f => f.OpenOrder > 0).OrderBy(f => f.OpenOrder))
+                foreach (var file in Settings.RecentFilesPaths.Where(f => f.OpenOrder > 0).OrderBy(f => f))
                 {
                     if (file.UntitledNumber > 0)
                     {
-                        _ = AddTabAsync(file.GroupKey, null, false, file.UntitledNumber);
+                        tab = AddTab(file.GroupKey, null, false, file.UntitledNumber, file.Options);
                     }
                     else
                     {
-                        _ = AddTabAsync(file.GroupKey, file.FilePath, false);
+                        tab = AddTab(file.GroupKey, file.FilePath, false, options: file.Options);
                     }
+                    _ = tab.InitializeAsync(file.FilePath);
                 }
             }
 
@@ -114,7 +116,8 @@ namespace DevPad
 
             foreach (var group in Groups.Where(t => !t.FileViewTabs.Any()))
             {
-                _ = AddTabAsync(group.Key, null, false);
+                tab = AddTab(group.Key, null, false);
+                _ = tab.InitializeAsync(null);
             }
 
             foreach (var group in Groups)
@@ -417,7 +420,8 @@ namespace DevPad
             var count = _groups.Count - 1;
             _groups.Insert(count, group);
             GroupsTab.SelectedIndex = count;
-            await AddTabAsync(group.Key, null, selectTab);
+            var tab = AddTab(group.Key, null, selectTab);
+            await tab.InitializeAsync(null);
         }
 
         private class WindowDataContext : DictionaryObject
@@ -564,13 +568,14 @@ namespace DevPad
                 await RemoveTabAsync(group.Tabs[0], false, false, false, false);
             }
 
-            tab = await AddTabAsync(group.Key, filePath, selectTab);
+            tab = AddTab(group.Key, filePath, selectTab);
             tab.GroupKey = group.Key;
             Settings.AddRecentFile(filePath, group.Key, tab.Index + 1);
             Settings.SerializeToConfigurationWhenIdle();
             WindowsUtilities.SHAddToRecentDocs(filePath);
             Program.WindowsApplication.PublishRecentList();
             SetTitle();
+            await tab.InitializeAsync(filePath);
         }
 
         private async Task RemoveTabAsync(MonacoTab tab, bool deleteAutoSave, bool checkAtLeastOneTab, bool removeFromRecent, bool removeFromOpened)
@@ -591,7 +596,7 @@ namespace DevPad
             // always ensure we have one (untitled) tab opened
             if (checkAtLeastOneTab && !group.FileViewTabs.Any())
             {
-                await AddTabAsync(group.Key, null, true);
+                await AddTab(group.Key, null, true).InitializeAsync(null);
             }
 
             if (removeFromRecent)
@@ -622,13 +627,18 @@ namespace DevPad
             }
         }
 
-        private async Task<MonacoTab> AddTabAsync(string groupKey, string filePath, bool select, int untitledNumber = 0)
+        private MonacoTab AddTab(string groupKey, string filePath, bool select, int untitledNumber = 0, RecentFileOptions options = RecentFileOptions.None)
         {
             try
             {
                 var group = GetGroupOrDefault(groupKey);
                 //Program.Trace("path:" + filePath + " groupKey:" + groupKey?.Replace("\0", "!") + " group:" + group.Key + " select:" + select);
                 var newTab = new MonacoTab();
+                if (options.HasFlag(RecentFileOptions.Pinned))
+                {
+                    newTab.IsPinned = true;
+                }
+
                 newTab.GroupKey = groupKey;
                 if (filePath == null)
                 {
@@ -641,7 +651,6 @@ namespace DevPad
                     group.SelectTab(newTab);
                 }
 
-                await newTab.InitializeAsync(filePath);
                 newTab.MonacoEvent += OnTabMonacoEvent;
                 newTab.FileChanged += OnTabFileChanged;
                 newTab.PropertyChanged += OnTabPropertyChanged;
@@ -824,7 +833,7 @@ namespace DevPad
             }
             else
             {
-                if (Settings.OpenFromCurrentTabFolder && CurrentTab.FilePath != null)
+                if (DevPad.Settings.Current.OpenFromCurrentTabFolder && CurrentTab.FilePath != null)
                 {
                     fd.InitialDirectory = Path.GetDirectoryName(CurrentTab.FilePath);
                     fd.RestoreDirectory = false;
@@ -912,14 +921,98 @@ namespace DevPad
             return false;
         }
 
-        private void PinUnpinTab(MonacoTab tab, bool pin)
+        private void SaveRecentFile(MonacoTab tab)
         {
-            if (tab == null)
-                return;
+            var options = RecentFileOptions.None;
+            if (tab.IsPinned)
+            {
+                options |= RecentFileOptions.Pinned;
+            }
 
-            tab.IsPinned = pin;
+            if (tab.FilePath == null)
+            {
+                Settings.AddRecentUntitledFile(tab.UntitledNumber, tab.Index + 1, tab.GroupKey, options);
+            }
+            else
+            {
+                Settings.AddRecentFile(tab.FilePath, tab.GroupKey, tab.Index + 1, options);
+            }
+            Settings.SerializeToConfigurationWhenIdle();
         }
 
+        private void RenumberGroup(TabGroup group)
+        {
+            var index = 0;
+            foreach (var tab in group.FileViewTabs)
+            {
+                tab.Index = index;
+                SaveRecentFile(tab);
+                index++;
+            }
+        }
+
+        private void MoveTab(MonacoTab tabToMove, TabGroup group, int newIndex)
+        {
+            group = group ?? GetGroup(tabToMove);
+            if (tabToMove.GroupKey != group.Key)
+            {
+                var oldGroup = GetGroup(tabToMove);
+                oldGroup.Tabs.Remove(tabToMove);
+                group.Tabs.Insert(newIndex, tabToMove);
+                tabToMove.GroupKey = group.Key;
+                SaveRecentFile(tabToMove);
+                RenumberGroup(oldGroup);
+                RenumberGroup(group);
+                GroupsTab.SelectedItem = group;
+                group.SelectTab(tabToMove);
+                return;
+            }
+
+            if (newIndex != tabToMove.Index)
+            {
+                group.Tabs.Move(tabToMove.Index, newIndex);
+                RenumberGroup(group);
+            }
+        }
+
+        private void UnpinAll(TabGroup group)
+        {
+            if (group == null)
+                return;
+
+            var changed = false;
+            foreach (var tab in group.FileViewTabs)
+            {
+                if (tab.IsPinned)
+                {
+                    tab.IsPinned = false;
+                    changed = true;
+                }
+            }
+
+            if (changed)
+            {
+                Settings.SerializeToConfigurationWhenIdle();
+            }
+        }
+
+        private void PinUnpinTab(MonacoTab tab, bool pin)
+        {
+            if (tab == null || tab.IsPinned == pin)
+                return;
+
+            var group = GetGroup(tab);
+            var lastPinned = group.FileViewTabs.LastOrDefault(t => t.IsPinned);
+            var newIndex = lastPinned != null ? lastPinned.Index + (pin ? 1 : 0) : 0;
+            MoveTab(tab, group, newIndex);
+            tab.IsPinned = pin;
+            SaveRecentFile(tab);
+        }
+
+        private void OnUnPinAllTabs(object sender, RoutedEventArgs e) => UnpinAll(CurrentGroup);
+        private async void OnSaveTab(object sender, RoutedEventArgs e) => await SaveTabAsync(e.GetDataContext<MonacoTab>());
+        private void OnPinThisTab(object sender, RoutedEventArgs e) => PinUnpinTab(GetTabFromContextMenu(e), true);
+        private void OnUnPinThisTab(object sender, RoutedEventArgs e) => PinUnpinTab(GetTabFromContextMenu(e), false);
         private void OnUnpinTab(object sender, RoutedEventArgs e) => PinUnpinTab(e.GetDataContext<MonacoTab>(), false);
         private void OnPinTab(object sender, RoutedEventArgs e) => PinUnpinTab(e.GetDataContext<MonacoTab>(), true);
         private void OnEditCurrentGroup(object sender, RoutedEventArgs e) => EditGroup(CurrentGroup);
@@ -930,7 +1023,7 @@ namespace DevPad
         private async void OnSaveAsCommand(object sender, ExecutedRoutedEventArgs e) => await SaveTabAsAsync(CurrentTab);
         private async void OnSaveCommand(object sender, ExecutedRoutedEventArgs e) => await SaveTabAsync(CurrentTab);
         private async void OnSaveAllCommand(object sender, ExecutedRoutedEventArgs e) => await SaveAllTabsAsync();
-        private async void OnNewTabCommand(object sender, ExecutedRoutedEventArgs e) => await AddTabAsync(CurrentGroup.Key, null, true);
+        private async void OnNewTabCommand(object sender, ExecutedRoutedEventArgs e) => await AddTab(CurrentGroup.Key, null, true).InitializeAsync(null);
         private async void OnOpenCommand(object sender, ExecutedRoutedEventArgs e) => await OpenAsync(CurrentGroup.Key, null);
         private async void OnCloseAll(object sender, RoutedEventArgs e) => await CloseAllGroups(true, false);
         private void OnCloseTab(object sender, RoutedEventArgs e) => _ = CloseTabAsync(e.GetDataContext<MonacoTab>(), true, false, true);
@@ -941,7 +1034,7 @@ namespace DevPad
         private void OnFormat(object sender, RoutedEventArgs e) => _ = CurrentTab?.FormatDocumentAsync();
         private void OnOpenConfigFolder(object sender, RoutedEventArgs e) => WindowsUtilities.OpenExplorer(Path.GetDirectoryName(Settings.ConfigurationFilePath));
         private void OnOpenConfig(object sender, RoutedEventArgs e) => _ = OpenFileAsync(CurrentGroup.Key, Settings.ConfigurationFilePath, true);
-        private async void OnAddTab(object sender, RoutedEventArgs e) => await AddTabAsync(CurrentGroup.Key, null, true);
+        private async void OnAddTab(object sender, RoutedEventArgs e) => await AddTab(CurrentGroup.Key, null, true).InitializeAsync(null);
 
         private void OnAboutClick(object sender, RoutedEventArgs e)
         {
@@ -1375,34 +1468,85 @@ namespace DevPad
             Clipboard.SetText(tab.FilePath);
         }
 
-        private void OnSaveTab(object sender, RoutedEventArgs e)
+        private async void OnCloseAllTabs(object sender, RoutedEventArgs e)
         {
-
+            foreach (var tab in CurrentGroup.Tabs.ToArray())
+            {
+                await CloseTabAsync(tab, true, false, true);
+            }
         }
 
-        private void OnCloseAllTabs(object sender, RoutedEventArgs e)
+        private async void OnCloseAllTabsButThis(object sender, RoutedEventArgs e)
         {
-
+            var thisTab = e.GetDataContext<MonacoTab>();
+            foreach (var tab in CurrentGroup.Tabs.ToArray())
+            {
+                if (tab != thisTab)
+                {
+                    await CloseTabAsync(tab, true, false, true);
+                }
+            }
         }
 
-        private void OnCloseAllTabsButThis(object sender, RoutedEventArgs e)
+        private async void OnCloseAllTabsButPinned(object sender, RoutedEventArgs e)
         {
-
+            foreach (var tab in CurrentGroup.Tabs.ToArray().Where(t => !t.IsPinned))
+            {
+                await CloseTabAsync(tab, true, false, true);
+            }
         }
 
-        private void OnCloseAllTabsButPinned(object sender, RoutedEventArgs e)
+        private void OnTabMenuOpening(object sender, ContextMenuEventArgs e)
         {
+            var tab = e.GetDataContext<MonacoTab>();
+            if (tab == null || tab.IsAdd)
+                return;
 
+            if (!(sender is FrameworkElement element))
+                return;
+
+            if (element.FindName("SaveMenuItem") is MenuItem saveItem)
+            {
+                saveItem.Header = string.Format(DevPad.Resources.Resources.SaveTab, tab.FilePath);
+            }
+
+            if (element.FindName("UnPinAllTabsMenuItem") is MenuItem unpinAll)
+            {
+                unpinAll.IsEnabled = GetGroup(tab).Tabs.Any(t => t.IsPinned);
+            }
+
+            if (element.FindName("OpenWithMenuItem") is MenuItem openWith)
+            {
+                openWith.IsEnabled = tab.FilePath != null && IOUtilities.PathIsFile(tab.FilePath);
+            }
+
+            if (element.FindName("MoveToGroupMenuItem") is MenuItem moveItem)
+            {
+                moveItem.Items.Clear();
+                var count = 0;
+                foreach (var group in Groups)
+                {
+                    var groupItem = new MenuItem();
+                    groupItem.Header = group.Name;
+                    groupItem.IsEnabled = tab.GroupKey != group.Key;
+                    groupItem.Click += (s, e2) =>
+                    {
+                        MoveTab(tab, group, group.FileViewTabs.Count());
+                    };
+                    moveItem.Items.Add(groupItem);
+                    count++;
+                }
+                moveItem.IsEnabled = count > 1;
+            }
         }
 
-        private void OnPinThisTab(object sender, RoutedEventArgs e)
+        private void OnOpenWith(object sender, RoutedEventArgs e)
         {
+            var tab = e.GetDataContext<MonacoTab>();
+            if (tab == null || tab.FilePath == null || !IOUtilities.PathIsFile(tab.FilePath))
+                return;
 
-        }
-
-        private void OnSave(object sender, RoutedEventArgs e)
-        {
-
+            WindowsUtilities.OpenWith(new WindowInteropHelper(this).Handle, tab.FilePath);
         }
     }
 }

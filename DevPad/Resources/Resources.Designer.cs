@@ -124,7 +124,7 @@ namespace DevPad.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Auto-Save Period (sec).
+        ///   Looks up a localized string similar to Auto-Save Period (seconds).
         /// </summary>
         internal static string AutoSavePeriodDisplayName {
             get {
@@ -359,6 +359,15 @@ namespace DevPad.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Max Load Buffer Size (bytes).
+        /// </summary>
+        internal static string MaxLoadBufferSize {
+            get {
+                return ResourceManager.GetString("MaxLoadBufferSize", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Name cannot be empty or whitespace.
         /// </summary>
         internal static string NameError {
@@ -463,6 +472,15 @@ namespace DevPad.Resources {
         internal static string RunningOnDeskop {
             get {
                 return ResourceManager.GetString("RunningOnDeskop", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Save {0}.
+        /// </summary>
+        internal static string SaveTab {
+            get {
+                return ResourceManager.GetString("SaveTab", resourceCulture);
             }
         }
         

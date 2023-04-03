@@ -14,6 +14,7 @@ namespace DevPad
     public class Settings : Serializable<Settings>
     {
         private const int _defaultAutoSavePeriod = 2;
+        internal const uint _defaultMaxLoadBufferSize = 65536 * 16;
 
         public static string DefaultUserDataFolder { get; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), typeof(Settings).Namespace); // will create an "EBWebView" folder in there
         public static string GetUntitledName(int number) => string.Format(Resources.Resources.Untitled, number);
@@ -62,6 +63,14 @@ namespace DevPad
         [LocalizedCategory("Behavior")]
         [LocalizedDisplayName("AutoSavePeriodDisplayName")]
         public virtual int AutoSavePeriod { get => GetPropertyValue(_defaultAutoSavePeriod); set { SetPropertyValue(value); } }
+
+        [LocalizedCategory("Behavior")]
+        [LocalizedDisplayName("MaxLoadBufferSize")]
+        public virtual uint MaxLoadBufferSize { get => GetPropertyValue(_defaultMaxLoadBufferSize); set { SetPropertyValue(value); } }
+
+        [LocalizedCategory("Behavior")]
+        [DefaultValue(true)]
+        public virtual bool OpenFromCurrentTabFolder { get => GetPropertyValue(true); set { SetPropertyValue(value); } }
 
         [DefaultValue(null)]
         [PropertyGridOptions(EditorDataTemplateResourceKey = "RegisterExtensionEditor")]
