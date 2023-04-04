@@ -60,10 +60,6 @@ namespace DevPad
         [DefaultValue(AutoDetectLanguageMode.AutoDetect)]
         public virtual AutoDetectLanguageMode AutoDetectLanguageMode { get => GetPropertyValue(AutoDetectLanguageMode.AutoDetect); set { SetPropertyValue(value); } }
 
-        [LocalizedCategory("Appearance")]
-        [DefaultValue(true)]
-        public virtual bool ShowMinimap { get => GetPropertyValue(true); set { SetPropertyValue(value); } }
-
         [LocalizedCategory("Behavior")]
         [LocalizedDisplayName("AutoSavePeriodDisplayName")]
         public virtual int AutoSavePeriod { get => GetPropertyValue(_defaultAutoSavePeriod); set { SetPropertyValue(value); } }
@@ -75,6 +71,19 @@ namespace DevPad
         [LocalizedCategory("Behavior")]
         [DefaultValue(true)]
         public virtual bool OpenFromCurrentTabFolder { get => GetPropertyValue(true); set { SetPropertyValue(value); } }
+
+        [LocalizedCategory("Appearance")]
+        [DefaultValue(true)]
+        public virtual bool ShowMinimap { get => GetPropertyValue(true); set { SetPropertyValue(value); } }
+
+        [LocalizedCategory("Appearance")]
+        [PropertyGridOptions(IsEnum = true, EnumNames = new[] { "vs", "vs-dark", "hc-light", "hc-black" })]
+        [DefaultValue("vs")]
+        public virtual string Theme { get => GetPropertyValue("vs"); set { SetPropertyValue(value); } }
+
+        [LocalizedCategory("Appearance")]
+        [DefaultValue(13d)]
+        public virtual double FontSize { get => GetPropertyValue(13d); set { SetPropertyValue(value); } }
 
         [DefaultValue(null)]
         [PropertyGridOptions(EditorDataTemplateResourceKey = "RegisterExtensionEditor")]

@@ -238,6 +238,9 @@ namespace DevPad.Utilities
         [DllImport("kernel32")]
         public static extern bool AllocConsole();
 
+        [DllImport("dwmapi")]
+        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref bool attrValue, int attrSize);
+
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
         private struct OPENASINFO
         {
@@ -319,6 +322,9 @@ namespace DevPad.Utilities
         private const int SWP_NOSIZE = 0x0001;
         private const int SWP_NOZORDER = 0x0004;
         private const int SWP_NOACTIVATE = 0x0010;
+
+        private const int DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1 = 19;
+        private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
 
         private static readonly Lazy<MethodInfo> _decodeMessage = new Lazy<MethodInfo>(() =>
         {
@@ -794,6 +800,19 @@ namespace DevPad.Utilities
             info.Verb = "runas"; // Provides Run as Administrator
 
             return Process.Start(info) != null;
+        }
+
+        public static bool SetDarkMode(IntPtr handle)
+        {
+            if (handle == IntPtr.Zero)
+                throw new ArgumentException(null, nameof(handle));
+
+            var set = true;
+            var size = Marshal.SizeOf<bool>();
+            if (DwmSetWindowAttribute(handle, DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, ref set, size) >= 0)
+                return true;
+
+            return DwmSetWindowAttribute(handle, DWMWA_USE_IMMERSIVE_DARK_MODE, ref set, size) >= 0;
         }
 
 #if SETUP

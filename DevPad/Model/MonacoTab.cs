@@ -439,7 +439,7 @@ namespace DevPad.Model
                     }
 
                     await EnableMinimapAsync(Settings.Current.ShowMinimap);
-                    await SetEditorThemeAsync(MainWindow.Current.Settings.Theme);
+                    await SetEditorThemeAsync(Settings.Current.Theme);
                     await FocusEditorAsync();
 
                     var status = await LoadFileIfAnyAsync();

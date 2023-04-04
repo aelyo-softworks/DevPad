@@ -44,6 +44,7 @@
         <Menu
             x:Name="MenuMain"
             Grid.Row="0"
+            Background="White"
             IsMainMenu="True">
             <Menu.ItemsPanel>
                 <ItemsPanelTemplate>
@@ -83,7 +84,8 @@
                 <MenuItem
                     x:Name="PerDesktopPreferencesMenuItem"
                     Click="OnPerDesktopPreferences"
-                    Header="Per Virtual Des_ktop Preferences..." />
+                    Header="Per Virtual Des_ktop Preferences..."
+                    Visibility="Collapsed" />
                 <MenuItem
                     x:Name="RestartAsAdminMenuItem"
                     Click="OnRestartAsAdmin"

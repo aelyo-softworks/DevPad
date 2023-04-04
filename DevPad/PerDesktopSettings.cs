@@ -6,9 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json.Serialization;
 using DevPad.Model;
-using DevPad.Resources;
 using DevPad.Utilities;
-using DevPad.Utilities.Grid;
 
 namespace DevPad
 {
@@ -78,15 +76,6 @@ namespace DevPad
                 return list.OrderBy(s => s).ToArray();
             }
         }
-
-        [LocalizedCategory("Appearance")]
-        [PropertyGridOptions(IsEnum = true, EnumNames = new[] { "vs", "vs-dark", "hc-light", "hc-black" })]
-        [DefaultValue("vs")]
-        public virtual string Theme { get => GetPropertyValue("vs"); set { SetPropertyValue(value); } }
-
-        [LocalizedCategory("Appearance")]
-        [DefaultValue(13d)]
-        public virtual double FontSize { get => GetPropertyValue(13d); set { SetPropertyValue(value); } }
 
         private Dictionary<string, RecentFile> GetRecentFiles()
         {

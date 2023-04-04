@@ -1158,7 +1158,7 @@ namespace DevPad
             switch (e.EventType)
             {
                 case DevPadEventType.EditorCreated:
-                    await tab.SetFontSizeAsync(Settings.FontSize);
+                    await tab.SetFontSizeAsync(DevPad.Settings.Current.FontSize);
                     break;
 
                 case DevPadEventType.Paste:
@@ -1210,9 +1210,9 @@ namespace DevPad
                         case EditorOption.fontInfo:
                             var option = await tab.GetEditorOptionsAsync<JsonElement>(cfe.Option);
                             var fontSize = option.GetValue("fontSize", 0d);
-                            if (fontSize > 0 && fontSize != Settings.FontSize)
+                            if (fontSize > 0 && fontSize != DevPad.Settings.Current.FontSize)
                             {
-                                Settings.FontSize = fontSize;
+                                DevPad.Settings.Current.FontSize = fontSize;
                                 Settings.SerializeToConfigurationWhenIdle();
                             }
                             break;
