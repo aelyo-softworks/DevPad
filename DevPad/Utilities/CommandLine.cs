@@ -9,6 +9,7 @@ namespace DevPad.Utilities
         public static CommandLine From(IReadOnlyList<string> args)
         {
             var cmdLine = new CommandLine();
+            cmdLine.CurrentDirectory = Environment.CurrentDirectory;
             if (args != null)
             {
                 for (var i = 0; i < args.Count; i++)
@@ -65,9 +66,14 @@ namespace DevPad.Utilities
         private readonly Dictionary<string, string> _namedArguments = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<int, string> _positionArguments = new Dictionary<int, string>();
 
+        private CommandLine()
+        {
+        }
+
         public IReadOnlyDictionary<string, string> NamedArguments => _namedArguments;
         public IReadOnlyDictionary<int, string> PositionArguments => _positionArguments;
         public bool HelpRequested { get; private set; }
+        public string CurrentDirectory { get; internal set; }
 
         public string CommandLineWithoutExe
         {

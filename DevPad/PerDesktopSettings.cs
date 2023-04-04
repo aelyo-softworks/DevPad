@@ -65,6 +65,9 @@ namespace DevPad
                 {
                     foreach (var item in paths.Where(i => i.UntitledNumber == 0))
                     {
+                        if (!IOUtilities.IsPathRooted(item.FilePath))
+                            continue;
+
                         var dir = Path.GetDirectoryName(item.FilePath);
                         if (!string.IsNullOrWhiteSpace(dir))
                         {
@@ -93,7 +96,7 @@ namespace DevPad
             {
                 foreach (var recent in recents)
                 {
-                    if (recent.UntitledNumber == 0 && !IOUtilities.PathIsFile(recent.FilePath))
+                    if (recent.UntitledNumber == 0 && (!IOUtilities.IsPathRooted(recent.FilePath) || !IOUtilities.PathIsFile(recent.FilePath)))
                         continue;
 
                     dic[recent.FilePath] = recent;

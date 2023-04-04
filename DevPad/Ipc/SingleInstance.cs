@@ -25,6 +25,7 @@ namespace DevPad.Ipc
             var input = new List<object>
             {
                 WindowsUtilities.CurrentProcess.Id,
+                Environment.CurrentDirectory,
                 Environment.UserDomainName,
                 Environment.UserName,
                 desktopId.ToString("N"),
@@ -65,6 +66,7 @@ namespace DevPad.Ipc
         private class SingleInstanceCommand
         {
             public int ProcessId;
+            public string CurrentDirectory;
             public string UserDomainName;
             public string UserName;
             public Guid DesktopId;
@@ -78,19 +80,23 @@ namespace DevPad.Ipc
                 if (!int.TryParse(string.Format("{0}", args[0]), out var processId))
                     return null;
 
-                if (!(args[1] is string userDomainName))
+                if (!(args[1] is string currentDirectory))
                     return null;
 
-                if (!(args[2] is string userName))
+                if (!(args[2] is string userDomainName))
                     return null;
 
-                if (!(args[3] is string did) || !Guid.TryParse(did, out var desktopId))
+                if (!(args[3] is string userName))
+                    return null;
+
+                if (!(args[4] is string did) || !Guid.TryParse(did, out var desktopId))
                     return null;
 
                 args = args.Skip(_wellKnownArgs).ToArray();
                 var cmd = new SingleInstanceCommand
                 {
                     ProcessId = processId,
+                    CurrentDirectory = currentDirectory,
                     UserDomainName = userDomainName,
                     UserName = userName,
                     DesktopId = desktopId,
@@ -106,7 +112,13 @@ namespace DevPad.Ipc
             if (cmd == null)
                 return;
 
-            var ce = new SingleInstanceCommandEventArgs((SingleInstanceCommandType)e.Id, cmd.ProcessId, cmd.UserDomainName, cmd.UserName, cmd.DesktopId, cmd.Arguments);
+            var ce = new SingleInstanceCommandEventArgs((SingleInstanceCommandType)e.Id,
+                cmd.ProcessId,
+                cmd.CurrentDirectory,
+                cmd.UserDomainName,
+                cmd.UserName,
+                cmd.DesktopId,
+                cmd.Arguments);
             Command?.Invoke(sender, ce);
             if (ce._outputSet)
             {
@@ -119,7 +131,7 @@ namespace DevPad.Ipc
             }
         }
 
-        private const int _wellKnownArgs = 4;
+        private const int _wellKnownArgs = 5;
 
         [DllImport("user32")]
         private static extern bool AllowSetForegroundWindow(int processId);

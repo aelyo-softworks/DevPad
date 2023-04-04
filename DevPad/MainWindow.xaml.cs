@@ -59,6 +59,11 @@ namespace DevPad
             RecentFoldersMenuItem.Icon = RecentFoldersMenuItem.Icon ?? new Image { Source = IconUtilities.GetStockIconImageSource(StockIconId.FOLDER) };
 
             Loaded += OnLoaded;
+
+            if (DevPad.Settings.Current.FirstInstanceStartScreen == FirstInstanceStartScreen.Primary)
+            {
+                WindowStartupLocation = WindowStartupLocation.Manual;
+            }
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e)
@@ -99,6 +104,9 @@ namespace DevPad
             {
                 foreach (var file in Settings.RecentFilesPaths.Where(f => f.OpenOrder > 0).OrderBy(f => f))
                 {
+                    if (file.FilePath != null && !IOUtilities.IsPathRooted(file.FilePath))
+                        continue;
+
                     if (file.UntitledNumber > 0)
                     {
                         tab = AddTab(file.GroupKey, null, false, file.UntitledNumber, file.Options);
@@ -112,7 +120,7 @@ namespace DevPad
             }
 
             RevealFile(Settings.ActiveFilePath);
-            SetTitle();
+            SetTitle(CurrentTab);
 
             foreach (var group in Groups.Where(t => !t.FileViewTabs.Any()))
             {
@@ -297,6 +305,7 @@ namespace DevPad
                     e.Handled = true;
                     Program.Trace(e.Type + " process:" + e.CallingProcessId + " user:" + e.UserDomainName + "\\" + e.UserName + " desktop:" + e.CallingDesktopId);
                     var cmdLine = CommandLine.From(e.Arguments?.Select(a => string.Format("{0}", a))?.ToArray());
+                    cmdLine.CurrentDirectory = e.CurrentDirectory;
                     Dispatcher.Invoke(() =>
                     {
                         WindowsUtilities.SetForegroundWindow(Handle);
@@ -334,6 +343,11 @@ namespace DevPad
             var open = cmdLine.GetNullifiedArgument(0);
             if (open != null)
             {
+                if (!IOUtilities.IsPathRooted(open) && IOUtilities.IsPathRooted(cmdLine.CurrentDirectory))
+                {
+                    open = Path.Combine(cmdLine.CurrentDirectory, open);
+                }
+
                 var groupName = cmdLine.GetNullifiedArgument("group");
                 _ = OpenFileAsync(groupName, open, true);
             }
@@ -552,6 +566,9 @@ namespace DevPad
 
         private async Task OpenFileAsync(string groupKey, string filePath, bool selectTab)
         {
+            if (!IOUtilities.IsPathRooted(filePath) || !IOUtilities.PathIsFile(filePath))
+                return;
+
             var tab = AllViewTabs.FirstOrDefault(t => t.FilePath.EqualsIgnoreCase(filePath));
             if (tab != null)
             {
@@ -574,11 +591,11 @@ namespace DevPad
             Settings.SerializeToConfigurationWhenIdle();
             WindowsUtilities.SHAddToRecentDocs(filePath);
             Program.WindowsApplication.PublishRecentList();
-            SetTitle();
             await tab.InitializeAsync(filePath);
+            SetTitle(tab);
         }
 
-        private async Task RemoveTabAsync(MonacoTab tab, bool deleteAutoSave, bool checkAtLeastOneTab, bool removeFromRecent, bool removeFromOpened)
+        internal async Task RemoveTabAsync(MonacoTab tab, bool deleteAutoSave, bool checkAtLeastOneTab, bool removeFromRecent, bool removeFromOpened)
         {
             if (tab == null || tab.IsAdd)
                 return;
@@ -879,19 +896,19 @@ namespace DevPad
             return (sb.ToString(), index);
         }
 
-        private void SetTitle()
+        private void SetTitle(MonacoTab tab)
         {
-            if (CurrentTab == null)
+            if (tab == null || tab.IsAdd)
                 return;
 
-            var name = CurrentTab.FilePath ?? CurrentTab.Name;
+            var name = tab.FilePath ?? tab.Name;
             if (string.IsNullOrWhiteSpace(name))
             {
                 Title = AssemblyUtilities.GetTitle();
             }
             else
             {
-                if (CurrentTab.HasContentChanged)
+                if (tab.HasContentChanged)
                 {
                     name += " *";
                 }
@@ -1062,8 +1079,7 @@ namespace DevPad
                 if (!tab.IsAdd)
                 {
                     _dataContext.RaisePropertyChanged();
-
-                    SetTitle();
+                    SetTitle(tab);
 
                     var group = GetGroup(tab);
                     if (group != null)
@@ -1089,7 +1105,7 @@ namespace DevPad
                     break;
 
                 case nameof(MonacoTab.HasContentChanged):
-                    SetTitle();
+                    SetTitle(CurrentTab);
                     break;
 
                 default:

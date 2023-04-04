@@ -10,10 +10,11 @@ namespace DevPad.Ipc
         private object _output;
         private readonly Lazy<Process> _callingProcess;
 
-        internal SingleInstanceCommandEventArgs(SingleInstanceCommandType type, int callingProcessId, string userDomainName, string userName, Guid callingDesktopId, object[] arguments)
+        internal SingleInstanceCommandEventArgs(SingleInstanceCommandType type, int callingProcessId, string currentDirectory, string userDomainName, string userName, Guid callingDesktopId, object[] arguments)
         {
             Type = type;
             CallingProcessId = callingProcessId;
+            CurrentDirectory = currentDirectory;
             UserDomainName = userDomainName;
             UserName = userName;
             CallingDesktopId = callingDesktopId;
@@ -22,6 +23,7 @@ namespace DevPad.Ipc
         }
 
         public SingleInstanceCommandType Type { get; }
+        public string CurrentDirectory { get; }
         public string UserDomainName { get; }
         public string UserName { get; }
         public Guid CallingDesktopId { get; }

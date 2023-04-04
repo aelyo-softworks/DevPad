@@ -74,6 +74,7 @@
     <Compile Include="ExtensionsToRegister.xaml.cs">
       <DependentUpon>ExtensionsToRegister.xaml</DependentUpon>
     </Compile>
+    <Compile Include="FirstInstanceStartScreen.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="Ipc\CommandResult.cs" />
     <Compile Include="Ipc\CommandTarget.cs" />

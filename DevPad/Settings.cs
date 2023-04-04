@@ -48,6 +48,10 @@ namespace DevPad
         [DefaultValue(SingleInstanceMode.OneInstancePerDesktop)]
         public virtual SingleInstanceMode SingleInstanceMode { get => GetPropertyValue(SingleInstanceMode.OneInstancePerDesktop); set { SetPropertyValue(value); } }
 
+        [LocalizedCategory("Startup")]
+        [DefaultValue(FirstInstanceStartScreen.Current)]
+        public virtual FirstInstanceStartScreen FirstInstanceStartScreen { get => GetPropertyValue(FirstInstanceStartScreen.Current); set { SetPropertyValue(value); } }
+
         [LocalizedCategory("Behavior")]
         [DefaultValue(EncodingDetectorMode.AutoDetect)]
         public virtual EncodingDetectorMode EncodingDetectionMode { get => GetPropertyValue(EncodingDetectorMode.AutoDetect); set { SetPropertyValue(value); } }

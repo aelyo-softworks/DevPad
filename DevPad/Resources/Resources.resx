@@ -183,6 +183,9 @@
   <data name="ConfirmRestartAsAdmin" xml:space="preserve">
     <value>The file wasn't saved because of an unauthorized access error. Do you want to restart DevPad as Administrator?</value>
   </data>
+  <data name="Current" xml:space="preserve">
+    <value>Current</value>
+  </data>
   <data name="DefaultGroupName" xml:space="preserve">
     <value>Default</value>
   </data>
@@ -240,6 +243,9 @@
   </data>
   <data name="Preferences" xml:space="preserve">
     <value>Preferences</value>
+  </data>
+  <data name="Primary" xml:space="preserve">
+    <value>Primary</value>
   </data>
   <data name="Process" xml:space="preserve">
     <value>Process</value>

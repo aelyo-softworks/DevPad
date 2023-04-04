@@ -4,6 +4,7 @@ using System.Diagnostics.Eventing;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 using DevPad.Ipc;
@@ -97,6 +98,7 @@ namespace DevPad
             try
             {
                 var app = new App();
+                TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
                 Application.Current.DispatcherUnhandledException += Current_DispatcherUnhandledException;
                 app.InitializeComponent();
                 app.Run();
@@ -107,9 +109,9 @@ namespace DevPad
             }
         }
 
-        private static void F_HandleCreated(object sender, EventArgs e)
+        private static void OnUnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e)
         {
-            throw new NotImplementedException();
+            ShowError(null, e.Exception, false);
         }
 
         private static bool _errorShown;
