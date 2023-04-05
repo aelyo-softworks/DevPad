@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -17,6 +18,7 @@ using DevPad.Ipc;
 using DevPad.Model;
 using DevPad.MonacoModel;
 using DevPad.Utilities;
+using DevPad.Utilities.Github;
 using DevPad.Utilities.Grid;
 using Microsoft.Win32;
 
@@ -107,11 +109,11 @@ namespace DevPad
 
                     if (file.UntitledNumber > 0)
                     {
-                        tab = AddTab(file.GroupKey, null, false, file.UntitledNumber, file.Options);
+                        tab = AddTabAsync(file.GroupKey, null, false, file.UntitledNumber, file.Options);
                     }
                     else
                     {
-                        tab = AddTab(file.GroupKey, file.FilePath, false, options: file.Options);
+                        tab = AddTabAsync(file.GroupKey, file.FilePath, false, options: file.Options);
                     }
                     _ = tab.InitializeAsync(file.FilePath);
                 }
@@ -122,7 +124,7 @@ namespace DevPad
 
             foreach (var group in Groups.Where(t => !t.FileViewTabs.Any()))
             {
-                tab = AddTab(group.Key, null, false);
+                tab = AddTabAsync(group.Key, null, false);
                 _ = tab.InitializeAsync(null);
             }
 
@@ -324,7 +326,7 @@ namespace DevPad
                     Program.Trace(e.Type + " process:" + e.CallingProcessId + " user:" + e.UserDomainName + "\\" + e.UserName + " deskop:" + e.CallingDesktopId);
                     Dispatcher.Invoke(async () =>
                     {
-                        await CloseAllGroups(false, true);
+                        await CloseAllGroupsAsync(false, true);
                         Settings.SerializeToConfigurationWhenIdle(0); // flush if any change in queue
                         _state = State.Closing;
                         Close();
@@ -432,7 +434,7 @@ namespace DevPad
             var count = _groups.Count - 1;
             _groups.Insert(count, group);
             GroupsTab.SelectedIndex = count;
-            var tab = AddTab(group.Key, null, selectTab);
+            var tab = AddTabAsync(group.Key, null, selectTab);
             await tab.InitializeAsync(null);
         }
 
@@ -604,7 +606,7 @@ namespace DevPad
                 await RemoveTabAsync(group.Tabs[0], false, false, false, false);
             }
 
-            tab = AddTab(group.Key, filePath, selectTab);
+            tab = AddTabAsync(group.Key, filePath, selectTab);
             tab.GroupKey = group.Key;
             SaveTabToRecentFiles(tab, filePath);
             await tab.InitializeAsync(filePath);
@@ -629,7 +631,7 @@ namespace DevPad
             // always ensure we have one (untitled) tab opened
             if (checkAtLeastOneTab && !group.FileViewTabs.Any())
             {
-                await AddTab(group.Key, null, true).InitializeAsync(null);
+                await AddTabAsync(group.Key, null, true).InitializeAsync(null);
             }
 
             if (removeFromRecent)
@@ -660,7 +662,7 @@ namespace DevPad
             }
         }
 
-        private MonacoTab AddTab(string groupKey, string filePath, bool select, int untitledNumber = 0, RecentFileOptions options = RecentFileOptions.None)
+        private MonacoTab AddTabAsync(string groupKey, string filePath, bool select, int untitledNumber = 0, RecentFileOptions options = RecentFileOptions.None)
         {
             var group = GetGroupOrDefault(groupKey);
             //Program.Trace("path:" + filePath + " groupKey:" + groupKey?.Replace("\0", "!") + " group:" + group.Key + " select:" + select);
@@ -711,7 +713,7 @@ namespace DevPad
             await RemoveTabAsync(tab, deleteAutoSave, true, removeFromRecent, removeFromOpened);
         }
 
-        private async Task CloseAllGroups(bool checkAtLeastOneTab, bool quitting)
+        private async Task CloseAllGroupsAsync(bool checkAtLeastOneTab, bool quitting)
         {
             foreach (var group in Groups)
             {
@@ -1017,7 +1019,7 @@ namespace DevPad
             SaveRecentFile(tab);
         }
 
-        private async Task DiscardChangesAndReload(MonacoTab tab)
+        private async Task DiscardChangesAndReloadAsync(MonacoTab tab)
         {
             if (tab == null)
                 return;
@@ -1025,7 +1027,7 @@ namespace DevPad
             await tab.ReloadAsync();
         }
 
-        private async Task ShowCommandPalette(MonacoTab tab)
+        private async Task ShowCommandPaletteAsync(MonacoTab tab)
         {
             if (tab == null)
                 return;
@@ -1033,8 +1035,28 @@ namespace DevPad
             await tab.ShowCommandPaletteAsync();
         }
 
-        private void OnShowCommandPalette(object sender, RoutedEventArgs e) => _ = ShowCommandPalette(CurrentTab);
-        private void OnDiscardChanges(object sender, RoutedEventArgs e) => _ = DiscardChangesAndReload(e.GetDataContext<MonacoTab>());
+        private async Task CheckForUpdatesAsync()
+        {
+            var thisVersion = Version.Parse(AssemblyUtilities.GetInformationalVersion());
+            var releases = await GitHubApi.GetReleasesAsync(CancellationToken.None);
+            var last = releases.LastOrDefault();
+            if (last == null || thisVersion >= last.Version || last.Assets.Count == 0)
+            {
+                this.ShowMessage(DevPad.Resources.Resources.NoUpdate);
+                return;
+            }
+
+            if (this.ShowConfirm(string.Format(DevPad.Resources.Resources.UpdateAvailable, last.Name)) != MessageBoxResult.Yes)
+                return;
+
+            var path = await GitHubApi.DownloadReleaseAsync(last.Assets[0].DownloadUrl, CancellationToken.None);
+            Process.Start(path);
+            Close();
+        }
+
+        private async void OnCheckForUpdates(object sender, RoutedEventArgs e) => await CheckForUpdatesAsync();
+        private void OnShowCommandPalette(object sender, RoutedEventArgs e) => _ = ShowCommandPaletteAsync(CurrentTab);
+        private void OnDiscardChanges(object sender, RoutedEventArgs e) => _ = DiscardChangesAndReloadAsync(e.GetDataContext<MonacoTab>());
         private void OnUnPinAllTabs(object sender, RoutedEventArgs e) => UnpinAll(CurrentGroup);
         private async void OnSaveTab(object sender, RoutedEventArgs e) => await SaveTabAsync(e.GetDataContext<MonacoTab>());
         private void OnPinThisTab(object sender, RoutedEventArgs e) => PinUnpinTab(GetTabFromContextMenu(e), true);
@@ -1049,9 +1071,9 @@ namespace DevPad
         private async void OnSaveAsCommand(object sender, ExecutedRoutedEventArgs e) => await SaveTabAsAsync(CurrentTab);
         private async void OnSaveCommand(object sender, ExecutedRoutedEventArgs e) => await SaveTabAsync(CurrentTab);
         private async void OnSaveAllCommand(object sender, ExecutedRoutedEventArgs e) => await SaveAllTabsAsync();
-        private async void OnNewTabCommand(object sender, ExecutedRoutedEventArgs e) => await AddTab(CurrentGroup.Key, null, true).InitializeAsync(null);
+        private async void OnNewTabCommand(object sender, ExecutedRoutedEventArgs e) => await AddTabAsync(CurrentGroup.Key, null, true).InitializeAsync(null);
         private async void OnOpenCommand(object sender, ExecutedRoutedEventArgs e) => await OpenAsync(CurrentGroup.Key, null);
-        private async void OnCloseAll(object sender, RoutedEventArgs e) => await CloseAllGroups(true, false);
+        private async void OnCloseAll(object sender, RoutedEventArgs e) => await CloseAllGroupsAsync(true, false);
         private void OnCloseTab(object sender, RoutedEventArgs e) => _ = CloseTabAsync(e.GetDataContext<MonacoTab>(), true, false, true);
         private void OnExitClick(object sender, RoutedEventArgs e) => Close();
         private void OnRestartAsAdmin(object sender, RoutedEventArgs e) => RestartAsAdmin(true);
@@ -1059,7 +1081,7 @@ namespace DevPad
         private void OnFormat(object sender, RoutedEventArgs e) => _ = CurrentTab?.FormatDocumentAsync();
         private void OnOpenConfigFolder(object sender, RoutedEventArgs e) => WindowsUtilities.OpenExplorer(Path.GetDirectoryName(Settings.ConfigurationFilePath));
         private void OnOpenConfig(object sender, RoutedEventArgs e) => _ = OpenFileAsync(CurrentGroup.Key, Settings.ConfigurationFilePath, true);
-        private async void OnAddTab(object sender, RoutedEventArgs e) => await AddTab(CurrentGroup.Key, null, true).InitializeAsync(null);
+        private async void OnAddTab(object sender, RoutedEventArgs e) => await AddTabAsync(CurrentGroup.Key, null, true).InitializeAsync(null);
 
         private void OnAboutClick(object sender, RoutedEventArgs e)
         {
@@ -1185,10 +1207,16 @@ namespace DevPad
                         case EditorOption.fontInfo:
                             var option = await tab.GetEditorOptionsAsync<JsonElement>(cfe.Option);
                             var fontSize = option.GetValue("fontSize", 0d);
-                            if (fontSize > 0 && fontSize != DevPad.Settings.Current.FontSize)
+                            if (fontSize <= 0)
+                                return;
+
+                            fontSize = Math.Round(fontSize, 1);
+                            if (fontSize != DevPad.Settings.Current.FontSize)
                             {
+                                DevPad.Settings.Current.RaisePropertyChanged = false;
                                 DevPad.Settings.Current.FontSize = fontSize;
-                                Settings.SerializeToConfigurationWhenIdle();
+                                DevPad.Settings.Current.RaisePropertyChanged = true;
+                                DevPad.Settings.Current.SerializeToConfigurationWhenIdle();
                             }
                             break;
                     }

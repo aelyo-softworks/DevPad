@@ -16,7 +16,7 @@ namespace DevPad
         private const int _defaultAutoSavePeriod = 2;
         internal const uint _defaultMaxLoadBufferSize = 65536 * 16;
 
-        public static string DefaultUserDataFolder { get; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), typeof(Settings).Namespace); // will create an "EBWebView" folder in there
+        public static string DefaultUserDataFolder { get; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AssemblyUtilities.GetProduct()); // will create an "EBWebView" folder in there
         public static string GetUntitledName(int number) => string.Format(Resources.Resources.Untitled, number);
 
         private static readonly Lazy<Settings> _current = new Lazy<Settings>(() =>

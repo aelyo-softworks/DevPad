@@ -232,6 +232,9 @@
   <data name="NameError" xml:space="preserve">
     <value>Name cannot be empty or whitespace</value>
   </data>
+  <data name="NoUpdate" xml:space="preserve">
+    <value>You have the latest version.</value>
+  </data>
   <data name="OneFileFilter" xml:space="preserve">
     <value>{0} Files ({1})|{1}</value>
   </data>
@@ -303,6 +306,9 @@
   </data>
   <data name="Untitled" xml:space="preserve">
     <value>(Untitled {0})</value>
+  </data>
+  <data name="UpdateAvailable" xml:space="preserve">
+    <value>Version '{0}' is available, do you want to close and upgrade?</value>
   </data>
   <data name="Warning" xml:space="preserve">
     <value>Warning</value>

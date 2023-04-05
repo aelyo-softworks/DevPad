@@ -164,6 +164,8 @@
                 <MenuItem Click="OnOpenConfig" Header="_Open Configuration File" />
                 <MenuItem Click="OnOpenConfigFolder" Header="_Open Configuration Folder" />
                 <Separator x:Name="HelpSeparator" />
+                <MenuItem Click="OnCheckForUpdates" Header="Check For _Updates..." />
+                <Separator />
                 <MenuItem
                     x:Name="AboutMenuItem"
                     Click="OnAboutClick"

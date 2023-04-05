@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace DevPad.Utilities
 {
@@ -13,6 +14,9 @@ namespace DevPad.Utilities
         private readonly ConcurrentDictionary<string, object> _values = new ConcurrentDictionary<string, object>(StringComparer.OrdinalIgnoreCase);
 
         public event PropertyChangedEventHandler PropertyChanged;
+
+        [JsonIgnore]
+        internal bool RaisePropertyChanged { get; set; } = true;
 
         public void SerializeToConfigurationWhenIdle(string filePath, int dueTime = 1000) => DevPadExtensions.DoWhenIdle(() => Serialize(filePath), dueTime);
         public void Serialize(string filePath)
@@ -36,7 +40,13 @@ namespace DevPad.Utilities
         }
 
         protected void OnPropertyChanged(string name) => OnPropertyChanged(this, new PropertyChangedEventArgs(name));
-        protected virtual void OnPropertyChanged(object sender, PropertyChangedEventArgs e) => PropertyChanged?.Invoke(sender, e);
+        protected virtual void OnPropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (!RaisePropertyChanged)
+                return;
+
+            PropertyChanged?.Invoke(sender, e);
+        }
 
         protected Tv GetPropertyValue<Tv>(Tv defaultValue = default, [CallerMemberName] string propertyName = null)
         {

@@ -404,6 +404,15 @@ namespace DevPad.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to You have the latest version..
+        /// </summary>
+        internal static string NoUpdate {
+            get {
+                return ResourceManager.GetString("NoUpdate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to {0} Files ({1})|{1}.
         /// </summary>
         internal static string OneFileFilter {
@@ -616,6 +625,15 @@ namespace DevPad.Resources {
         internal static string Untitled {
             get {
                 return ResourceManager.GetString("Untitled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Version &apos;{0}&apos; is available, do you want to close and upgrade?.
+        /// </summary>
+        internal static string UpdateAvailable {
+            get {
+                return ResourceManager.GetString("UpdateAvailable", resourceCulture);
             }
         }
         
