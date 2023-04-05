@@ -18,7 +18,6 @@ using DevPad.Model;
 using DevPad.MonacoModel;
 using DevPad.Utilities;
 using DevPad.Utilities.Grid;
-using Microsoft.Web.WebView2.Core;
 using Microsoft.Win32;
 
 namespace DevPad
@@ -33,7 +32,6 @@ namespace DevPad
         private WindowDataContext _dataContext;
         private MenuItem _desktopMenuItem;
         private bool _onChangedShown;
-        private bool _webViewUnavailable;
         private bool _languagesLoaded;
         private State _state = State.Opening;
 
@@ -664,77 +662,30 @@ namespace DevPad
 
         private MonacoTab AddTab(string groupKey, string filePath, bool select, int untitledNumber = 0, RecentFileOptions options = RecentFileOptions.None)
         {
-            try
+            var group = GetGroupOrDefault(groupKey);
+            //Program.Trace("path:" + filePath + " groupKey:" + groupKey?.Replace("\0", "!") + " group:" + group.Key + " select:" + select);
+            var newTab = new MonacoTab();
+            if (options.HasFlag(RecentFileOptions.Pinned))
             {
-                var group = GetGroupOrDefault(groupKey);
-                //Program.Trace("path:" + filePath + " groupKey:" + groupKey?.Replace("\0", "!") + " group:" + group.Key + " select:" + select);
-                var newTab = new MonacoTab();
-                if (options.HasFlag(RecentFileOptions.Pinned))
-                {
-                    newTab.IsPinned = true;
-                }
-
-                newTab.GroupKey = groupKey;
-                if (filePath == null)
-                {
-                    newTab.UntitledNumber = untitledNumber != 0 ? untitledNumber : group.FileViewTabs.Count(t => t.IsUntitled) + 1;
-                }
-
-                group.AddTab(newTab);
-                if (select)
-                {
-                    group.SelectTab(newTab);
-                }
-
-                newTab.MonacoEvent += OnTabMonacoEvent;
-                newTab.FileChanged += OnTabFileChanged;
-                newTab.PropertyChanged += OnTabPropertyChanged;
-                return newTab;
+                newTab.IsPinned = true;
             }
-            catch (WebView2RuntimeNotFoundException ex)
+
+            newTab.GroupKey = groupKey;
+            if (filePath == null)
             {
-                if (!_webViewUnavailable)
-                {
-                    _webViewUnavailable = true;
-                    // handle WebViewRuntime not properly installed
-                    // point to evergreen for download
-                    Program.Trace(ex);
-                    using (var td = new TaskDialog())
-                    {
-                        const int sysInfoId = 1;
-                        td.Event += (s, e) =>
-                        {
-                            if (e.Message == TASKDIALOG_NOTIFICATIONS.TDN_HYPERLINK_CLICKED)
-                            {
-                                WindowsUtilities.SendMessage(e.Hwnd, MessageDecoder.WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
-                            }
-                            else if (e.Message == TASKDIALOG_NOTIFICATIONS.TDN_BUTTON_CLICKED)
-                            {
-                                var id = (int)(long)e.WParam;
-                                if (id == sysInfoId)
-                                {
-                                    ShowSystemInfo(null);
-                                    e.HResult = 1; // S_FALSE => don't close
-                                }
-                            }
-                        };
-
-                        td.Flags |= TASKDIALOG_FLAGS.TDF_SIZE_TO_CONTENT | TASKDIALOG_FLAGS.TDF_ENABLE_HYPERLINKS | TASKDIALOG_FLAGS.TDF_ALLOW_DIALOG_CANCELLATION;
-                        td.CommonButtonFlags |= TASKDIALOG_COMMON_BUTTON_FLAGS.TDCBF_CLOSE_BUTTON;
-                        td.MainIcon = TaskDialog.TD_ERROR_ICON;
-                        td.Title = WinformsUtilities.ApplicationTitle;
-                        td.MainInstruction = DevPad.Resources.Resources.WebViewError;
-                        td.CustomButtons.Add(sysInfoId, DevPad.Resources.Resources.SystemInfo);
-                        var msg = ex.GetAllMessages();
-                        msg += Environment.NewLine + Environment.NewLine;
-                        msg += DevPad.Resources.Resources.WebViewDownload;
-                        td.Content = msg;
-                        td.Show(this);
-                    }
-                }
-                Application.Current.Shutdown();
-                return null;
+                newTab.UntitledNumber = untitledNumber != 0 ? untitledNumber : group.FileViewTabs.Count(t => t.IsUntitled) + 1;
             }
+
+            group.AddTab(newTab);
+            if (select)
+            {
+                group.SelectTab(newTab);
+            }
+
+            newTab.MonacoEvent += OnTabMonacoEvent;
+            newTab.FileChanged += OnTabFileChanged;
+            newTab.PropertyChanged += OnTabPropertyChanged;
+            return newTab;
         }
 
         private bool DiscardChanges(MonacoTab tab = null)

@@ -18,6 +18,7 @@ namespace DevPad.Model
     public partial class MonacoTab : DictionaryObject, IDisposable
     {
         private readonly DevPadObject _dpo = new DevPadObject();
+        private bool _webViewUnavailable;
         private bool _disposedValue;
         private char[] _buffer;
         private int? _bufferSize;
@@ -122,18 +123,64 @@ namespace DevPad.Model
             if (filePath != null && !IOUtilities.IsPathRooted(filePath))
                 throw new ArgumentException(null, nameof(filePath));
 
-            FilePath = filePath;
-            var udf = Settings.Current.UserDataFolder;
-            var env = await CoreWebView2Environment.CreateAsync(null, udf);
-            await WebView.EnsureCoreWebView2Async(env);
-            WebView.CoreWebView2.ContextMenuRequested += OnContextMenuRequested;
+            try
+            {
+                FilePath = filePath;
+                var udf = Settings.Current.UserDataFolder;
+                var env = await CoreWebView2Environment.CreateAsync(null, udf);
+                await WebView.EnsureCoreWebView2Async(env);
+                WebView.CoreWebView2.ContextMenuRequested += OnContextMenuRequested;
 
-            // this is the name of the host object in js code
-            // called like this: chrome.webview.hostObjects.sync.devPad.MyCustomMethod();
-            WebView.CoreWebView2.AddHostObjectToScript("devPad", _dpo);
-            var startupPath = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName);
-            WebView.Source = new Uri(Path.Combine(startupPath, @"Monaco\index.html"));
-            IsMonacoReady = true;
+                // this is the name of the host object in js code
+                // called like this: chrome.webview.hostObjects.sync.devPad.MyCustomMethod();
+                WebView.CoreWebView2.AddHostObjectToScript("devPad", _dpo);
+                var startupPath = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName);
+                WebView.Source = new Uri(Path.Combine(startupPath, @"Monaco\index.html"));
+                IsMonacoReady = true;
+            }
+            catch (WebView2RuntimeNotFoundException ex)
+            {
+                if (!_webViewUnavailable)
+                {
+                    _webViewUnavailable = true;
+                    // handle WebViewRuntime not properly installed
+                    // point to evergreen for download
+                    Program.Trace(ex);
+                    using (var td = new TaskDialog())
+                    {
+                        const int sysInfoId = 1;
+                        td.Event += (s, e) =>
+                        {
+                            if (e.Message == TASKDIALOG_NOTIFICATIONS.TDN_HYPERLINK_CLICKED)
+                            {
+                                WindowsUtilities.SendMessage(e.Hwnd, MessageDecoder.WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+                            }
+                            else if (e.Message == TASKDIALOG_NOTIFICATIONS.TDN_BUTTON_CLICKED)
+                            {
+                                var id = (int)(long)e.WParam;
+                                if (id == sysInfoId)
+                                {
+                                    MainWindow.ShowSystemInfo(MainWindow.Current);
+                                    e.HResult = 1; // S_FALSE => don't close
+                                }
+                            }
+                        };
+
+                        td.Flags |= TASKDIALOG_FLAGS.TDF_SIZE_TO_CONTENT | TASKDIALOG_FLAGS.TDF_ENABLE_HYPERLINKS | TASKDIALOG_FLAGS.TDF_ALLOW_DIALOG_CANCELLATION;
+                        td.CommonButtonFlags |= TASKDIALOG_COMMON_BUTTON_FLAGS.TDCBF_CLOSE_BUTTON;
+                        td.MainIcon = TaskDialog.TD_ERROR_ICON;
+                        td.Title = WinformsUtilities.ApplicationTitle;
+                        td.MainInstruction = DevPad.Resources.Resources.WebViewError;
+                        td.CustomButtons.Add(sysInfoId, DevPad.Resources.Resources.SystemInfo);
+                        var msg = ex.GetAllMessages();
+                        msg += Environment.NewLine + Environment.NewLine;
+                        msg += DevPad.Resources.Resources.WebViewDownload;
+                        td.Content = msg;
+                        td.Show(MainWindow.Current);
+                    }
+                }
+                Application.Current.Shutdown();
+            }
         }
 
         private bool DeleteAutoSave() => IOUtilities.FileDelete(AutoSaveFilePath, true, false);
