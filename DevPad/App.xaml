@@ -115,7 +115,7 @@
                                 x:Name="ContentPanel"
                                 Grid.Row="1"
                                 Grid.Column="0"
-                                Background="{TemplateBinding Background}"
+                                Background="{Binding SelectedItem.ItemBackColor, RelativeSource={RelativeSource Mode=TemplatedParent}}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
                                 KeyboardNavigation.DirectionalNavigation="Contained"

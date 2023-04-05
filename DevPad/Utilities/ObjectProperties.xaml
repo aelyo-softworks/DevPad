@@ -5,7 +5,7 @@
     xmlns:grid="clr-namespace:DevPad.Utilities.Grid"
     Title="Properties"
     Width="400"
-    Height="400"
+    Height="600"
     ResizeMode="CanResize"
     WindowStartupLocation="CenterOwner"
     WindowStyle="ToolWindow">

@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Text.Json;
 
 namespace DevPad.MonacoModel
 {
@@ -9,6 +11,20 @@ namespace DevPad.MonacoModel
     {
         public event EventHandler<DevPadLoadEventArgs> Load;
         public event EventHandler<DevPadEventArgs> Event;
+
+        public object getOptions()
+        {
+            return JsonSerializer.Serialize(new
+            {
+                automaticLayout = true,
+                //language = "plaintext",
+                fontSize = Settings.Current.FontSize.ToString(CultureInfo.InvariantCulture) + "px",
+                dragAndDrop = false,
+                mouseWheelZoom = true,
+                contextmenu = false,
+                theme = Settings.Current.Theme,
+            });
+        }
 
         public string load()
         {

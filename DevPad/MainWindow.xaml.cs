@@ -445,7 +445,8 @@ namespace DevPad
             public WindowDataContext(MainWindow main)
             {
                 _main = main;
-                _main.Settings.PropertyChanged += OnSettingsPropertyChanged;
+                _main.Settings.PropertyChanged += OnPerDesktopSettingsPropertyChanged;
+                DevPad.Settings.Current.PropertyChanged += OnSettingsPropertyChanged;
             }
 
             public Dock GroupsTabPlacement { get => DictionaryObjectGetPropertyValue(Dock.Top); set => DictionaryObjectSetPropertyValue(value); }
@@ -456,15 +457,35 @@ namespace DevPad
                 if (e.PropertyName == nameof(DevPad.Settings.Current.ShowMinimap))
                 {
                     OnPropertyChanged(e.PropertyName);
+                    _ = _main.CurrentTab?.EnableMinimapAsync(DevPad.Settings.Current.ShowMinimap);
+                    return;
                 }
+
+                if (e.PropertyName == nameof(DevPad.Settings.Current.FontSize))
+                {
+                    _ = _main.CurrentTab?.SetFontSizeAsync(DevPad.Settings.Current.FontSize);
+                    return;
+                }
+
+                if (e.PropertyName == nameof(DevPad.Settings.Current.Theme))
+                {
+                    _ = _main.CurrentTab?.SetEditorThemeAsync(DevPad.Settings.Current.Theme);
+                    return;
+                }
+            }
+
+            private void OnPerDesktopSettingsPropertyChanged(object sender, PropertyChangedEventArgs e)
+            {
             }
 
             public void RaisePropertyChanged()
             {
+                // from settings
+                OnPropertyChanged(nameof(ShowMinimap));
+
                 OnPropertyChanged(nameof(CursorPosition));
                 OnPropertyChanged(nameof(CursorSelection));
                 OnPropertyChanged(nameof(ModelLanguageName));
-                OnPropertyChanged(nameof(ShowMinimap));
                 OnPropertyChanged(nameof(EncodingName));
                 OnPropertyChanged(nameof(EncodingToolTip));
                 OnPropertyChanged(nameof(LoadingPercent));
@@ -587,10 +608,7 @@ namespace DevPad
 
             tab = AddTab(group.Key, filePath, selectTab);
             tab.GroupKey = group.Key;
-            Settings.AddRecentFile(filePath, group.Key, tab.Index + 1);
-            Settings.SerializeToConfigurationWhenIdle();
-            WindowsUtilities.SHAddToRecentDocs(filePath);
-            Program.WindowsApplication.PublishRecentList();
+            SaveTabToRecentFiles(tab, filePath);
             await tab.InitializeAsync(filePath);
             SetTitle(tab);
         }
@@ -785,7 +803,13 @@ namespace DevPad
             if (tab == null || !tab.IsFileView)
                 return;
 
-            var filter = BuildFilter();
+            string ext = null;
+            if (tab.FilePath != null)
+            {
+                ext = Path.GetExtension(tab.FilePath);
+            }
+
+            var filter = BuildFilter(ext);
             if (filter.Item1 == null)
                 return;
 
@@ -801,6 +825,15 @@ namespace DevPad
                 return;
 
             await WrapUnauthorizedAccessAsync(async () => await tab.SaveAsync(fd.FileName));
+            SaveTabToRecentFiles(tab, fd.FileName);
+        }
+
+        private void SaveTabToRecentFiles(MonacoTab tab, string filePath)
+        {
+            Settings.AddRecentFile(filePath, tab.GroupKey, tab.Index + 1);
+            Settings.SerializeToConfigurationWhenIdle();
+            WindowsUtilities.SHAddToRecentDocs(filePath);
+            Program.WindowsApplication.PublishRecentList();
         }
 
         private async Task SaveTabAsync(MonacoTab tab)
@@ -811,6 +844,7 @@ namespace DevPad
             if (tab.FilePath != null)
             {
                 await WrapUnauthorizedAccessAsync(async () => await tab.SaveAsync(tab.FilePath));
+                SaveTabToRecentFiles(tab, tab.FilePath);
                 return;
             }
             await SaveTabAsAsync(tab);
@@ -829,7 +863,7 @@ namespace DevPad
 
         private async Task OpenAsync(string groupKey, string directoryPath)
         {
-            var filter = BuildFilter();
+            var filter = BuildFilter(null);
             if (filter.Item1 == null)
                 return;
 
@@ -871,7 +905,7 @@ namespace DevPad
             }
         }
 
-        private (string, int) BuildFilter()
+        private (string, int) BuildFilter(string ext)
         {
             var view = DefaultGroup.FileViewTabs.FirstOrDefault()?.WebView;
             if (view == null)
@@ -879,7 +913,8 @@ namespace DevPad
 
             var languages = MonacoExtensions.GetLanguages();
             var sb = new StringBuilder();
-            var index = 0;
+            int? index = null;
+            var i = 0;
             foreach (var kv in languages.OrderBy(k => k.Value.Name))
             {
                 if (kv.Value.Extensions == null || kv.Value.Extensions.Length == 0)
@@ -890,10 +925,15 @@ namespace DevPad
                     sb.Append('|');
                 }
                 sb.Append(string.Format(DevPad.Resources.Resources.OneFileFilter, kv.Value.Name, "*" + string.Join(";*", kv.Value.Extensions)));
-                index++;
+
+                if (ext != null && kv.Value.Extensions.Contains(ext, StringComparer.OrdinalIgnoreCase))
+                {
+                    index = i;
+                }
+                i++;
             }
             sb.Append(DevPad.Resources.Resources.AllFilesFilter);
-            return (sb.ToString(), index);
+            return (sb.ToString(), index ?? i);
         }
 
         private void SetTitle(MonacoTab tab)
@@ -1026,6 +1066,24 @@ namespace DevPad
             SaveRecentFile(tab);
         }
 
+        private async Task DiscardChangesAndReload(MonacoTab tab)
+        {
+            if (tab == null)
+                return;
+
+            await tab.ReloadAsync();
+        }
+
+        private async Task ShowCommandPalette(MonacoTab tab)
+        {
+            if (tab == null)
+                return;
+
+            await tab.ShowCommandPaletteAsync();
+        }
+
+        private void OnShowCommandPalette(object sender, RoutedEventArgs e) => _ = ShowCommandPalette(CurrentTab);
+        private void OnDiscardChanges(object sender, RoutedEventArgs e) => _ = DiscardChangesAndReload(e.GetDataContext<MonacoTab>());
         private void OnUnPinAllTabs(object sender, RoutedEventArgs e) => UnpinAll(CurrentGroup);
         private async void OnSaveTab(object sender, RoutedEventArgs e) => await SaveTabAsync(e.GetDataContext<MonacoTab>());
         private void OnPinThisTab(object sender, RoutedEventArgs e) => PinUnpinTab(GetTabFromContextMenu(e), true);
@@ -1046,7 +1104,6 @@ namespace DevPad
         private void OnCloseTab(object sender, RoutedEventArgs e) => _ = CloseTabAsync(e.GetDataContext<MonacoTab>(), true, false, true);
         private void OnExitClick(object sender, RoutedEventArgs e) => Close();
         private void OnRestartAsAdmin(object sender, RoutedEventArgs e) => RestartAsAdmin(true);
-        private void OnClearRecentList(object sender, RoutedEventArgs e) => Settings.ClearRecentFiles();
         private void OnFind(object sender, RoutedEventArgs e) => _ = CurrentTab?.ShowFindUIAsync();
         private void OnFormat(object sender, RoutedEventArgs e) => _ = CurrentTab?.FormatDocumentAsync();
         private void OnOpenConfigFolder(object sender, RoutedEventArgs e) => WindowsUtilities.OpenExplorer(Path.GetDirectoryName(Settings.ConfigurationFilePath));
@@ -1161,39 +1218,6 @@ namespace DevPad
                     await tab.SetFontSizeAsync(DevPad.Settings.Current.FontSize);
                     break;
 
-                case DevPadEventType.Paste:
-                    var autoDetectMode = DevPad.Settings.Current.AutoDetectLanguageMode;
-                    if (autoDetectMode != AutoDetectLanguageMode.DontAutoDetect)
-                    {
-                        var langId = tab.ModelLanguageId;
-                        if (e.RootElement.GetNullifiedValue("languageId") == null &&
-                            e.RootElement.GetValue("range.startLineNumber", -1) == 1 &&
-                            e.RootElement.GetValue("range.startColumn", -1) == 1)
-                        {
-                            _ = Task.Run(async () =>
-                            {
-                                var text = await Dispatcher.Invoke(async () => await tab.GetEditorTextAsync(false));
-                                var det = new Detector();
-                                var lang = det.Detect(text);
-                                if (lang != Utilities.Language.Unknown)
-                                {
-                                    var newLangId = lang.ToString().ToLowerInvariant();
-                                    _ = Dispatcher.Invoke(async () =>
-                                    {
-                                        if (autoDetectMode == AutoDetectLanguageMode.PromptIfLanguageChanges && langId != newLangId && langId != LanguageExtensionPoint.DefaultLanguageId)
-                                        {
-                                            if (this.ShowConfirm(string.Format(DevPad.Resources.Resources.LanguageChanging, MonacoExtensions.GetLanguageName(langId), MonacoExtensions.GetLanguageName(newLangId))) != MessageBoxResult.Yes)
-                                                return;
-                                        }
-
-                                        await tab.SetEditorLanguageAsync(newLangId);
-                                    });
-                                }
-                            });
-                        }
-                    }
-                    break;
-
                 case DevPadEventType.OpenResource:
                     var uri = e.RootElement.GetValue<Uri>("resource");
                     if (uri != null)
@@ -1281,7 +1305,7 @@ namespace DevPad
 
         private void OnPreferences(object sender, RoutedEventArgs e)
         {
-            var clone = DevPad.Settings.Current;
+            var clone = DevPad.Settings.Current.Clone();
             var dlg = new ObjectProperties(clone, false);
             dlg.Owner = this;
             dlg.Title = DevPad.Resources.Resources.Preferences;
@@ -1294,10 +1318,15 @@ namespace DevPad
 
         private void OnPerDesktopPreferences(object sender, RoutedEventArgs e)
         {
-            var dlg = new ObjectProperties(Settings, false);
+            var clone = Settings.Clone();
+            var dlg = new ObjectProperties(clone, false);
             dlg.Owner = this;
             dlg.Title = DevPad.Resources.Resources.Preferences;
-            dlg.ShowDialog();
+            if (dlg.ShowDialog() != true)
+                return;
+
+            Settings.CopyFrom(clone);
+            Settings.SerializeToConfigurationWhenIdle();
         }
 
         private void OnFileOpened(object sender, RoutedEventArgs e)
@@ -1318,6 +1347,7 @@ namespace DevPad
                 foreach (var file in files)
                 {
                     var item = new MenuItem { Header = file.DisplayName };
+                    item.Tag = file;
                     item.Icon = new Image { Source = IconUtilities.GetItemIconAsImageSource(file.FilePath, SHIL.SHIL_SMALL) };
                     RecentFilesMenuItem.Items.Add(item);
                     item.Click += (s, e2) =>
@@ -1333,6 +1363,27 @@ namespace DevPad
                 {
                     Settings.ClearRecentFiles();
                 };
+
+                var fileItems = RecentFilesMenuItem.Items.OfType<MenuItem>().Where(m => m.Tag is RecentFile).ToList();
+                if (fileItems.Count > 1)
+                {
+                    var last = fileItems.Last();
+                    var clearLast = new MenuItem { Header = string.Format(DevPad.Resources.Resources.ClearLast, ((RecentFile)last.Tag).FilePath) };
+                    clearLast.StaysOpenOnClick = true;
+                    RecentFilesMenuItem.Items.Add(clearLast);
+                    clearLast.Click += (s, e2) =>
+                    {
+                        RecentFilesMenuItem.Items.Remove(last);
+                        Settings.RemoveRecentFile(((RecentFile)last.Tag).FilePath);
+                        Settings.SerializeToConfigurationWhenIdle();
+                        fileItems.Remove(last);
+                        last = fileItems.Last();
+                        if (fileItems.Count == 1)
+                        {
+                            clearLast.IsEnabled = false;
+                        }
+                    };
+                }
 
                 var clean = new MenuItem { Header = DevPad.Resources.Resources.CleanRecentList };
                 RecentFilesMenuItem.Items.Add(clean);
@@ -1524,6 +1575,12 @@ namespace DevPad
             if (element.FindName("SaveMenuItem") is MenuItem saveItem)
             {
                 saveItem.Header = string.Format(DevPad.Resources.Resources.SaveTab, tab.FilePath);
+            }
+
+            if (element.FindName("DiscardChangesMenuItem") is MenuItem discardItem)
+            {
+                discardItem.Visibility = tab.HasContentChanged && tab.FilePath != null ? Visibility.Visible : Visibility.Collapsed;
+                discardItem.Header = string.Format(DevPad.Resources.Resources.DiscardTabChanges, tab.FilePath);
             }
 
             if (element.FindName("UnPinAllTabsMenuItem") is MenuItem unpinAll)

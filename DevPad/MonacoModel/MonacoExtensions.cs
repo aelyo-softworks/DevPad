@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using DevPad.Utilities;
 using Microsoft.Web.WebView2.Wpf;
+using Microsoft.Win32;
 
 namespace DevPad.MonacoModel
 {
@@ -17,7 +20,7 @@ namespace DevPad.MonacoModel
 
         private static bool _loadingLanguages;
 
-        public static async Task LoadLanguages(WebView2 webView)
+        internal static async Task LoadLanguages(WebView2 webView)
         {
             if (webView == null)
                 throw new ArgumentNullException(nameof(webView));
@@ -125,6 +128,58 @@ namespace DevPad.MonacoModel
                 throw new InvalidOperationException();
 
             return _languagesById;
+        }
+
+        public static string GetLanguageByExtension(string ext)
+        {
+            if (string.IsNullOrWhiteSpace(ext) || !LanguagesLoaded)
+                return LanguageExtensionPoint.DefaultLanguageId;
+
+            if (_languagesByExtension.TryGetValue(ext, out var langs) && langs.Count > 0)
+                return langs[0].Id;
+
+            using (var key = Registry.ClassesRoot.OpenSubKey(ext, false))
+            {
+                if (key != null)
+                {
+                    var ct = key.GetValue("Content Type") as string;
+                    if (!string.IsNullOrWhiteSpace(ct))
+                    {
+                        using (var mime = Registry.ClassesRoot.OpenSubKey(Path.Combine(@"MIME\Database\Content Type", ct), false))
+                        {
+                            var mimeExt = (mime?.GetValue("Extension") as string)?.Nullify();
+                            if (mimeExt != null && _languagesByExtension.TryGetValue(mimeExt, out langs) && langs.Count > 0)
+                                return langs[0].Id;
+                        }
+                    }
+                }
+            }
+
+            return LanguageExtensionPoint.DefaultLanguageId;
+        }
+
+        public static bool IsUnknownLanguageExtension(string ext)
+        {
+            if (string.IsNullOrWhiteSpace(ext))
+                return true;
+
+            if (LanguagesLoaded)
+            {
+                var languages = GetLanguagesByExtension();
+                if (languages.TryGetValue(ext, out var list) && list.Count > 0)
+                    return false;
+            }
+
+            using (var key = Registry.ClassesRoot.OpenSubKey(ext, false))
+            {
+                if (key == null)
+                    return true;
+
+                var ct = key.GetValue("Content Type") as string;
+                if (string.IsNullOrWhiteSpace(ct))
+                    return true;
+            }
+            return false;
         }
 
         public static async Task<T> ExecuteScriptAsync<T>(this WebView2 webView, string javaScript, T defaultValue = default, JsonSerializerOptions options = null)

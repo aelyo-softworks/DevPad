@@ -10,6 +10,8 @@ namespace DevPad.Utilities
 {
     public static class DevPadExtensions
     {
+        private static readonly ConcurrentDictionary<string, Timer> _doWhenIdleTimers = new ConcurrentDictionary<string, Timer>();
+
         public static string Nullify(this string text)
         {
             if (text == null)
@@ -79,8 +81,6 @@ namespace DevPad.Utilities
 
             return exception;
         }
-
-        private static readonly ConcurrentDictionary<string, Timer> _doWhenIdleTimers = new ConcurrentDictionary<string, Timer>();
 
         // dueTime = 0 do it it was requested before ("flush if any")
         // duetime = -1 do it anyway

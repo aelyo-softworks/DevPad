@@ -147,6 +147,9 @@
   <data name="CleanRecentList" xml:space="preserve">
     <value>Remove deleted files from this list</value>
   </data>
+  <data name="ClearLast" xml:space="preserve">
+    <value>Remove last item ('{0}') from this list</value>
+  </data>
   <data name="ClearRecentList" xml:space="preserve">
     <value>Clear this list</value>
   </data>
@@ -195,6 +198,9 @@
   <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
   <data name="DevPadIcon" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>DevPad.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="DiscardTabChanges" xml:space="preserve">
+    <value>Discard {0} changes and reload</value>
   </data>
   <data name="DontAutoDetect" xml:space="preserve">
     <value>Don't auto detect</value>

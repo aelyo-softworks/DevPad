@@ -32,26 +32,19 @@
             chrome.webview.hostObjects.sync.devPad.onEvent(5);
         });
 
-        var editor = monaco.editor.create(document.getElementById('container'),
-            {
-                automaticLayout: true,
-                language: 'plaintext',
-                fontSize: '12px',
-                dragAndDrop: false,
-                mouseWheelZoom: true,
-                contextmenu: false
-            },
+        var options = JSON.parse(chrome.webview.hostObjects.sync.devPad.getOptions());
+        var editor = monaco.editor.create(document.getElementById('container'), options,
             {
                 openerService: openerService
             }
         );
 
-        monaco.editor.addKeybindingRules([
-            {
-                keybinding: monaco.KeyCode.F1,
-                command: null,
-            }
-        ]);
+        //monaco.editor.addKeybindingRules([
+        //    {
+        //        keybinding: monaco.KeyCode.F1,
+        //        command: null,
+        //    }
+        //]);
 
         editor.getModel().onDidChangeContent(evt => {
             chrome.webview.hostObjects.sync.devPad.onEvent(2);
@@ -141,10 +134,16 @@
             editor.revealLine(lineNumber);
         }
 
+        function loadFromHost() {
+            editor.setValue('');
+            loadChunksFromHost();
+        }
+
         function loadChunksFromHost() {
             var text = chrome.webview.hostObjects.sync.devPad.load();
-            if (text === null)
+            if (text === null) {
                 return;
+            }
 
             var lines = editor.getModel().getLineCount();
             var col = editor.getModel().getLineMaxColumn(lines);

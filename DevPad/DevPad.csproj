@@ -85,6 +85,7 @@
     <Compile Include="Ipc\SingleInstanceCommandEventArgs.cs" />
     <Compile Include="Ipc\SingleInstanceCommandType.cs" />
     <Compile Include="Ipc\SingleInstanceMode.cs" />
+    <Compile Include="Model\LoadingStatus.cs" />
     <Compile Include="Model\MonacoAddTab.cs" />
     <Compile Include="Model\AddTabGroup.cs" />
     <Compile Include="Model\TabGroup.cs" />

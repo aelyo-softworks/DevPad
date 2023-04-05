@@ -94,7 +94,7 @@
                 <Separator />
                 <MenuItem Click="OnExitClick" Header="E_xit" />
             </MenuItem>
-            <MenuItem Header="_Edit">
+            <MenuItem Header="_Edit" Visibility="Collapsed">
                 <MenuItem
                     x:Name="FindMenuItem"
                     Click="OnFind"
@@ -109,8 +109,12 @@
                     IsCheckable="True"
                     IsChecked="{Binding ShowMinimap, Mode=TwoWay}" />
                 <MenuItem
+                    Click="OnShowCommandPalette"
+                    Header="Show _Command Palette"
+                    InputGestureText="F1" />
+                <MenuItem
                     x:Name="LanguagesMenuItem"
-                    Header="Languages"
+                    Header="Set _Language"
                     SubmenuOpened="OnLanguagesOpened">
                     <MenuItem Header="(Lazy)" />
                 </MenuItem>
@@ -233,6 +237,10 @@
                                                 x:Name="SaveMenuItem"
                                                 Click="OnSaveTab"
                                                 Header="_Save Full Path" />
+                                            <MenuItem
+                                                x:Name="DiscardChangesMenuItem"
+                                                Click="OnDiscardChanges"
+                                                Header="_Discard Changes" />
                                             <Separator />
                                             <MenuItem Click="OnCloseTab" Header="Close" />
                                             <MenuItem Click="OnCloseAllTabs" Header="Close _All Tabs" />

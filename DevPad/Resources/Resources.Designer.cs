@@ -151,6 +151,15 @@ namespace DevPad.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Remove last item (&apos;{0}&apos;) from this list.
+        /// </summary>
+        internal static string ClearLast {
+            get {
+                return ResourceManager.GetString("ClearLast", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Clear this list.
         /// </summary>
         internal static string ClearRecentList {
@@ -292,6 +301,15 @@ namespace DevPad.Resources {
             get {
                 object obj = ResourceManager.GetObject("DevPadIcon", resourceCulture);
                 return ((System.Drawing.Icon)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Discard {0} changes and reload.
+        /// </summary>
+        internal static string DiscardTabChanges {
+            get {
+                return ResourceManager.GetString("DiscardTabChanges", resourceCulture);
             }
         }
         

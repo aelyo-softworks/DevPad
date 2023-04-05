@@ -15,7 +15,7 @@ using Microsoft.Web.WebView2.Wpf;
 
 namespace DevPad.Model
 {
-    public class MonacoTab : DictionaryObject, IDisposable
+    public partial class MonacoTab : DictionaryObject, IDisposable
     {
         private readonly DevPadObject _dpo = new DevPadObject();
         private bool _disposedValue;
@@ -35,6 +35,12 @@ namespace DevPad.Model
             if (!IsAdd)
             {
                 WebView = new WebView2();
+
+                if (IsDarkTheme())
+                {
+                    WebView.DefaultBackgroundColor = System.Drawing.Color.Black;
+                }
+
                 WebView.AllowDrop = false;
                 WebView.AllowExternalDrop = false;
             }
@@ -51,6 +57,7 @@ namespace DevPad.Model
         public virtual string CloseButtonTooltip => Resources.Resources.CloseTabTooltip;
         public virtual string AddButtonTooltip => string.Empty;
         public string BackColor => "Transparent";
+        public string ItemBackColor => IsDarkTheme() ? "Black" : "Transparent";
         public string GroupKey { get => DictionaryObjectGetNullifiedPropertyValue(); set => DictionaryObjectSetPropertyValue(value); }
         public bool IsMonacoReady { get => DictionaryObjectGetPropertyValue(false); private set => DictionaryObjectSetPropertyValue(value); }
         public bool HasContentChanged { get => DictionaryObjectGetPropertyValue(false); private set => DictionaryObjectSetPropertyValue(value); }
@@ -148,36 +155,20 @@ namespace DevPad.Model
         }
 
         public Task SetEditorLanguageAsync(string lang) => ExecuteScriptAsync($"monaco.editor.setModelLanguage(editor.getModel(), '{lang}');");
-        private async Task SetEditorLanguageFromFilePathAsync(string filePath)
-        {
-            var ext = Path.GetExtension(filePath);
-            var langs = MonacoExtensions.GetLanguagesByExtension();
-            string lang;
-            if (langs.TryGetValue(ext, out var langObject))
-            {
-                lang = langObject[0].Id;
-            }
-            else
-            {
-                lang = LanguageExtensionPoint.DefaultLanguageId;
-            }
-            await SetEditorLanguageAsync(lang);
-        }
+        private Task SetEditorLanguageFromFilePathAsync(string filePath) => SetEditorLanguageAsync(MonacoExtensions.GetLanguageByExtension(Path.GetExtension(filePath)));
 
-        public async Task ReloadAsync()
+        public async Task<LoadingStatus> ReloadAsync()
         {
             if (FilePath == null)
                 throw new InvalidOperationException();
 
-            if (FilePath != null)
-            {
-                FilesWatcher.UnwatchFile(FilePath);
-                FilesWatcher.FileChanged -= OnFileChanged;
-            }
+            FilesWatcher.UnwatchFile(FilePath);
+            FilesWatcher.FileChanged -= OnFileChanged;
 
             DeleteAutoSave();
-            await LoadFileIfAnyAsync();
+            var status = await LoadFileIfAnyAsync();
             HasContentChanged = false;
+            return status;
         }
 
         public async Task CloseAsync(bool deleteAutoSave)
@@ -245,6 +236,40 @@ namespace DevPad.Model
         public async Task EnableMinimapAsync(bool enabled) => await ExecuteScriptAsync("editor.updateOptions({minimap:{enabled:" + enabled.ToString().ToLowerInvariant() + "}})");
         public async Task SetFontSizeAsync(double size) => await ExecuteScriptAsync("editor.updateOptions({fontSize:'" + size.ToString(CultureInfo.InvariantCulture) + "px'})");
         public async Task FormatDocumentAsync() => await ExecuteScriptAsync("editor.getAction('editor.action.formatDocument').run()");
+        public async Task ShowCommandPaletteAsync() => await ExecuteScriptAsync("editor.trigger('', 'editor.action.quickCommand')");
+
+        public Task DetectLanguage(Window window)
+        {
+            var autoDetectMode = Settings.Current.AutoDetectLanguageMode;
+            if (autoDetectMode == AutoDetectLanguageMode.DontAutoDetect)
+                return Task.CompletedTask;
+
+            var dispatcher = window?.Dispatcher;
+            if (dispatcher == null)
+                return Task.CompletedTask;
+
+            return Task.Run(async () =>
+            {
+                var text = await dispatcher.Invoke(async () => await GetEditorTextAsync(false));
+                var det = new Detector();
+                var lang = det.Detect(text);
+                if (lang != Language.Unknown)
+                {
+                    var langId = ModelLanguageId;
+                    var newLangId = lang.ToString().ToLowerInvariant();
+                    _ = dispatcher.Invoke(async () =>
+                    {
+                        if (autoDetectMode == AutoDetectLanguageMode.PromptIfLanguageChanges && langId != newLangId && langId != LanguageExtensionPoint.DefaultLanguageId)
+                        {
+                            if (window.ShowConfirm(string.Format(Resources.Resources.LanguageChanging, MonacoExtensions.GetLanguageName(langId), MonacoExtensions.GetLanguageName(newLangId))) != MessageBoxResult.Yes)
+                                return;
+                        }
+
+                        await SetEditorLanguageAsync(newLangId);
+                    });
+                }
+            });
+        }
 
         protected virtual void Dispose(bool disposing)
         {
@@ -295,14 +320,6 @@ namespace DevPad.Model
             return UnescapeEditorText(text);
         }
 
-        private enum LoadingStatus
-        {
-            Ok,
-            OkFromAutoSave,
-            NoFile,
-            Error,
-        }
-
         private async Task<LoadingStatus> LoadFileIfAnyAsync()
         {
             var fromAutoSave = false;
@@ -319,12 +336,7 @@ namespace DevPad.Model
             var lang = LanguageExtensionPoint.DefaultLanguageId;
             if (FilePath != null)
             {
-                var ext = Path.GetExtension(FilePath);
-                var langs = MonacoExtensions.GetLanguagesByExtension();
-                if (langs.TryGetValue(ext, out var langObject) && langObject.Count > 0)
-                {
-                    lang = langObject[0].Id;
-                }
+                lang = MonacoExtensions.GetLanguageByExtension(Path.GetExtension(FilePath));
 
                 FilesWatcher.WatchFile(FilePath);
                 FilesWatcher.FileChanged += OnFileChanged;
@@ -339,6 +351,7 @@ namespace DevPad.Model
                 _reader?.Dispose();
                 _reader = new StreamReader(filePath, encoding);
                 LoadingPercent = 0;
+                _totalRead = 0;
                 var max = Settings.Current.MaxLoadBufferSize;
                 if (max < 1024)
                 {
@@ -346,7 +359,7 @@ namespace DevPad.Model
                 }
 
                 _bufferSize = (int)Math.Min(_reader.BaseStream.Length, max);
-                await ExecuteScriptAsync($"loadChunksFromHost()");
+                await ExecuteScriptAsync($"loadFromHost()");
             }
             catch (Exception ex)
             {
@@ -357,7 +370,6 @@ namespace DevPad.Model
             }
 
             await SetEditorLanguageAsync(lang);
-
             await SetEditorPositionAsync();
             return fromAutoSave ? LoadingStatus.OkFromAutoSave : LoadingStatus.Ok;
         }
@@ -459,6 +471,11 @@ namespace DevPad.Model
 
                     IsEditorCreated = true;
 
+                    if (MonacoExtensions.IsUnknownLanguageExtension(Path.GetExtension(FilePath)))
+                    {
+                        await DetectLanguage(MainWindow.Current);
+                    }
+
                     // this will force CursorPosition text to update
                     var pos = await WebView.ExecuteScriptAsync<JsonElement>("editor.getPosition()");
                     line = pos.GetValue("lineNumber", -1);
@@ -467,6 +484,7 @@ namespace DevPad.Model
 
                     langId = await ExecuteScriptAsync("editor.getModel().getLanguageId()");
                     langId = UnescapeEditorText(langId);
+
                     setLang();
                     break;
 
@@ -491,6 +509,15 @@ namespace DevPad.Model
                     else
                     {
                         CursorSelection = string.Format(Resources.Resources.StatusSelection, text.Length);
+                    }
+                    break;
+
+                case DevPadEventType.Paste:
+                    if (e.RootElement.GetNullifiedValue("languageId") == null &&
+                        e.RootElement.GetValue("range.startLineNumber", -1) == 1 &&
+                        e.RootElement.GetValue("range.startColumn", -1) == 1)
+                    {
+                        _ = DetectLanguage(MainWindow.Current);
                     }
                     break;
             }
@@ -534,5 +561,7 @@ namespace DevPad.Model
             }
             return Regex.Unescape(text);
         }
+
+        private static bool IsDarkTheme() => Settings.Current.Theme?.IndexOf("dark", StringComparison.OrdinalIgnoreCase) >= 0;
     }
 }
