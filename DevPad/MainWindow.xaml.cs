@@ -104,18 +104,19 @@ namespace DevPad
             {
                 foreach (var file in Settings.RecentFilesPaths.Where(f => f.OpenOrder > 0).OrderBy(f => f))
                 {
-                    if (file.FilePath != null && !IOUtilities.IsPathRooted(file.FilePath))
-                        continue;
-
                     if (file.UntitledNumber > 0)
                     {
                         tab = AddTabAsync(file.GroupKey, null, false, file.UntitledNumber, file.Options);
+                        _ = tab.InitializeAsync(null, file.LanguageId);
                     }
                     else
                     {
+                        if (!IOUtilities.IsPathRooted(file.FilePath))
+                            continue;
+
                         tab = AddTabAsync(file.GroupKey, file.FilePath, false, options: file.Options);
+                        _ = tab.InitializeAsync(file.FilePath, file.LanguageId);
                     }
-                    _ = tab.InitializeAsync(file.FilePath);
                 }
             }
 
@@ -148,8 +149,8 @@ namespace DevPad
         }
 
         public IntPtr Handle { get; private set; } // so we can access from any thread
-        public PerDesktopSettings Settings => DesktopId.HasValue ? PerDesktopSettings.Get(DesktopId.Value) : null;
-        public Guid? DesktopId => WindowsUtilities.GetWindowDesktopId(Handle);
+        public PerDesktopSettings Settings => PerDesktopSettings.Get(DesktopId);
+        public Guid DesktopId => WindowsUtilities.GetWindowDesktopId(Handle);
         public TabGroup DefaultGroup => _defaultTabGroup;
         public TabGroup CurrentGroup => GroupsTab.SelectedItem is TabGroup group && !group.IsAdd ? group : _defaultTabGroup;
         public MonacoTab CurrentTab => CurrentGroup.Tabs.ElementAtOrDefault(CurrentGroup.SelectedTabIndex);
@@ -585,6 +586,15 @@ namespace DevPad
             return _defaultTabGroup;
         }
 
+        private async Task SetLanguageAsync(MonacoTab tab, string languageId)
+        {
+            if (tab == null || !tab.IsFileView)
+                return;
+
+            await tab.SetEditorLanguageAsync(languageId);
+            SaveRecentFile(tab, languageId);
+        }
+
         private async Task OpenFileAsync(string groupKey, string filePath, bool selectTab)
         {
             if (!IOUtilities.IsPathRooted(filePath) || !IOUtilities.PathIsFile(filePath))
@@ -599,17 +609,19 @@ namespace DevPad
                 return;
             }
 
-            // if only one uchanged & untitled open, remove it (so it's replacing it by this file)
+            // if only one unchanged & untitled open, remove it (so it's replacing it by this file)
             var group = GetGroupOrDefault(groupKey);
             if (group.Tabs.Count == 2 && group.Tabs[0].FilePath == null && !group.Tabs[0].HasContentChanged)
             {
                 await RemoveTabAsync(group.Tabs[0], false, false, false, false);
             }
 
+            var recent = Settings.GetRecentFile(filePath);
+
             tab = AddTabAsync(group.Key, filePath, selectTab);
             tab.GroupKey = group.Key;
             SaveTabToRecentFiles(tab, filePath);
-            await tab.InitializeAsync(filePath);
+            await tab.InitializeAsync(filePath, recent?.LanguageId);
             SetTitle(tab);
         }
 
@@ -931,7 +943,7 @@ namespace DevPad
             return false;
         }
 
-        private void SaveRecentFile(MonacoTab tab)
+        private void SaveRecentFile(MonacoTab tab, string languageId = null)
         {
             var options = RecentFileOptions.None;
             if (tab.IsPinned)
@@ -941,11 +953,11 @@ namespace DevPad
 
             if (tab.FilePath == null)
             {
-                Settings.AddRecentUntitledFile(tab.UntitledNumber, tab.Index + 1, tab.GroupKey, options);
+                Settings.AddRecentUntitledFile(tab.UntitledNumber, tab.Index + 1, tab.GroupKey, options, languageId);
             }
             else
             {
-                Settings.AddRecentFile(tab.FilePath, tab.GroupKey, tab.Index + 1, options);
+                Settings.AddRecentFile(tab.FilePath, tab.GroupKey, tab.Index + 1, options, languageId);
             }
             Settings.SerializeToConfigurationWhenIdle();
         }
@@ -1046,10 +1058,10 @@ namespace DevPad
                 return;
             }
 
-            if (this.ShowConfirm(string.Format(DevPad.Resources.Resources.UpdateAvailable, last.Name)) != MessageBoxResult.Yes)
+            if (this.ShowQuestion(string.Format(DevPad.Resources.Resources.UpdateAvailable, last.Name)) != MessageBoxResult.Yes)
                 return;
 
-            var path = await GitHubApi.DownloadReleaseAsync(last.Assets[0].DownloadUrl, CancellationToken.None);
+            var path = await GitHubApi.DownloadReleaseAsync(last.Assets[0].DownloadUrl, "DevPad.Setup.exe", CancellationToken.None);
             Process.Start(path);
             Close();
         }
@@ -1255,7 +1267,7 @@ namespace DevPad
                         item.Items.Add(subItem);
                         subItem.Click += async (s, e2) =>
                         {
-                            await CurrentTab.SetEditorLanguageAsync(lang.Key);
+                            await SetLanguageAsync(CurrentTab, lang.Key);
                         };
                     }
                 }
@@ -1266,7 +1278,7 @@ namespace DevPad
                     LanguagesMenuItem.Items.Add(item);
                     item.Click += async (s, e2) =>
                     {
-                        await CurrentTab.SetEditorLanguageAsync(subLangs[0].Key);
+                        await SetLanguageAsync(CurrentTab, subLangs[0].Key);
                     };
                 }
             }

@@ -18,9 +18,9 @@ namespace DevPad.Setup
         private readonly CancellationTokenSource _cancelSource = new CancellationTokenSource();
         private bool _paused;
 
-        public Main(string tempFileSize)
+        public Main(string tempFilePath)
         {
-            _tempFilePath = tempFileSize;
+            _tempFilePath = tempFilePath;
             InitializeComponent();
             Icon = Resources.Resources.DevPadIcon;
 #if DEBUG
@@ -78,7 +78,7 @@ namespace DevPad.Setup
             return false;
         }
 
-        internal static string GetTargetDir() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Aelyo.DevPad");
+        internal static string GetTargetDir() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AssemblyUtilities.GetProduct());
         private bool Install(CancellationToken cancellationToken)
         {
             var targetDir = GetTargetDir();
@@ -146,7 +146,7 @@ namespace DevPad.Setup
                 key.SetValue("HelpLink", "https://github.com/aelyo-softworks/DevPad");
                 key.SetValue("NoModify", 1);
                 key.SetValue("NoRepair", 1);
-                key.SetValue("EstimatedSize", size);
+                key.SetValue("EstimatedSize", size / 1000);
                 key.SetValue("InstallDate", DateTime.Now.ToString("yyyyMMdd"));
                 key.SetValue("InstallLocation", targetDir);
                 key.SetValue("UninstallString", "\"" + Path.Combine(targetDir, fileName) + "\" /uninstall");
@@ -162,8 +162,10 @@ namespace DevPad.Setup
         {
             var version = AssemblyUtilities.GetFileVersion();
             var product = AssemblyUtilities.GetProduct();
-            var link = new Link();
-            link.Path = Path.Combine(targetDir, version, "DevPad.exe");
+            var link = new Link
+            {
+                Path = Path.Combine(targetDir, version, "DevPad.exe")
+            };
             link.Save(Path.Combine(targetDir, product + ".lnk"));
 
             var programs = Environment.GetFolderPath(Environment.SpecialFolder.Programs);

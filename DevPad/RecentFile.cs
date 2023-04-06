@@ -37,6 +37,6 @@ namespace DevPad
             return OpenOrder.CompareTo(other.OpenOrder);
         }
 
-        public override string ToString() => LastAccessTime + (OpenOrder != 0 ? " {#" + OpenOrder + "}" : null) + " [" + GroupKey.Replace("\0", "!") + "]" + (FilePath != null ? FilePath : Settings.GetUntitledName(UntitledNumber));
+        public override string ToString() => LastAccessTime + (OpenOrder != 0 ? " {#" + OpenOrder + "}" : null) + " [" + GroupKey?.Replace("\0", "!") + "]" + (FilePath != null ? FilePath : Settings.GetUntitledName(UntitledNumber));
     }
 }

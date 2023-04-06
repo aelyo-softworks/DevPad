@@ -823,10 +823,7 @@ namespace DevPad.Utilities
                 return null;
 
             var id = GetWindowDesktopId(new WindowInteropHelper(window).Handle);
-            if (!id.HasValue)
-                return null;
-
-            return GetWindowDesktopName(id.Value);
+            return GetWindowDesktopName(id);
         }
 #endif
 
@@ -871,12 +868,12 @@ namespace DevPad.Utilities
             return list;
         }
 
-        public static Guid? GetDesktopId()
+        public static Guid GetDesktopId()
         {
             using (var form = new NoActivateForm())
             {
                 form.Show();
-                return GetWindowDesktopId(form.Handle) ?? Guid.Empty;
+                return GetWindowDesktopId(form.Handle);
             }
         }
 
@@ -897,13 +894,13 @@ namespace DevPad.Utilities
             protected override bool ShowWithoutActivation => true;
         }
 
-        public static Guid? GetWindowDesktopId(IntPtr handle)
+        public static Guid GetWindowDesktopId(IntPtr handle)
         {
             try
             {
                 var mgr = (IVirtualDesktopManager)new VirtualDesktopManager();
                 if (mgr.GetWindowDesktopId(handle, out var guid) < 0)
-                    return null;
+                    return Guid.Empty;
 
                 return guid;
             }

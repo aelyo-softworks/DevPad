@@ -45,22 +45,19 @@ namespace DevPad.Utilities.Github
             }
         }
 
-        public static async Task<string> DownloadReleaseAsync(string url, CancellationToken cancellationToken)
+        public static async Task<string> DownloadReleaseAsync(string url, string fileName, CancellationToken cancellationToken)
         {
             if (url == null)
                 throw new ArgumentNullException(nameof(url));
+
+            if (fileName == null)
+                throw new ArgumentNullException(nameof(fileName));
 
             var req = new HttpRequestMessage(HttpMethod.Get, url);
             using (var response = await Client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false))
             {
                 await HandleResponseStatus(response).ConfigureAwait(false);
-                var fileName = response.Content.Headers.ContentDisposition?.FileNameStar.Nullify() ?? response.Content.Headers.ContentDisposition?.FileName.Nullify();
-                if (fileName == null)
-                {
-                    fileName = "DevPad.Setup.exe";
-                }
-
-                var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + "." + fileName);
+                var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"), fileName);
                 IOUtilities.FileEnsureDirectory(path);
                 IOUtilities.FileDelete(path, true, false);
                 using (var output = File.OpenWrite(path))

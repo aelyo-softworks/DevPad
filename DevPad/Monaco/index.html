@@ -130,8 +130,9 @@
                 lineNumber = editor.getModel().getLineCount();
             }
 
-            editor.setPosition({ column: column, lineNumber: lineNumber });
-            editor.revealLine(lineNumber);
+            var position = { column: column, lineNumber: lineNumber };
+            editor.setPosition(position);
+            editor.revealPosition(position);
         }
 
         function loadFromHost() {

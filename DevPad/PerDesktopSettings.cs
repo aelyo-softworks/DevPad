@@ -167,10 +167,20 @@ namespace DevPad
             if (filePath == null)
                 throw new ArgumentNullException(nameof(filePath));
 
-            AddRecentFile(filePath, 0, 0, null, RecentFileOptions.None);
+            AddRecentFile(filePath, 0, 0, null, RecentFileOptions.None, null);
         }
 
-        public void AddRecentFile(string filePath, string groupKey, int openOrder, RecentFileOptions options = RecentFileOptions.None)
+        public RecentFile GetRecentFile(string filePath)
+        {
+            if (filePath == null)
+                throw new ArgumentNullException(nameof(filePath));
+
+            var dic = GetRecentFiles();
+            dic.TryGetValue(filePath, out var existing);
+            return existing;
+        }
+
+        public void AddRecentFile(string filePath, string groupKey, int openOrder, RecentFileOptions options = RecentFileOptions.None, string languageId = null)
         {
             if (filePath == null)
                 throw new ArgumentNullException(nameof(filePath));
@@ -181,14 +191,30 @@ namespace DevPad
             if (!IOUtilities.PathIsFile(filePath))
                 return;
 
-            AddRecentFile(filePath, 0, openOrder, groupKey, options);
+            AddRecentFile(filePath, 0, openOrder, groupKey, options, languageId);
         }
 
-        public void AddRecentUntitledFile(int untitledNumber, int openOrder, string groupKey, RecentFileOptions options = RecentFileOptions.None) => AddRecentFile(GetUntitledFilePath(untitledNumber, groupKey), untitledNumber, openOrder, groupKey, options);
-        private void AddRecentFile(string filePath, int untitledNumber, int openOrder, string groupKey, RecentFileOptions options)
+        public void AddRecentUntitledFile(int untitledNumber, int openOrder, string groupKey, RecentFileOptions options = RecentFileOptions.None, string languageId = null) => AddRecentFile(GetUntitledFilePath(untitledNumber, groupKey), untitledNumber, openOrder, groupKey, options, languageId);
+        private void AddRecentFile(string filePath, int untitledNumber, int openOrder, string groupKey, RecentFileOptions options, string languageId)
         {
             var dic = GetRecentFiles();
-            dic[filePath] = new RecentFile { FilePath = filePath, OpenOrder = openOrder, UntitledNumber = untitledNumber, GroupKey = groupKey, Options = options };
+            if (!dic.TryGetValue(filePath, out var existing))
+            {
+                existing = new RecentFile();
+            }
+
+            existing.FilePath = filePath;
+            existing.OpenOrder = openOrder;
+            existing.UntitledNumber = untitledNumber;
+            existing.GroupKey = groupKey;
+            existing.Options = options;
+            existing.LastAccessTime = DateTime.Now;
+            if (languageId != null)
+            {
+                existing.LanguageId = languageId;
+            }
+
+            dic[filePath] = existing;
             SetRecentFiles(dic);
         }
 

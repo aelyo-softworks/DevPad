@@ -60,7 +60,7 @@ namespace DevPad.Utilities
         public string ThemeFilePath => WindowsUtilities.GetCurrentThemeFilePath();
 
         [LocalizedCategory("Windows")]
-        public string CurrentDesktop => WindowsUtilities.GetWindowDesktopName(MainWindow.Current.DesktopId ?? Guid.Empty);
+        public string CurrentDesktop => WindowsUtilities.GetWindowDesktopName(MainWindow.Current.DesktopId);
 
         [LocalizedCategory("Windows")]
         public string Desktops => string.Join(", ", WindowsUtilities.GetWindowDesktops().Select(d => d.Item1 + " ('" + d.Item2 + "')"));

@@ -48,7 +48,7 @@ namespace DevPad
             var desktopId = Guid.Empty;
 #else
             // for some reason, this is slow under debug
-            var desktopId = WindowsUtilities.GetDesktopId() ?? Guid.Empty;
+            var desktopId = WindowsUtilities.GetDesktopId();
             Trace("parent desktop: " + desktopId);
 #endif
 
