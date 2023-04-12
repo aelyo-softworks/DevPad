@@ -13,6 +13,7 @@ using System.Windows;
 using System.Windows.Forms;
 using Microsoft.Win32;
 using System.ComponentModel;
+using System.Collections.Concurrent;
 
 #if SETUP
 using Resources = DevPad.Setup.Resources;
@@ -25,6 +26,8 @@ namespace DevPad.Utilities
     public static class WindowsUtilities
     {
         public const int ApplicationIcon = 32512;
+
+        private static readonly ConcurrentDictionary<IntPtr, Guid> _desktopIds = new ConcurrentDictionary<IntPtr, Guid>();
 
         private static readonly Lazy<Process> _currentProcess = new Lazy<Process>(() => Process.GetCurrentProcess(), true);
         public static Process CurrentProcess => _currentProcess.Value;
@@ -899,13 +902,25 @@ namespace DevPad.Utilities
             try
             {
                 var mgr = (IVirtualDesktopManager)new VirtualDesktopManager();
-                if (mgr.GetWindowDesktopId(handle, out var guid) < 0)
-                    return Guid.Empty;
+                var hr = mgr.GetWindowDesktopId(handle, out var guid);
+                if (hr < 0)
+                {
+                    // for some reason, even on same (UI) thread, this call ends up with RPC_E_CANTCALLOUT_ININPUTSYNCCALL
+                    // so we store the last value
+                    if (_desktopIds.TryGetValue(handle, out guid))
+                        return guid;
 
+                    return Guid.Empty;
+                }
+
+                _desktopIds[handle] = guid;
                 return guid;
             }
             catch
             {
+                if (_desktopIds.TryGetValue(handle, out var guid))
+                    return guid;
+
                 return Guid.Empty;
             }
         }
