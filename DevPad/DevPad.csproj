@@ -71,6 +71,7 @@
     <Compile Include="About.xaml.cs">
       <DependentUpon>About.xaml</DependentUpon>
     </Compile>
+    <Compile Include="PasteAction.cs" />
     <Compile Include="EncodingName.cs" />
     <Compile Include="ExtensionsToRegister.xaml.cs">
       <DependentUpon>ExtensionsToRegister.xaml</DependentUpon>
@@ -192,6 +193,7 @@
     <Compile Include="Utilities\UniversalConverterOperator.cs" />
     <Compile Include="Utilities\UniversalConverterOptions.cs" />
     <Compile Include="Utilities\ValueChangedEventArgs.cs" />
+    <Compile Include="Utilities\VirtualDesktop.cs" />
     <Compile Include="Utilities\WindowPlacement.cs" />
     <Compile Include="Utilities\WindowsApp.cs" />
     <Compile Include="Utilities\WindowsUtilities.cs" />

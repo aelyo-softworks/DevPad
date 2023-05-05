@@ -55,7 +55,6 @@ namespace DevPad
 
             NewMenuItem.Icon = NewMenuItem.Icon ?? new Image { Source = IconUtilities.GetStockIconImageSource(StockIconId.DOCASSOC) };
             AboutMenuItem.Icon = AboutMenuItem.Icon ?? new Image { Source = IconUtilities.GetStockIconImageSource(StockIconId.HELP) };
-            FindMenuItem.Icon = FindMenuItem.Icon ?? new Image { Source = IconUtilities.GetStockIconImageSource(StockIconId.FIND) };
             RecentFoldersMenuItem.Icon = RecentFoldersMenuItem.Icon ?? new Image { Source = IconUtilities.GetStockIconImageSource(StockIconId.FOLDER) };
 
             Loaded += OnLoaded;
@@ -66,9 +65,68 @@ namespace DevPad
             }
         }
 
+        private void LoadPosition()
+        {
+            // only restore if caption is reachable
+            var width = Math.Max(Settings.Width, (int)MinWidth);
+            var height = Math.Max(Settings.Height, (int)MinHeight);
+            var left = Settings.Left;
+            var top = Settings.Top;
+            var screen = System.Windows.Forms.Screen.FromRectangle(new System.Drawing.Rectangle(left, top, width, height));
+            if (left >= screen.WorkingArea.Right)
+            {
+                left = screen.WorkingArea.Left;
+            }
+
+            if ((left + width) < 0)
+            {
+                left = screen.WorkingArea.Left;
+            }
+
+            if (top >= screen.WorkingArea.Bottom)
+            {
+                top = screen.WorkingArea.Top;
+            }
+
+            if ((top + height) < 0)
+            {
+                top = screen.WorkingArea.Top;
+            }
+
+            Left = left;
+            Top = top;
+            Width = width;
+            Height = height;
+            if (Settings.IsMaximized)
+            {
+                WindowState = WindowState.Maximized;
+            }
+        }
+
+        private void SavePosition()
+        {
+            // https://devblogs.microsoft.com/oldnewthing/20041028-00/?p=37453
+            if (WindowState != WindowState.Minimized &&
+                VirtualDesktop.IsValidDesktopId(DesktopId) &&
+                Left > WindowsUtilities.WHERE_NOONE_CAN_SEE_ME &&
+                Top > WindowsUtilities.WHERE_NOONE_CAN_SEE_ME)
+            {
+                Settings.Left = (int)Left;
+                Settings.Top = (int)Top;
+                Settings.Width = (int)Width;
+                Settings.Height = (int)Height;
+                Settings.IsMaximized = WindowState == WindowState.Maximized;
+                Settings.SerializeToConfigurationWhenIdle();
+            }
+        }
+
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             Handle = new WindowInteropHelper(this).Handle;
+            LoadPosition();
+            SizeChanged += (_, __) => SavePosition();
+            LocationChanged += (_, __) => SavePosition();
+
             _dataContext = new WindowDataContext(this);
             DataContext = _dataContext;
 
@@ -150,7 +208,7 @@ namespace DevPad
 
         public IntPtr Handle { get; private set; } // so we can access from any thread
         public PerDesktopSettings Settings => PerDesktopSettings.Get(DesktopId);
-        public Guid DesktopId => WindowsUtilities.GetWindowDesktopId(Handle);
+        public Guid DesktopId => VirtualDesktop.GetWindowDesktopId(Handle);
         public TabGroup DefaultGroup => _defaultTabGroup;
         public TabGroup CurrentGroup => GroupsTab.SelectedItem is TabGroup group && !group.IsAdd ? group : _defaultTabGroup;
         public MonacoTab CurrentTab => CurrentGroup.Tabs.ElementAtOrDefault(CurrentGroup.SelectedTabIndex);
@@ -296,7 +354,7 @@ namespace DevPad
                 case SingleInstanceCommandType.SendCommandLine:
                     var instanceMode = DevPad.Settings.Current.SingleInstanceMode;
 #if DEBUG // see Program.cs for explanation
-                    if (instanceMode == SingleInstanceMode.OneInstancePerDesktop && e.CallingDesktopId != DesktopId && e.CallingDesktopId != Guid.Empty)
+                    if (instanceMode == SingleInstanceMode.OneInstancePerDesktop && e.CallingDesktopId != DesktopId && VirtualDesktop.IsValidDesktopId(e.CallingDesktopId))
                         break;
 #else
                     if (instanceMode == SingleInstanceMode.OneInstancePerDesktop && e.CallingDesktopId != DesktopId)
@@ -304,7 +362,7 @@ namespace DevPad
 #endif
 
                     e.Handled = true;
-                    Program.Trace(e.Type + " process:" + e.CallingProcessId + " user:" + e.UserDomainName + "\\" + e.UserName + " desktop:" + e.CallingDesktopId);
+                    //Program.Trace(e.Type + " process:" + e.CallingProcessId + " user:" + e.UserDomainName + "\\" + e.UserName + " desktop:" + e.CallingDesktopId);
                     var cmdLine = CommandLine.From(e.Arguments?.Select(a => string.Format("{0}", a))?.ToArray());
                     cmdLine.CurrentDirectory = e.CurrentDirectory;
                     Dispatcher.Invoke(() =>
@@ -318,13 +376,13 @@ namespace DevPad
 
                 case SingleInstanceCommandType.Ping:
                     e.Handled = true;
-                    Program.Trace(e.Type + " process:" + e.CallingProcessId + " user:" + e.UserDomainName + "\\" + e.UserName + " deskop:" + e.CallingDesktopId);
+                    //Program.Trace(e.Type + " process:" + e.CallingProcessId + " user:" + e.UserDomainName + "\\" + e.UserName + " deskop:" + e.CallingDesktopId);
                     e.Output = WindowsUtilities.CurrentProcess.Id;
                     break;
 
                 case SingleInstanceCommandType.Quit:
                     e.Handled = true;
-                    Program.Trace(e.Type + " process:" + e.CallingProcessId + " user:" + e.UserDomainName + "\\" + e.UserName + " deskop:" + e.CallingDesktopId);
+                    //Program.Trace(e.Type + " process:" + e.CallingProcessId + " user:" + e.UserDomainName + "\\" + e.UserName + " deskop:" + e.CallingDesktopId);
                     Dispatcher.Invoke(async () =>
                     {
                         await CloseAllGroupsAsync(false, true);
@@ -591,7 +649,7 @@ namespace DevPad
             if (tab == null || !tab.IsFileView)
                 return;
 
-            await tab.SetEditorLanguageAsync(languageId);
+            await tab.SetEditorLanguageAsync(languageId, PasteAction.DoNothing);
             SaveRecentFile(tab, languageId);
         }
 
@@ -1075,7 +1133,6 @@ namespace DevPad
         private void OnUnPinThisTab(object sender, RoutedEventArgs e) => PinUnpinTab(GetTabFromContextMenu(e), false);
         private void OnUnpinTab(object sender, RoutedEventArgs e) => PinUnpinTab(e.GetDataContext<MonacoTab>(), false);
         private void OnPinTab(object sender, RoutedEventArgs e) => PinUnpinTab(e.GetDataContext<MonacoTab>(), true);
-        private void OnEditCurrentGroup(object sender, RoutedEventArgs e) => EditGroup(CurrentGroup);
         private void OnCloseGroup(object sender, RoutedEventArgs e) => CloseGroup(e.GetDataContext<TabGroup>());
         private void OnEditGroup(object sender, RoutedEventArgs e) => EditGroup(e.GetDataContext<TabGroup>());
         private void OnCloseCommand(object sender, ExecutedRoutedEventArgs e) => _ = CloseTabAsync(CurrentTab, true, false, true);
@@ -1090,7 +1147,7 @@ namespace DevPad
         private void OnExitClick(object sender, RoutedEventArgs e) => Close();
         private void OnRestartAsAdmin(object sender, RoutedEventArgs e) => RestartAsAdmin(true);
         private void OnFind(object sender, RoutedEventArgs e) => _ = CurrentTab?.ShowFindUIAsync();
-        private void OnFormat(object sender, RoutedEventArgs e) => _ = CurrentTab?.FormatDocumentAsync();
+        private void OnFormatDocument(object sender, RoutedEventArgs e) => _ = CurrentTab?.FormatDocumentAsync();
         private void OnOpenConfigFolder(object sender, RoutedEventArgs e) => WindowsUtilities.OpenExplorer(Path.GetDirectoryName(Settings.ConfigurationFilePath));
         private void OnOpenConfig(object sender, RoutedEventArgs e) => _ = OpenFileAsync(CurrentGroup.Key, Settings.ConfigurationFilePath, true);
         private async void OnAddTab(object sender, RoutedEventArgs e) => await AddTabAsync(CurrentGroup.Key, null, true).InitializeAsync(null);
@@ -1457,20 +1514,17 @@ namespace DevPad
 
         private void OnHelpOpened(object sender, RoutedEventArgs e)
         {
-            if (WindowsUtilities.KernelVersion.Major >= 10)
+            var desktop = VirtualDesktop.GetWindowDesktopName(Current);
+            if (desktop != null)
             {
-                var desktop = WindowsUtilities.GetWindowDesktopName(Current);
-                if (desktop != null)
+                if (_desktopMenuItem == null)
                 {
-                    if (_desktopMenuItem == null)
-                    {
-                        _desktopMenuItem = new MenuItem();
-                        _desktopMenuItem.IsEnabled = false;
-                        HelpMenu.Items.Insert(3, _desktopMenuItem);
-                        HelpMenu.Items.Insert(4, new Separator());
-                    }
-                    _desktopMenuItem.Header = string.Format(DevPad.Resources.Resources.RunningOnDeskop, desktop);
+                    _desktopMenuItem = new MenuItem();
+                    _desktopMenuItem.IsEnabled = false;
+                    HelpMenu.Items.Insert(3, _desktopMenuItem);
+                    HelpMenu.Items.Insert(4, new Separator());
                 }
+                _desktopMenuItem.Header = string.Format(DevPad.Resources.Resources.RunningOnDeskop, desktop);
             }
         }
 

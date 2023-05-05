@@ -14,6 +14,7 @@ namespace DevPad
     public class Settings : Serializable<Settings>
     {
         private const int _defaultAutoSavePeriod = 2;
+        private const int _defaultFormatOnPasteWaitTime = 200;
         internal const uint _defaultMaxLoadBufferSize = 65536 * 16;
 
         public static string DefaultUserDataFolder { get; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AssemblyUtilities.GetProduct()); // will create an "EBWebView" folder in there
@@ -61,11 +62,22 @@ namespace DevPad
         public virtual AutoDetectLanguageMode AutoDetectLanguageMode { get => GetPropertyValue(AutoDetectLanguageMode.AutoDetect); set { SetPropertyValue(value); } }
 
         [LocalizedCategory("Behavior")]
+        [DefaultValue(PasteAction.AutoDetectLanguageAndFormat)]
+        public virtual PasteAction PasteAction { get => GetPropertyValue(PasteAction.AutoDetectLanguageAndFormat); set { SetPropertyValue(value); } }
+
+        [LocalizedCategory("Behavior")]
+        [LocalizedDisplayName("FormatOnPasteWaitTime")]
+        [DefaultValue(_defaultFormatOnPasteWaitTime)]
+        public virtual int FormatOnPasteWaitTime { get => GetPropertyValue(_defaultFormatOnPasteWaitTime); set { SetPropertyValue(value); } }
+
+        [LocalizedCategory("Behavior")]
         [LocalizedDisplayName("AutoSavePeriodDisplayName")]
+        [DefaultValue(_defaultAutoSavePeriod)]
         public virtual int AutoSavePeriod { get => GetPropertyValue(_defaultAutoSavePeriod); set { SetPropertyValue(value); } }
 
         [LocalizedCategory("Behavior")]
         [LocalizedDisplayName("MaxLoadBufferSize")]
+        [DefaultValue(_defaultMaxLoadBufferSize)]
         public virtual uint MaxLoadBufferSize { get => GetPropertyValue(_defaultMaxLoadBufferSize); set { SetPropertyValue(value); } }
 
         [LocalizedCategory("Behavior")]

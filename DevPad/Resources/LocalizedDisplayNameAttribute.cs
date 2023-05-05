@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using DevPad.Utilities;
 
 namespace DevPad.Resources
 {
@@ -9,6 +10,6 @@ namespace DevPad.Resources
         {
         }
 
-        public override string DisplayName => Resources.ResourceManager.GetString(base.DisplayName);
+        public override string DisplayName => Resources.ResourceManager.GetString(base.DisplayName).Nullify() ?? Conversions.Decamelize(base.DisplayName);
     }
 }

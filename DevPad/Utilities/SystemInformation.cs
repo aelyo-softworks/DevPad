@@ -60,10 +60,10 @@ namespace DevPad.Utilities
         public string ThemeFilePath => WindowsUtilities.GetCurrentThemeFilePath();
 
         [LocalizedCategory("Windows")]
-        public string CurrentDesktop => WindowsUtilities.GetWindowDesktopName(MainWindow.Current.DesktopId);
+        public string CurrentDesktop => VirtualDesktop.GetWindowDesktopName(MainWindow.Current.DesktopId);
 
         [LocalizedCategory("Windows")]
-        public string Desktops => string.Join(", ", WindowsUtilities.GetWindowDesktops().Select(d => d.Item1 + " ('" + d.Item2 + "')"));
+        public string Desktops => string.Join(", ", VirtualDesktop.GetDesktops());
 
         [LocalizedCategory("Process")]
         public string CommandLine => Environment.CommandLine;

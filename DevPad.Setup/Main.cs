@@ -40,7 +40,7 @@ namespace DevPad.Setup
                 }
                 catch (Exception ex)
                 {
-                    Program.Trace("Error:" + ex);
+                    Program.Trace(ex);
                     error = ex;
                     return false;
                 }

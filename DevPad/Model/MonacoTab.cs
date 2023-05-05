@@ -23,6 +23,7 @@ namespace DevPad.Model
         private char[] _buffer;
         private int? _bufferSize;
         private long _totalRead;
+        private string _pasteDetectedLangId;
         private StreamReader _reader;
 
         public event EventHandler<DevPadEventArgs> MonacoEvent;
@@ -146,7 +147,7 @@ namespace DevPad.Model
                     _webViewUnavailable = true;
                     // handle WebViewRuntime not properly installed
                     // point to evergreen for download
-                    Program.Trace(ex);
+                    //Program.Trace(ex);
                     using (var td = new TaskDialog())
                     {
                         const int sysInfoId = 1;
@@ -271,6 +272,7 @@ namespace DevPad.Model
         public async Task SetEditorThemeAsync(string theme = null) { theme = theme.Nullify() ?? "vs"; await ExecuteScriptAsync($"monaco.editor.setTheme('{theme}')"); }
         public async Task FocusEditorAsync() { await ExecuteScriptAsync("editor.focus()"); WebView.Focus(); }
         public async Task SetEditorPositionAsync(int lineNumber = 0, int column = 0) => await ExecuteScriptAsync("editor.setPosition({lineNumber:" + lineNumber + ",column:" + column + "})");
+        public async Task EditorRevealLineInCenterAsync(int lineNumber = 0) => await ExecuteScriptAsync("editor.revealLineInCenter(" + lineNumber + ")");
         public async Task ShowFindUIAsync() => await ExecuteScriptAsync("editor.trigger('','actions.find')");
         public async Task<bool> EditorHasFocusAsync() => await WebView.ExecuteScriptAsync<bool>("editor.hasTextFocus()");
         public async Task BlurEditorAsync() => await ExecuteScriptAsync("editor.blur()");
@@ -282,9 +284,13 @@ namespace DevPad.Model
         public async Task SetFontSizeAsync(double size) => await ExecuteScriptAsync("editor.updateOptions({fontSize:'" + size.ToString(CultureInfo.InvariantCulture) + "px'})");
         public async Task FormatDocumentAsync() => await ExecuteScriptAsync("editor.getAction('editor.action.formatDocument').run()");
         public async Task ShowCommandPaletteAsync() => await ExecuteScriptAsync("editor.trigger('', 'editor.action.quickCommand')");
-        public Task SetEditorLanguageAsync(string lang) => ExecuteScriptAsync($"monaco.editor.setModelLanguage(editor.getModel(), '{lang}');");
+        public Task SetEditorLanguageAsync(string lang, PasteAction pasteAction)
+        {
+            _pasteDetectedLangId = pasteAction == PasteAction.AutoDetectLanguageAndFormat ? lang : null;
+            return ExecuteScriptAsync($"monaco.editor.setModelLanguage(editor.getModel(), '{lang}');");
+        }
 
-        public Task DetectLanguage(Window window)
+        public Task DetectLanguage(Window window, PasteAction pasteAction)
         {
             var autoDetectMode = Settings.Current.AutoDetectLanguageMode;
             if (autoDetectMode == AutoDetectLanguageMode.DontAutoDetect)
@@ -311,7 +317,7 @@ namespace DevPad.Model
                                 return;
                         }
 
-                        await SetEditorLanguageAsync(newLangId);
+                        await SetEditorLanguageAsync(newLangId, pasteAction);
                     });
                 }
             });
@@ -453,17 +459,17 @@ namespace DevPad.Model
             if (ModelLanguageId != null)
             {
                 // lang specified at init time
-                await SetEditorLanguageAsync(ModelLanguageId);
+                await SetEditorLanguageAsync(ModelLanguageId, PasteAction.DoNothing);
             }
             else
             {
                 if (MonacoExtensions.IsUnknownLanguageExtension(Path.GetExtension(FilePath)))
                 {
-                    await DetectLanguage(MainWindow.Current);
+                    await DetectLanguage(MainWindow.Current, PasteAction.DoNothing);
                 }
                 else if (FilePath != null)
                 {
-                    await SetEditorLanguageAsync(MonacoExtensions.GetLanguageByExtension(Path.GetExtension(FilePath)));
+                    await SetEditorLanguageAsync(MonacoExtensions.GetLanguageByExtension(Path.GetExtension(FilePath)), PasteAction.DoNothing);
                 }
             }
 
@@ -563,6 +569,17 @@ namespace DevPad.Model
 
                 case DevPadEventType.ModelLanguageChanged:
                     SetLanguageId(e.RootElement.GetNullifiedValue("newLanguage"));
+                    if (_pasteDetectedLangId != null)
+                    {
+                        _pasteDetectedLangId = null;
+                        var wait = Settings.Current.FormatOnPasteWaitTime;
+                        if (wait > 0)
+                        {
+                            await Task.Delay(wait);
+                        }
+
+                        _ = FormatDocumentAsync();
+                    }
                     break;
 
                 case DevPadEventType.CursorPositionChanged:
@@ -585,11 +602,19 @@ namespace DevPad.Model
                     break;
 
                 case DevPadEventType.Paste:
-                    if (e.RootElement.GetNullifiedValue("languageId") == null &&
-                        e.RootElement.GetValue("range.startLineNumber", -1) == 1 &&
-                        e.RootElement.GetValue("range.startColumn", -1) == 1)
+                    var eln = e.RootElement.GetValue("range.endLineNumber", -1);
+                    if (eln >= 0)
                     {
-                        _ = DetectLanguage(MainWindow.Current);
+                        _ = EditorRevealLineInCenterAsync(eln);
+                    }
+
+                    var pa = Settings.Current.PasteAction;
+                    if (pa == PasteAction.AutoDetectLanguage || pa == PasteAction.AutoDetectLanguageAndFormat)
+                    {
+                        if (e.RootElement.GetValue("range.startLineNumber", -1) == 1 && e.RootElement.GetValue("range.startColumn", -1) == 1)
+                        {
+                            _ = DetectLanguage(MainWindow.Current, pa);
+                        }
                     }
                     break;
             }

@@ -20,6 +20,7 @@ namespace DevPad.Utilities
             {
                 skipWhitespaces();
                 var token = readToken();
+                //Program.Trace("token: '" + token + "'");
                 if (i == text.Length)
                     break;
 
@@ -37,7 +38,7 @@ namespace DevPad.Utilities
                     }
                 }
 
-                if (token.Length > 2 && token[0] == '"' && token[token.Length - 1] == '"')
+                if (token.Length > 3 && token[0] == '"' && token[token.Length - 2] == '"' && token[token.Length - 1] == ':')
                 {
                     addScore(new LanguageScore(Language.Json, 0.1));
                 }

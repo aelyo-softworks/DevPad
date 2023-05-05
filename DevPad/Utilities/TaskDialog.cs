@@ -16,6 +16,13 @@ namespace DevPad.Utilities
         public static readonly IntPtr TD_INFORMATION_ICON = new IntPtr(unchecked((ushort)-3));
         public static readonly IntPtr TD_SHIELD_ICON = new IntPtr(unchecked((ushort)-4));
 
+        public static int IDOK = 1;
+        public static int IDCANCEL = 2;
+        public static int IDRETRY = 4;
+        public static int IDYES = 6;
+        public static int IDNO = 7;
+        public static int IDCLOSE = 8;
+
         public event EventHandler<TaskDialogEventArgs> Event;
 
         private GCHandle _handle;
@@ -36,6 +43,7 @@ namespace DevPad.Utilities
         public virtual string CollapsedControlText { get; set; }
         public virtual string ExpandedControlText { get; set; }
         public virtual string Footer { get; set; }
+        public virtual int DefaultButtonId { get; set; }
         public virtual IntPtr MainIcon { get; set; }
         public virtual IntPtr FooterIcon { get; set; }
         public virtual int Width { get; set; }
@@ -64,6 +72,7 @@ namespace DevPad.Utilities
             config.hwndParent = hwnd;
             config.dwFlags = Flags;
             config.dwCommonButtons = CommonButtonFlags;
+            config.nDefaultButton = DefaultButtonId;
             config.pszWindowTitle = Title;
             config.pszMainInstruction = MainInstruction;
             config.pszContent = Content;
@@ -165,6 +174,38 @@ namespace DevPad.Utilities
                 // set large fields to null
                 _disposedValue = true;
             }
+        }
+
+        public static MessageBoxResult ShowMessage(Window owner, string text, string title = null)
+        {
+            var dlg = new TaskDialog();
+            dlg.CommonButtonFlags = TASKDIALOG_COMMON_BUTTON_FLAGS.TDCBF_OK_BUTTON;
+            dlg.Title = title;
+            dlg.Content = text;
+            dlg.MainIcon = TD_INFORMATION_ICON;
+            return dlg.Show(owner);
+        }
+
+        public static MessageBoxResult ShowConfirm(Window owner, string text, string title = null)
+        {
+            var dlg = new TaskDialog();
+            dlg.CommonButtonFlags = TASKDIALOG_COMMON_BUTTON_FLAGS.TDCBF_CANCEL_BUTTON | TASKDIALOG_COMMON_BUTTON_FLAGS.TDCBF_YES_BUTTON;
+            dlg.Title = title;
+            dlg.Content = text;
+            dlg.DefaultButtonId = IDCANCEL;
+            dlg.MainIcon = TD_WARNING_ICON;
+            return dlg.Show(owner);
+        }
+
+        public static MessageBoxResult ShowQuestion(Window owner, string text, string title = null)
+        {
+            var dlg = new TaskDialog();
+            dlg.CommonButtonFlags = TASKDIALOG_COMMON_BUTTON_FLAGS.TDCBF_NO_BUTTON | TASKDIALOG_COMMON_BUTTON_FLAGS.TDCBF_YES_BUTTON;
+            dlg.Title = title;
+            dlg.Content = text;
+            dlg.DefaultButtonId = IDNO;
+            dlg.MainIcon = TD_INFORMATION_ICON;
+            return dlg.Show(owner);
         }
 
         [DllImport("comctl32", SetLastError = true)]

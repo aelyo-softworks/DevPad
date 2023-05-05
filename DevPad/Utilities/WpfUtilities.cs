@@ -20,11 +20,9 @@ namespace DevPad.Utilities
         public static string ApplicationVersion => AssemblyUtilities.GetFileVersion();
         public static string ApplicationTitle => ApplicationName + " V" + ApplicationVersion;
 
-        public static void ShowMessage(this Window owner, string text) => MessageBox.Show(owner, text, ApplicationTitle, MessageBoxButton.OK, MessageBoxImage.Information);
-        public static MessageBoxResult ShowConfirm(this Window owner, string text) => MessageBox.Show(owner, text, ApplicationTitle + " - " + Resources.Resources.Confirmation, MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No);
-        public static MessageBoxResult ShowQuestion(this Window owner, string text) => MessageBox.Show(owner, text, ApplicationTitle + " - " + Resources.Resources.Confirmation, MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No);
-        public static void ShowError(this Window owner, string text) => MessageBox.Show(owner, text, ApplicationTitle, MessageBoxButton.OK, MessageBoxImage.Error);
-        public static void ShowWarning(this Window owner, string text) => MessageBox.Show(owner, text, ApplicationTitle + " - " + Resources.Resources.Warning, MessageBoxButton.OK, MessageBoxImage.Warning);
+        public static void ShowMessage(this Window owner, string text) => TaskDialog.ShowMessage(owner, text, ApplicationTitle);
+        public static MessageBoxResult ShowConfirm(this Window owner, string text) => TaskDialog.ShowConfirm(owner, text, ApplicationTitle + " - " + Resources.Resources.Confirmation);
+        public static MessageBoxResult ShowQuestion(this Window owner, string text) => TaskDialog.ShowQuestion(owner, text, ApplicationTitle + " - " + Resources.Resources.Confirmation);
 
         public static void SafeInvoke(this Dispatcher dispatcher, Action action, DispatcherPriority priority = DispatcherPriority.Normal)
         {

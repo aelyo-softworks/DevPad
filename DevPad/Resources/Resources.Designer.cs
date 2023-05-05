@@ -124,6 +124,24 @@ namespace DevPad.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Auto Detect Language.
+        /// </summary>
+        internal static string AutoDetectLanguage {
+            get {
+                return ResourceManager.GetString("AutoDetectLanguage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Auto Detect Language and Format.
+        /// </summary>
+        internal static string AutoDetectLanguageAndFormat {
+            get {
+                return ResourceManager.GetString("AutoDetectLanguageAndFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Auto-Save Period (seconds).
         /// </summary>
         internal static string AutoSavePeriodDisplayName {
@@ -310,6 +328,15 @@ namespace DevPad.Resources {
         internal static string DiscardTabChanges {
             get {
                 return ResourceManager.GetString("DiscardTabChanges", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Do Nothing.
+        /// </summary>
+        internal static string DoNothing {
+            get {
+                return ResourceManager.GetString("DoNothing", resourceCulture);
             }
         }
         

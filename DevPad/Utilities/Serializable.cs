@@ -24,7 +24,7 @@ namespace DevPad.Utilities
             if (filePath == null)
                 throw new ArgumentNullException(nameof(filePath));
 
-            Program.Trace("path:" + filePath);
+            //Program.Trace("path:" + filePath);
             var dir = Path.GetDirectoryName(filePath);
             if (dir != null && !Directory.Exists(dir))
             {

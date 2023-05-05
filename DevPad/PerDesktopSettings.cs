@@ -31,6 +31,21 @@ namespace DevPad
             return settings;
         }
 
+        [Browsable(false)]
+        public bool IsMaximized { get; set; }
+
+        [Browsable(false)]
+        public int Left { get; set; }
+
+        [Browsable(false)]
+        public int Top { get; set; }
+
+        [Browsable(false)]
+        public int Width { get; set; }
+
+        [Browsable(false)]
+        public int Height { get; set; }
+
         [JsonIgnore]
         [Browsable(false)]
         public string ConfigurationFilePath { get; private set; }

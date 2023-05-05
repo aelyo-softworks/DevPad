@@ -138,6 +138,12 @@
   <data name="AutoDetect" xml:space="preserve">
     <value>Auto detect</value>
   </data>
+  <data name="AutoDetectLanguage" xml:space="preserve">
+    <value>Auto Detect Language</value>
+  </data>
+  <data name="AutoDetectLanguageAndFormat" xml:space="preserve">
+    <value>Auto Detect Language and Format</value>
+  </data>
   <data name="AutoSavePeriodDisplayName" xml:space="preserve">
     <value>Auto-Save Period (seconds)</value>
   </data>
@@ -201,6 +207,9 @@
   </data>
   <data name="DiscardTabChanges" xml:space="preserve">
     <value>Discard {0} changes and reload</value>
+  </data>
+  <data name="DoNothing" xml:space="preserve">
+    <value>Do Nothing</value>
   </data>
   <data name="DontAutoDetect" xml:space="preserve">
     <value>Don't auto detect</value>

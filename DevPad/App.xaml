@@ -190,12 +190,12 @@
         <SolidColorBrush
             x:Key="TabItemSelected"
             Opacity="0.4"
-            Color="#FFC9C7BA" />
+            Color="#3C7FB1" />
 
         <LinearGradientBrush x:Key="TabItemSelectedBar">
             <GradientStop Offset="0" Color="#F4F4F4" />
-            <GradientStop Offset="0.05" Color="#3C7FB1" />
-            <GradientStop Offset="0.95" Color="#3C7FB1" />
+            <GradientStop Offset="0.05" Color="Orange" />
+            <GradientStop Offset="0.95" Color="Orange" />
             <GradientStop Offset="1.0" Color="#F4F4F4" />
         </LinearGradientBrush>
 
