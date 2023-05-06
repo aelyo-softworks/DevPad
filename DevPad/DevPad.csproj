@@ -234,6 +234,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Resource Include="Monaco\vs\base\browser\ui\codicons\codicon\codicon.ttf" />
     <Resource Include="Resources\DevPad.ico" />
   </ItemGroup>
   <ItemGroup>
@@ -246,9 +247,6 @@
     <Resource Include="Resources\plus.png" />
     <Resource Include="Resources\unpinned.png" />
     <Resource Include="Resources\DevPad48.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Monaco\vs\base\browser\ui\codicons\codicon\codicon.ttf" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Web.WebView2">
