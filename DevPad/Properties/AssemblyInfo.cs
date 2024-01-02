@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 #endif
 [assembly: AssemblyCompany("Aelyo Softworks")]
 [assembly: AssemblyProduct("Aelyo DevPad")]
-[assembly: AssemblyCopyright("Copyright (C) 2022-2023 Aelyo Softworks. All rights reserved.")]
+[assembly: AssemblyCopyright("Copyright (C) 2022-2024 Aelyo Softworks. All rights reserved.")]
 [assembly: ComVisible(false)]
 [assembly: Guid("29f8ff15-90ae-406d-bccf-246c6a67e68f")]
 
