@@ -1,11 +1,69 @@
-"use strict";/*!-----------------------------------------------------------------------------
+/*!-----------------------------------------------------------------------------
  * Copyright (c) Microsoft Corporation. All rights reserved.
- * Version: 0.44.0(3e047efd345ff102c8c61b5398fb30845aaac166)
+ * Version: 0.51.0(67d664a32968e19e2eb08b696a92463804182ae4)
  * Released under the MIT license
  * https://github.com/microsoft/monaco-editor/blob/main/LICENSE.txt
  *-----------------------------------------------------------------------------*/
-define("vs/basic-languages/wgsl/wgsl", ["require","require"],(require)=>{
-var moduleExports=(()=>{var s=Object.defineProperty;var m=Object.getOwnPropertyDescriptor;var l=Object.getOwnPropertyNames;var u=Object.prototype.hasOwnProperty;var p=(t,e)=>{for(var a in e)s(t,a,{get:e[a],enumerable:!0})},d=(t,e,a,o)=>{if(e&&typeof e=="object"||typeof e=="function")for(let i of l(e))!u.call(t,i)&&i!==a&&s(t,i,{get:()=>e[i],enumerable:!(o=m(e,i))||o.enumerable});return t};var x=t=>d(s({},"__esModule",{value:!0}),t);var F={};p(F,{conf:()=>f,language:()=>L});var f={comments:{lineComment:"//",blockComment:["/*","*/"]},brackets:[["{","}"],["[","]"],["(",")"]],autoClosingPairs:[{open:"[",close:"]"},{open:"{",close:"}"},{open:"(",close:")"}],surroundingPairs:[{open:"{",close:"}"},{open:"[",close:"]"},{open:"(",close:")"}]};function r(t){let e=[],a=t.split(/\t+|\r+|\n+| +/);for(let o=0;o<a.length;++o)a[o].length>0&&e.push(a[o]);return e}var g=r("true false"),_=r(`
+define("vs/basic-languages/wgsl/wgsl", ["require"],(require)=>{
+"use strict";
+var moduleExports = (() => {
+  var __defProp = Object.defineProperty;
+  var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+  var __getOwnPropNames = Object.getOwnPropertyNames;
+  var __hasOwnProp = Object.prototype.hasOwnProperty;
+  var __export = (target, all) => {
+    for (var name in all)
+      __defProp(target, name, { get: all[name], enumerable: true });
+  };
+  var __copyProps = (to, from, except, desc) => {
+    if (from && typeof from === "object" || typeof from === "function") {
+      for (let key of __getOwnPropNames(from))
+        if (!__hasOwnProp.call(to, key) && key !== except)
+          __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+    }
+    return to;
+  };
+  var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+
+  // src/basic-languages/wgsl/wgsl.ts
+  var wgsl_exports = {};
+  __export(wgsl_exports, {
+    conf: () => conf,
+    language: () => language
+  });
+  var conf = {
+    comments: {
+      lineComment: "//",
+      blockComment: ["/*", "*/"]
+    },
+    brackets: [
+      ["{", "}"],
+      ["[", "]"],
+      ["(", ")"]
+    ],
+    autoClosingPairs: [
+      { open: "[", close: "]" },
+      { open: "{", close: "}" },
+      { open: "(", close: ")" }
+    ],
+    surroundingPairs: [
+      { open: "{", close: "}" },
+      { open: "[", close: "]" },
+      { open: "(", close: ")" }
+    ]
+  };
+  function qw(str) {
+    let result = [];
+    const words = str.split(/\t+|\r+|\n+| +/);
+    for (let i = 0; i < words.length; ++i) {
+      if (words[i].length > 0) {
+        result.push(words[i]);
+      }
+    }
+    return result;
+  }
+  var atoms = qw("true false");
+  var keywords = qw(`
 			  alias
 			  break
 			  case
@@ -30,7 +88,8 @@ var moduleExports=(()=>{var s=Object.defineProperty;var m=Object.getOwnPropertyD
 			  switch
 			  var
 			  while
-			  `),h=r(`
+			  `);
+  var reserved = qw(`
 			  NULL
 			  Self
 			  abstract
@@ -176,7 +235,8 @@ var moduleExports=(()=>{var s=Object.defineProperty;var m=Object.getOwnPropertyD
 			  with
 			  writeonly
 			  yield
-			  `),b=r(`
+			  `);
+  var predeclared_enums = qw(`
 		read write read_write
 		function private workgroup uniform storage
 		perspective linear flat
@@ -202,7 +262,8 @@ var moduleExports=(()=>{var s=Object.defineProperty;var m=Object.getOwnPropertyD
 		rgba32sint
 		rgba32float
 		bgra8unorm
-`),v=r(`
+`);
+  var predeclared_types = qw(`
 		bool
 		f16
 		f32
@@ -216,7 +277,8 @@ var moduleExports=(()=>{var s=Object.defineProperty;var m=Object.getOwnPropertyD
 		texture_external
 		texture_external
 		u32
-		`),y=r(`
+		`);
+  var predeclared_type_generators = qw(`
 		array
 		atomic
 		mat2x2
@@ -243,7 +305,8 @@ var moduleExports=(()=>{var s=Object.defineProperty;var m=Object.getOwnPropertyD
 		vec2
 		vec3
 		vec4
-		`),k=r(`
+		`);
+  var predeclared_type_aliases = qw(`
 		vec2i vec3i vec4i
 		vec2u vec3u vec4u
 		vec2f vec3f vec4f
@@ -254,7 +317,8 @@ var moduleExports=(()=>{var s=Object.defineProperty;var m=Object.getOwnPropertyD
 		mat2x2h mat2x3h mat2x4h
 		mat3x2h mat3x3h mat3x4h
 		mat4x2h mat4x3h mat4x4h
-		`),w=r(`
+		`);
+  var predeclared_intrinsics = qw(`
   bitcast all any select arrayLength abs acos acosh asin asinh atan atanh atan2
   ceil clamp cos cosh countLeadingZeros countOneBits countTrailingZeros cross
   degrees determinant distance dot exp exp2 extractBits faceForward firstLeadingBit
@@ -270,7 +334,8 @@ var moduleExports=(()=>{var s=Object.defineProperty;var m=Object.getOwnPropertyD
   pack4x8unorm pack2x16snorm pack2x16unorm pack2x16float unpack4x8snorm unpack4x8unorm
   unpack2x16snorm unpack2x16unorm unpack2x16float storageBarrier workgroupBarrier
   workgroupUniformLoad
-`),S=r(`
+`);
+  var operators = qw(`
 					 &
 					 &&
 					 ->
@@ -302,6 +367,121 @@ var moduleExports=(()=>{var s=Object.defineProperty;var m=Object.getOwnPropertyD
 					 ^=
 					 >>=
 					 <<=
-					 `),C=/enable|requires|diagnostic/,c=/[_\p{XID_Start}]\p{XID_Continue}*/u,n="variable.predefined",L={tokenPostfix:".wgsl",defaultToken:"invalid",unicode:!0,atoms:g,keywords:_,reserved:h,predeclared_enums:b,predeclared_types:v,predeclared_type_generators:y,predeclared_type_aliases:k,predeclared_intrinsics:w,operators:S,symbols:/[!%&*+\-\.\/:;<=>^|_~,]+/,tokenizer:{root:[[C,"keyword","@directive"],[c,{cases:{"@atoms":n,"@keywords":"keyword","@reserved":"invalid","@predeclared_enums":n,"@predeclared_types":n,"@predeclared_type_generators":n,"@predeclared_type_aliases":n,"@predeclared_intrinsics":n,"@default":"identifier"}}],{include:"@commentOrSpace"},{include:"@numbers"},[/[{}()\[\]]/,"@brackets"],["@","annotation","@attribute"],[/@symbols/,{cases:{"@operators":"operator","@default":"delimiter"}}],[/./,"invalid"]],commentOrSpace:[[/\s+/,"white"],[/\/\*/,"comment","@blockComment"],[/\/\/.*$/,"comment"]],blockComment:[[/[^\/*]+/,"comment"],[/\/\*/,"comment","@push"],[/\*\//,"comment","@pop"],[/[\/*]/,"comment"]],attribute:[{include:"@commentOrSpace"},[/\w+/,"annotation","@pop"]],directive:[{include:"@commentOrSpace"},[/[()]/,"@brackets"],[/,/,"delimiter"],[c,"meta.content"],[/;/,"delimiter","@pop"]],numbers:[[/0[fh]/,"number.float"],[/[1-9][0-9]*[fh]/,"number.float"],[/[0-9]*\.[0-9]+([eE][+-]?[0-9]+)?[fh]?/,"number.float"],[/[0-9]+\.[0-9]*([eE][+-]?[0-9]+)?[fh]?/,"number.float"],[/[0-9]+[eE][+-]?[0-9]+[fh]?/,"number.float"],[/0[xX][0-9a-fA-F]*\.[0-9a-fA-F]+(?:[pP][+-]?[0-9]+[fh]?)?/,"number.hex"],[/0[xX][0-9a-fA-F]+\.[0-9a-fA-F]*(?:[pP][+-]?[0-9]+[fh]?)?/,"number.hex"],[/0[xX][0-9a-fA-F]+[pP][+-]?[0-9]+[fh]?/,"number.hex"],[/0[xX][0-9a-fA-F]+[iu]?/,"number.hex"],[/[1-9][0-9]*[iu]?/,"number"],[/0[iu]?/,"number"]]}};return x(F);})();
+					 `);
+  var directive_re = /enable|requires|diagnostic/;
+  var ident_re = /[_\p{XID_Start}]\p{XID_Continue}*/u;
+  var predefined_token = "variable.predefined";
+  var language = {
+    tokenPostfix: ".wgsl",
+    defaultToken: "invalid",
+    unicode: true,
+    atoms,
+    keywords,
+    reserved,
+    predeclared_enums,
+    predeclared_types,
+    predeclared_type_generators,
+    predeclared_type_aliases,
+    predeclared_intrinsics,
+    operators,
+    symbols: /[!%&*+\-\.\/:;<=>^|_~,]+/,
+    tokenizer: {
+      root: [
+        [directive_re, "keyword", "@directive"],
+        [
+          // Identifier-like things, but also include '_'
+          ident_re,
+          {
+            cases: {
+              "@atoms": predefined_token,
+              "@keywords": "keyword",
+              "@reserved": "invalid",
+              "@predeclared_enums": predefined_token,
+              "@predeclared_types": predefined_token,
+              "@predeclared_type_generators": predefined_token,
+              "@predeclared_type_aliases": predefined_token,
+              "@predeclared_intrinsics": predefined_token,
+              "@default": "identifier"
+            }
+          }
+        ],
+        { include: "@commentOrSpace" },
+        { include: "@numbers" },
+        [/[{}()\[\]]/, "@brackets"],
+        ["@", "annotation", "@attribute"],
+        [
+          /@symbols/,
+          {
+            cases: {
+              "@operators": "operator",
+              "@default": "delimiter"
+            }
+          }
+        ],
+        [/./, "invalid"]
+      ],
+      commentOrSpace: [
+        [/\s+/, "white"],
+        [/\/\*/, "comment", "@blockComment"],
+        [/\/\/.*$/, "comment"]
+      ],
+      blockComment: [
+        // Soak up uninteresting text: anything except * or /
+        [/[^\/*]+/, "comment"],
+        // Recognize the start of a nested block comment.
+        [/\/\*/, "comment", "@push"],
+        // Recognize the end of a nested block comment.
+        [/\*\//, "comment", "@pop"],
+        // Recognize insignificant * and /
+        [/[\/*]/, "comment"]
+      ],
+      attribute: [
+        // For things like '@fragment' both '@' and 'fragment'
+        // are marked as annotations.  This should work even if
+        // there are spaces or comments between the two tokens.
+        { include: "@commentOrSpace" },
+        [/\w+/, "annotation", "@pop"]
+      ],
+      directive: [
+        // For things like 'enable f16;', 'enable' maps to 'meta'
+        // and 'f16' maps to 'meta.tag'.
+        { include: "@commentOrSpace" },
+        [/[()]/, "@brackets"],
+        [/,/, "delimiter"],
+        [ident_re, "meta.content"],
+        [/;/, "delimiter", "@pop"]
+      ],
+      numbers: [
+        // Decimal float literals
+        // https://www.w3.org/TR/WGSL/#syntax-decimal_float_literal
+        // 0, with type-specifying suffix.
+        [/0[fh]/, "number.float"],
+        // Other decimal integer, with type-specifying suffix.
+        [/[1-9][0-9]*[fh]/, "number.float"],
+        // Has decimal point, at least one digit after decimal.
+        [/[0-9]*\.[0-9]+([eE][+-]?[0-9]+)?[fh]?/, "number.float"],
+        // Has decimal point, at least one digit before decimal.
+        [/[0-9]+\.[0-9]*([eE][+-]?[0-9]+)?[fh]?/, "number.float"],
+        // Has at least one digit, and has an exponent.
+        [/[0-9]+[eE][+-]?[0-9]+[fh]?/, "number.float"],
+        // Hex float literals
+        // https://www.w3.org/TR/WGSL/#syntax-hex_float_literal
+        [/0[xX][0-9a-fA-F]*\.[0-9a-fA-F]+(?:[pP][+-]?[0-9]+[fh]?)?/, "number.hex"],
+        [/0[xX][0-9a-fA-F]+\.[0-9a-fA-F]*(?:[pP][+-]?[0-9]+[fh]?)?/, "number.hex"],
+        [/0[xX][0-9a-fA-F]+[pP][+-]?[0-9]+[fh]?/, "number.hex"],
+        // Hexadecimal integer literals
+        // https://www.w3.org/TR/WGSL/#syntax-hex_int_literal
+        [/0[xX][0-9a-fA-F]+[iu]?/, "number.hex"],
+        // Decimal integer literals
+        // https://www.w3.org/TR/WGSL/#syntax-decimal_int_literal
+        // We need two rules here because 01 is not valid.
+        [/[1-9][0-9]*[iu]?/, "number"],
+        [/0[iu]?/, "number"]
+        // Must match last
+      ]
+    }
+  };
+  return __toCommonJS(wgsl_exports);
+})();
 return moduleExports;
 });

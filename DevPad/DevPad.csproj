@@ -234,13 +234,14 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="Monaco\vs\base\browser\ui\codicons\codicon\codicon.ttf" />
     <Resource Include="Resources\DevPad.ico" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Monaco\**">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
+     <Content Include="Monaco\**">
+       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+     </Content>
+  </ItemGroup>
+  <ItemGroup>
     <Content Include="Properties\UpdateAssemblyInfo.exe" />
     <Resource Include="Resources\close.png" />
     <Resource Include="Resources\pinned.png" />
@@ -250,14 +251,18 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Web.WebView2">
-      <Version>1.0.2045.28</Version>
+      <Version>1.0.2739.15</Version>
     </PackageReference>
     <PackageReference Include="System.Text.Json">
-      <Version>7.0.3</Version>
+      <Version>8.0.4</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="app.manifest" />
+    <None Include="Monaco\vs\base\worker\workerMain.js.map" />
+    <None Include="Monaco\vs\editor\editor.main.js.map">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="Properties\pre-commit" />
   </ItemGroup>
   <ItemGroup>
