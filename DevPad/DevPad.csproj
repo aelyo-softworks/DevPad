@@ -237,9 +237,9 @@
     <Resource Include="Resources\DevPad.ico" />
   </ItemGroup>
   <ItemGroup>
-     <Content Include="Monaco\**">
-       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-     </Content>
+    <Content Include="Monaco\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <Content Include="Properties\UpdateAssemblyInfo.exe" />
@@ -251,18 +251,14 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Web.WebView2">
-      <Version>1.0.2739.15</Version>
+      <Version>1.0.3179.45</Version>
     </PackageReference>
     <PackageReference Include="System.Text.Json">
-      <Version>8.0.4</Version>
+      <Version>9.0.4</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="app.manifest" />
-    <None Include="Monaco\vs\base\worker\workerMain.js.map" />
-    <None Include="Monaco\vs\editor\editor.main.js.map">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Include="Properties\pre-commit" />
   </ItemGroup>
   <ItemGroup>
